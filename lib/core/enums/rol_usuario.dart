@@ -1,0 +1,4 @@
+enum RolUsuario {
+  vendedor,
+  admin,
+}
