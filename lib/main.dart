@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
+import 'package:super_motos/features/home/presentation/pages/dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +20,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Super Motos App Inicializada con Isar'),
-        ),
-      ),
-    );
+      ), // // ThemeData
+      home: const DashboardPage(), // <-- Mira lo limpio que queda
+    ); // // MaterialApp
   }
 }

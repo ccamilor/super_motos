@@ -27,7 +27,9 @@ class ProductoModel {
 
   static ProductoModel fromDomain(Producto domain) {
     return ProductoModel()
-      ..id = domain.id
+      ..id = (domain.id > 9007199254740991)
+          ? Isar.autoIncrement
+          : domain.id
       ..nombre = domain.nombre
       ..precio = domain.precio
       ..imagenUrl = domain.imagenUrl
