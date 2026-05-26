@@ -22,6 +22,7 @@ class Factura {
   final double? latitudVenta;
   final double? longitudVenta;
   final List<DetalleFactura> detalles;
+  final bool isSynced;
 
   Factura({
     required this.numeroFactura,
@@ -33,5 +34,6 @@ class Factura {
     this.latitudVenta,
     this.longitudVenta,
     required this.detalles,
+    this.isSynced = false,
   });
 }

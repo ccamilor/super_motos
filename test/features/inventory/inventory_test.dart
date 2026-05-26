@@ -42,7 +42,10 @@ void main() {
     final producto = ProductoModel()
       ..nombre = 'Cadena Honda Eco Deluxe'
       ..precio = 45000.0
-      ..imagenUrl = 'https://supabase.example.com/stock/ch-100.png';
+      ..imagenUrl = 'https://supabase.example.com/stock/ch-100.png'
+      ..isOriginal = true
+      ..motosCompatibles = 'Honda Eco Deluxe, Hero Eco'
+      ..stockMinimo = 5;
 
     await isar.writeTxn(() async {
       await isar.productoModels.put(producto);

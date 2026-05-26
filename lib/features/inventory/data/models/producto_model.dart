@@ -9,6 +9,9 @@ class ProductoModel {
   late String nombre;
   late double precio;
   String? imagenUrl;
+  late bool isOriginal;
+  late String motosCompatibles;
+  late int stockMinimo;
 
   Producto toDomain() {
     return Producto(
@@ -16,6 +19,9 @@ class ProductoModel {
       nombre: nombre,
       precio: precio,
       imagenUrl: imagenUrl,
+      isOriginal: isOriginal,
+      motosCompatibles: motosCompatibles,
+      stockMinimo: stockMinimo,
     );
   }
 
@@ -24,6 +30,9 @@ class ProductoModel {
       ..id = domain.id
       ..nombre = domain.nombre
       ..precio = domain.precio
-      ..imagenUrl = domain.imagenUrl;
+      ..imagenUrl = domain.imagenUrl
+      ..isOriginal = domain.isOriginal
+      ..motosCompatibles = domain.motosCompatibles
+      ..stockMinimo = domain.stockMinimo;
   }
 }

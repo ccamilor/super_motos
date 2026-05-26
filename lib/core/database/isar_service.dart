@@ -7,6 +7,9 @@ import 'package:super_motos/features/inventory/data/models/inventario_camion_mod
 import 'package:super_motos/features/customers/data/models/cliente_model.dart';
 import 'package:super_motos/features/billing/data/models/factura_model.dart';
 import 'package:super_motos/features/auth/data/models/usuario_model.dart';
+import 'package:super_motos/features/suppliers/data/models/proveedor_model.dart';
+import 'package:super_motos/features/suppliers/data/models/historial_precios_model.dart';
+import 'package:super_motos/features/returns/data/models/devolucion_model.dart';
 
 class IsarService {
   late Isar isar;
@@ -26,6 +29,9 @@ class IsarService {
         ClienteModelSchema,
         FacturaModelSchema,
         UsuarioModelSchema,
+        ProveedorModelSchema,
+        HistorialPreciosModelSchema,
+        DevolucionModelSchema,
       ],
       directory: directory,
     );

@@ -41,6 +41,7 @@ class FacturaModel {
   double? latitudVenta;
   double? longitudVenta;
   List<DetalleFacturaModel>? detalles;
+  bool isSynced = false;
 
   Factura toDomain() {
     return Factura(
@@ -53,6 +54,7 @@ class FacturaModel {
       latitudVenta: latitudVenta,
       longitudVenta: longitudVenta,
       detalles: detalles?.map((d) => d.toDomain()).toList() ?? [],
+      isSynced: isSynced,
     );
   }
 
@@ -66,6 +68,7 @@ class FacturaModel {
       ..tipoPago = domain.tipoPago
       ..latitudVenta = domain.latitudVenta
       ..longitudVenta = domain.longitudVenta
-      ..detalles = domain.detalles.map((d) => DetalleFacturaModel.fromDomain(d)).toList();
+      ..detalles = domain.detalles.map((d) => DetalleFacturaModel.fromDomain(d)).toList()
+      ..isSynced = domain.isSynced;
   }
 }

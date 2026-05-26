@@ -33,28 +33,33 @@ const FacturaModelSchema = CollectionSchema(
       name: r'fecha',
       type: IsarType.dateTime,
     ),
-    r'latitudVenta': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 3,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'latitudVenta': PropertySchema(
+      id: 4,
       name: r'latitudVenta',
       type: IsarType.double,
     ),
     r'longitudVenta': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'longitudVenta',
       type: IsarType.double,
     ),
     r'tipoPago': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'tipoPago',
       type: IsarType.string,
     ),
     r'total': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'total',
       type: IsarType.double,
     ),
     r'vendedorId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'vendedorId',
       type: IsarType.long,
     )
@@ -111,11 +116,12 @@ void _facturaModelSerialize(
     object.detalles,
   );
   writer.writeDateTime(offsets[2], object.fecha);
-  writer.writeDouble(offsets[3], object.latitudVenta);
-  writer.writeDouble(offsets[4], object.longitudVenta);
-  writer.writeString(offsets[5], object.tipoPago);
-  writer.writeDouble(offsets[6], object.total);
-  writer.writeLong(offsets[7], object.vendedorId);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeDouble(offsets[4], object.latitudVenta);
+  writer.writeDouble(offsets[5], object.longitudVenta);
+  writer.writeString(offsets[6], object.tipoPago);
+  writer.writeDouble(offsets[7], object.total);
+  writer.writeLong(offsets[8], object.vendedorId);
 }
 
 FacturaModel _facturaModelDeserialize(
@@ -133,12 +139,13 @@ FacturaModel _facturaModelDeserialize(
     DetalleFacturaModel(),
   );
   object.fecha = reader.readDateTime(offsets[2]);
-  object.latitudVenta = reader.readDoubleOrNull(offsets[3]);
-  object.longitudVenta = reader.readDoubleOrNull(offsets[4]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.latitudVenta = reader.readDoubleOrNull(offsets[4]);
+  object.longitudVenta = reader.readDoubleOrNull(offsets[5]);
   object.numeroFactura = id;
-  object.tipoPago = reader.readString(offsets[5]);
-  object.total = reader.readDouble(offsets[6]);
-  object.vendedorId = reader.readLong(offsets[7]);
+  object.tipoPago = reader.readString(offsets[6]);
+  object.total = reader.readDouble(offsets[7]);
+  object.vendedorId = reader.readLong(offsets[8]);
   return object;
 }
 
@@ -161,14 +168,16 @@ P _facturaModelDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readDoubleOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readDouble(offset)) as P;
+    case 8:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -485,6 +494,16 @@ extension FacturaModelQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
       ));
     });
   }
@@ -1008,6 +1027,18 @@ extension FacturaModelQuerySortBy
     });
   }
 
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByLatitudVenta() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'latitudVenta', Sort.asc);
@@ -1095,6 +1126,18 @@ extension FacturaModelQuerySortThenBy
   QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByFechaDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fecha', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
     });
   }
 
@@ -1189,6 +1232,12 @@ extension FacturaModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByLatitudVenta() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'latitudVenta');
@@ -1246,6 +1295,12 @@ extension FacturaModelQueryProperty
   QueryBuilder<FacturaModel, DateTime, QQueryOperations> fechaProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fecha');
+    });
+  }
+
+  QueryBuilder<FacturaModel, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 
