@@ -15,11 +15,13 @@ class IsarService {
   late Isar isar;
 
   Future<void> init() async {
-    String directory = '';
-    if (!kIsWeb) {
-      final appDir = await getApplicationDocumentsDirectory();
-      directory = appDir.path;
+    if (kIsWeb) {
+      return; // En web no inicializamos Isar por falta de soporte nativo en v3
     }
+
+    String directory = '';
+    final appDir = await getApplicationDocumentsDirectory();
+    directory = appDir.path;
 
     isar = await Isar.open(
       [

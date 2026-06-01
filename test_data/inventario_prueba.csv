@@ -1,0 +1,13 @@
+id,nombre,precio,is_original,motos_compatibles,stock_minimo,cantidad_camion,numero_canasta,cantidad_bodega
+101,Cadena Reforzada 428H-130L,35000,true,Yamaha YBR125 - Honda CB125F - Suzuki GN125,3,12,1,50
+102,Pastillas Freno Delantero Semi-Metalicas,18500,false,Pulsar NS200 - KTM Duke 200 - Dominar 250,8,25,2,120
+103,Kit Empaques Motor Completo,92000,true,Yamaha FZ25 - Honda CB190R - Suzuki Gixxer 250,2,5,3,15
+104,Aceite Motor 10W40 Sintetico 1L,28000,true,Universal todas las motos,15,40,1,200
+105,Filtro Aire Alto Rendimiento K&N,45000,true,Yamaha R15 V3 - Pulsar RS200 - Suzuki Gixxer SF,4,8,4,30
+106,Bujia Iridium NGK CR8EIX,12500,true,Universal 110cc-250cc,10,30,2,150
+107,Tensor Cadena Automatico,22000,false,Honda XR150 - Yamaha XTZ125 - Suzuki DR150,5,10,5,40
+108,Manigueta Freno Aluminio CNC,15000,false,Yamaha MT03 - Honda CB500X - KTM Duke 390,6,15,3,60
+109,Llanta Trasera Pirelli 140/70-17,185000,true,Yamaha R3 - Ninja 300 - Benelli 302S,2,4,6,12
+110,Amortiguador Trasero Gas Premium,135000,true,Pulsar NS200 - Yamaha FZ25 - Suzuki Gixxer 250,3,6,4,18
+111,Kit Luces LED H4 6000K,38000,false,Universal todas las motos,7,20,1,80
+112,Espejos Retrovisores Deportivos,16000,false,Yamaha R15 - Pulsar RS200 - Honda CBR250R,8,18,5,70

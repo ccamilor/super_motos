@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -15,26 +16,27 @@ class DashboardPage extends StatelessWidget {
         title: Row(
           children: [
             Icon(Icons.two_wheeler, color: colorScheme.primary, size: 28),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Text(
               'MotoRuta Pro',
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 color: colorScheme.onSurface,
+                letterSpacing: 0.5,
               ),
             ),
           ],
         ),
         actions: [
-          // Badge "Online" (verde)
+          // Badge "Online" (Verde NeÃ³n Cyberpunk)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: Colors.green.shade100,
+              color: colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.green.shade600,
+                color: colorScheme.primary.withValues(alpha: 0.4),
                 width: 1.5,
               ),
             ),
@@ -44,18 +46,25 @@ class DashboardPage extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.green,
+                    color: colorScheme.primary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.6),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   'Online',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: colorScheme.primary,
                   ),
                 ),
               ],
@@ -71,36 +80,53 @@ class DashboardPage extends StatelessWidget {
             children: [
               // Metrics Section: Dos Cards (Venta Total, Pendientes)
               Text(
-                'Métricas del Día',
+                'MÃ©tricas del DÃ­a',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
+                  // Tarjeta Venta Total (Verde NeÃ³n)
                   Expanded(
-                    child: Card(
-                      elevation: 2,
-                      color: colorScheme.primaryContainer,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.primary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Venta Total',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: colorScheme.onPrimaryContainer,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               '\$0.00',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onPrimaryContainer,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: colorScheme.primary,
                               ),
                             ),
                           ],
@@ -109,27 +135,44 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Tarjeta Pendientes (Cian Cyberpunk)
                   Expanded(
-                    child: Card(
-                      elevation: 2,
-                      color: colorScheme.secondaryContainer,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.secondary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.secondary.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Pendientes de Sinc.',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: colorScheme.onSecondaryContainer,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               '0',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSecondaryContainer,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: colorScheme.secondary,
                               ),
                             ),
                           ],
@@ -139,14 +182,14 @@ class DashboardPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Main Grid: 3 tarjetas con iconos (Inventario, Clientes, Historial)
               Text(
-                'Accesos Rápidos',
+                'Accesos RÃ¡pidos',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 12),
@@ -154,76 +197,87 @@ class DashboardPage extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.9,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 0.95,
                 children: [
                   _buildShortcutCard(
                     context,
                     title: 'Inventario',
                     icon: Icons.inventory_2_outlined,
-                    color: Colors.blue.shade100,
-                    iconColor: Colors.blue.shade800,
-                    onTap: () => _showSnackBar(context, 'Inventario'),
+                    bgColor: colorScheme.primary.withValues(alpha: 0.1),
+                    iconColor: colorScheme.primary,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const InventoryPage()),
+                    ),
                   ),
+
                   _buildShortcutCard(
                     context,
                     title: 'Clientes',
                     icon: Icons.people_outline_rounded,
-                    color: Colors.purple.shade100,
-                    iconColor: Colors.purple.shade800,
-                    onTap: () => _showSnackBar(context, 'Clientes'),
+                    bgColor: colorScheme.secondary.withValues(alpha: 0.1),
+                    iconColor: colorScheme.secondary,
+                    onTap: () => _showSnackBar(context, 'Modulo de clientes en preparacion'),
                   ),
                   _buildShortcutCard(
                     context,
                     title: 'Historial',
                     icon: Icons.history_edu_outlined,
-                    color: Colors.teal.shade100,
-                    iconColor: Colors.teal.shade800,
-                    onTap: () => _showSnackBar(context, 'Historial'),
+                    bgColor: colorScheme.error.withValues(alpha: 0.1),
+                    iconColor: colorScheme.error,
+                    onTap: () => _showSnackBar(context, 'Modulo de historial en preparacion'),
                   ),
                 ],
               ),
               const SizedBox(height: 32),
 
-              // Floating/Highlighted Buttons: Nueva Venta y Devolución
+              // Floating/Highlighted Buttons: Nueva Venta y Devolucion
               Card(
-                elevation: 1,
-                color: theme.cardColor,
+                elevation: 4,
+                color: colorScheme.surface,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Operaciones de Ruta',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _showActionDialog(context, 'Nueva Venta', '🛒 Registrar venta en calle'),
-                              icon: const Icon(Icons.shopping_cart),
+                              onPressed: () => _showActionDialog(
+                                context,
+                                'Nueva Venta',
+                                'Registrar nueva factura con geoposicionamiento en la ruta.',
+                              ),
+                              icon: const Icon(Icons.shopping_cart_outlined, size: 20),
                               label: const Text('Nueva Venta'),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                backgroundColor: colorScheme.primary,
-                                foregroundColor: colorScheme.onPrimary,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () => _showActionDialog(context, 'Devolución', '🔄 Registrar devolución en calle'),
-                              icon: const Icon(Icons.replay),
-                              label: const Text('Devolución'),
+                              onPressed: () => _showActionDialog(
+                                context,
+                                'Devolucion',
+                                'ðŸ”„ Registrar devoluciÃ³n fÃ­sica de repuesto en canasta de destino.',
+                              ),
+                              icon: const Icon(Icons.replay_outlined, size: 20),
+                              label: const Text('Devolucion'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
@@ -244,7 +298,7 @@ class DashboardPage extends StatelessWidget {
     BuildContext context, {
     required String title,
     required IconData icon,
-    required Color color,
+    required Color bgColor,
     required Color iconColor,
     required VoidCallback onTap,
   }) {
@@ -252,13 +306,13 @@ class DashboardPage extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Ink(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
             width: 1,
           ),
         ),
@@ -268,19 +322,20 @@ class DashboardPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: bgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
+                child: Icon(icon, color: iconColor, size: 26),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 title,
-                style: theme.textTheme.labelMedium?.copyWith(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+                  fontSize: 13,
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -293,27 +348,50 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  void _showSnackBar(BuildContext context, String moduleName) {
+  void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Navegando a: $moduleName'),
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         duration: const Duration(seconds: 1),
       ),
     );
   }
 
   void _showActionDialog(BuildContext context, String title, String description) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(description),
+          backgroundColor: colorScheme.surface,
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            description,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cerrar'),
+              child: Text(
+                'Cerrar',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );

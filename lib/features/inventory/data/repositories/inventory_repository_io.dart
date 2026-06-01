@@ -1,0 +1,71 @@
+import 'package:isar/isar.dart';
+import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
+import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
+import 'package:super_motos/features/inventory/data/models/producto_model.dart';
+import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
+import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
+import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
+import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
+
+class IsarInventoryRepository implements InventoryRepository {
+  Isar? get _isar => Isar.getInstance();
+  final InventoryCsvParser _parser = const InventoryCsvParser();
+
+  @override
+  Future<InventorySnapshot> loadInventory() async {
+    final isar = _isar;
+    if (isar == null) {
+      return InventorySnapshot.empty;
+    }
+
+    var productos = await isar.productoModels.where().findAll();
+    if (productos.isEmpty) {
+      await _seedDemoData(isar);
+      productos = await isar.productoModels.where().findAll();
+    }
+
+    final camion = await isar.inventarioCamionModels.where().findAll();
+    final bodega = await isar.inventarioBodegaModels.where().findAll();
+
+    return InventorySnapshot(
+      productos: productos,
+      camion: camion,
+      bodega: bodega,
+    );
+  }
+
+  @override
+  Future<InventorySnapshot> importCsv(String csvContent) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no está inicializado.');
+    }
+
+    final entries = _parser.parse(csvContent);
+    if (entries.isEmpty) {
+      throw FormatException('El CSV está vacío o no contiene filas válidas.');
+    }
+
+    await isar.writeTxn(() async {
+      for (final entry in entries) {
+        await isar.productoModels.put(entry.toProductoModel());
+        await isar.inventarioCamionModels.put(entry.toCamionModel());
+        await isar.inventarioBodegaModels.put(entry.toBodegaModel());
+      }
+    });
+
+    return loadInventory();
+  }
+
+  Future<void> _seedDemoData(Isar isar) async {
+    await isar.writeTxn(() async {
+      for (final entry in InventorySeedData.demoEntries) {
+        await isar.productoModels.put(entry.toProductoModel());
+        await isar.inventarioCamionModels.put(entry.toCamionModel());
+        await isar.inventarioBodegaModels.put(entry.toBodegaModel());
+      }
+    });
+  }
+}
+
+InventoryRepository createInventoryRepository() => IsarInventoryRepository();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
+import 'package:super_motos/core/theme/app_theme.dart';
 import 'package:super_motos/features/home/presentation/pages/dashboard_page.dart';
 
 void main() async {
@@ -16,12 +17,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Super Motos',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ), // // ThemeData
-      home: const DashboardPage(), // <-- Mira lo limpio que queda
+      title: 'MotoRuta Pro',
+      debugShowCheckedModeBanner: false,
+      theme: JapaniRacerTheme.darkTheme,
+      darkTheme: JapaniRacerTheme.darkTheme,
+      themeMode: ThemeMode.dark,
+      home: const DashboardPage(),
     ); // // MaterialApp
   }
 }
+
