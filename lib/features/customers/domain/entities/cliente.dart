@@ -11,7 +11,7 @@ class Cliente {
   final double saldoPendiente;
   final EstadoCuenta estadoCuenta;
 
-  Cliente({
+  const Cliente({
     required this.id,
     required this.nombre,
     required this.identificadorFiscal,
