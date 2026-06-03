@@ -3,6 +3,7 @@ import 'package:super_motos/features/billing/presentation/pages/factura_form_pag
 import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
+import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -274,10 +275,8 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () => _showActionDialog(
-                                context,
-                                'Devolucion',
-                                'Registrar devolucion fisica de repuesto en canasta de destino.',
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const DevolucionFormPage()),
                               ),
                               icon: const Icon(Icons.replay_outlined, size: 20),
                               label: const Text('Devolucion'),
@@ -350,43 +349,6 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _showActionDialog(BuildContext context, String title, String description) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: colorScheme.surface,
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            description,
-            style: const TextStyle(color: Colors.white70),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cerrar',
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
