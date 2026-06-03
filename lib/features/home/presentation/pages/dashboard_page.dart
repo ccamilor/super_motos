@@ -1,4 +1,6 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
+import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 
@@ -229,7 +231,9 @@ class DashboardPage extends StatelessWidget {
                     icon: Icons.history_edu_outlined,
                     bgColor: colorScheme.error.withValues(alpha: 0.1),
                     iconColor: colorScheme.error,
-                    onTap: () => _showSnackBar(context, 'Modulo de historial en preparacion'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const FacturasPage()),
+                    ),
                   ),
                 ],
               ),
@@ -257,10 +261,8 @@ class DashboardPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _showActionDialog(
-                                context,
-                                'Nueva Venta',
-                                'Registrar nueva factura con geoposicionamiento en la ruta.',
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const FacturaFormPage()),
                               ),
                               icon: const Icon(Icons.shopping_cart_outlined, size: 20),
                               label: const Text('Nueva Venta'),
@@ -347,20 +349,6 @@ class DashboardPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 1),
       ),
     );
   }
