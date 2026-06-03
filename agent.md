@@ -22,10 +22,10 @@
 | Feature | Estado | Notas |
 |---|---|---|
 | `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas |
-| `home` (dashboard) | 🟡 UI | Métricas en duro, navegación parcial; "Clientes" e "Historial" sólo `SnackBar` |
+| `customers` | ✅ Completo | CRUD: lista con búsqueda, crear/editar/eliminar, formato COP, soporte Isar + web |
+| `home` (dashboard) | 🟡 UI | Métricas en duro, navegación parcial; sólo "Historial" sigue como `SnackBar` |
 | `auth` | 🟡 Solo modelo | `UsuarioModel` en Isar, sin UI ni flujo |
 | `billing` | 🟡 Solo modelo | `FacturaModel` en Isar, sin UI ni flujo |
-| `customers` | 🟡 Solo modelo | `ClienteModel` en Isar, sin UI |
 | `suppliers` | 🟡 Solo modelo | `ProveedorModel` + `HistorialPreciosModel` en Isar, sin UI |
 | `returns` | 🟡 Solo modelo | `DevolucionModel` en Isar, sin UI |
 | Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
@@ -123,12 +123,32 @@ super_motos/
 
 - AppBar con título `MotoRuta Pro` y badge "Online" decorativo
 - 2 métricas en duro: `Venta Total $0.00` y `Pendientes de Sinc. 0`
-- Grid 3×1: Inventario (funcional), Clientes (stub), Historial (stub)
+- Grid 3×1: Inventario (funcional), Clientes (funcional), Historial (stub)
 - Card "Operaciones de Ruta": Nueva Venta (dialog informativo), Devolución (dialog informativo)
 
-### 5.3 Stubs (modelos sin UI)
+### 5.3 `customers` — módulo completo
 
-`auth`, `billing`, `customers`, `suppliers`, `returns`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
+**Pantallas:**
+- `ClientesPage`: lista con búsqueda (por `nombre` o `identificadorFiscal`), card por cliente con badge de estado, NIT, dirección, saldo y límite en COP. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
+- `ClienteFormPage`: 3 secciones (Datos básicos, Crédito, Estado). Validadores en cada campo. Saldo pendiente en modo edición es read-only (lo modifica facturación). Confirmación al descartar con cambios.
+
+**Capa de datos:** mismo patrón que inventario.
+```text
+ClientesRepository (contrato abstracto)
+  ├── IsarClientesRepository   → Android / nativo
+  └── WebClientesRepository    → Chrome (localStorage con JSON)
+```
+Factory con import condicional: `createClientesRepository()`.
+
+**Entidad `Cliente`:** 9 campos + `copyWith` (usado por el form para construir el update).
+
+**Seed demo (3 clientes):** cubren los 3 estados de `EstadoCuenta` (activo, sinCredito, suspendido). El cliente #2 excede el límite de crédito para ejercitar la alerta visual.
+
+**Test:** `test/features/customers/clientes_test.dart` — 4 tests CRUD sobre el contrato del repositorio Isar.
+
+### 5.4 Stubs (modelos sin UI)
+
+`auth`, `billing`, `suppliers`, `returns`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
 
 ---
 
@@ -275,7 +295,7 @@ flutter clean && flutter pub get
 - Definir estrategia de resolución de conflictos (pendiente)
 
 **Fase 3 — Módulos reales**
-- Clientes (UI + CRUD)
+- ✅ Clientes (UI + CRUD) — completado
 - Facturación (UI + flujo de venta)
 - Devoluciones (UI + flujo de retorno a canasta)
 - Autenticación (login + roles: `RolUsuario`, `EstadoCuenta` ya existen como enums)
@@ -294,9 +314,16 @@ flutter clean && flutter pub get
 | `lib/main.dart` | Entry point — inicializa Isar y lanza `MyApp` |
 | `lib/core/database/isar_service.dart` | Apertura de Isar con 9 schemas |
 | `lib/core/theme/app_theme.dart` | Tema dark `JapaniRacerTheme` |
+| `lib/core/utils/currency_formatter.dart` | `formatCOP(double)` — formato monetario COP |
 | `lib/core/services/sync_service.dart` | Placeholder de sync (fase 2) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
 | `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs |
+| `lib/features/customers/presentation/pages/clientes_page.dart` | Lista de clientes con búsqueda |
+| `lib/features/customers/presentation/pages/cliente_form_page.dart` | Form crear/editar cliente |
+| `lib/features/customers/data/repositories/clientes_repository.dart` | Contrato abstracto |
+| `lib/features/customers/data/repositories/clientes_repository_web.dart` | Impl web (localStorage + JSON) |
+| `lib/features/customers/data/repositories/clientes_repository_io.dart` | Impl nativa (Isar) |
+| `lib/features/customers/data/services/clientes_seed_data.dart` | 3 clientes demo cubriendo los 3 estados |
 | `lib/features/inventory/presentation/pages/web_storage_stub.dart` | Stub de localStorage para Android |
 | `lib/features/inventory/presentation/pages/web_storage_web.dart` | Impl localStorage para Chrome |
 | `lib/features/inventory/data/repositories/inventory_repository.dart` | Contrato abstracto |
