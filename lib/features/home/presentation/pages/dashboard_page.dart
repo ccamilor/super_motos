@@ -1,4 +1,7 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:super_motos/core/enums/rol_usuario.dart';
+import 'package:super_motos/core/services/auth_session.dart';
+import 'package:super_motos/features/auth/presentation/pages/login_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
@@ -32,48 +35,7 @@ class DashboardPage extends StatelessWidget {
           ],
         ),
         actions: [
-          // Badge "Online" (Verde NeÃ³n Cyberpunk)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.4),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.6),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _UserBadge(),
         ],
       ),
       body: SafeArea(
@@ -349,6 +311,96 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _UserBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final user = AuthSession.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isAdmin = user.rol == RolUsuario.admin;
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 48),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: (isAdmin ? colorScheme.primary : colorScheme.secondary)
+              .withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: (isAdmin ? colorScheme.primary : colorScheme.secondary)
+                .withValues(alpha: 0.4),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isAdmin ? colorScheme.primary : colorScheme.secondary,
+                boxShadow: [
+                  BoxShadow(
+                    color: (isAdmin ? colorScheme.primary : colorScheme.secondary)
+                        .withValues(alpha: 0.6),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              user.nombre,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isAdmin ? colorScheme.primary : colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 18,
+              color: isAdmin ? colorScheme.primary : colorScheme.secondary,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: colorScheme.error, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Cerrar sesion',
+                style: TextStyle(color: colorScheme.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'logout') {
+          AuthSession.instance.clear();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
+        }
+      },
     );
   }
 }

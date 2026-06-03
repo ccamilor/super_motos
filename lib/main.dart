@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
 import 'package:super_motos/core/theme/app_theme.dart';
-import 'package:super_motos/features/home/presentation/pages/dashboard_page.dart';
+import 'package:super_motos/features/auth/presentation/widgets/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +22,12 @@ class MyApp extends StatelessWidget {
       theme: JapaniRacerTheme.darkTheme,
       darkTheme: JapaniRacerTheme.darkTheme,
       themeMode: ThemeMode.dark,
-      home: const DashboardPage(),
-    ); // // MaterialApp
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/home': (context) => const AuthWrapper(),
+      },
+    );
   }
 }
 
