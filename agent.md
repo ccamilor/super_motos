@@ -24,10 +24,10 @@
 | `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas |
 | `customers` | ✅ Completo | CRUD: lista con búsqueda, crear/editar/eliminar, formato COP, soporte Isar + web |
 | `billing` | ✅ Completo | Listado + crear con line items + detalle; descuenta stock del camión al guardar |
-| `home` (dashboard) | 🟡 UI | Métricas en duro; sólo "Devolución" sigue como AlertDialog stub |
+| `returns` | ✅ Completo | Listado + crear con factura/producto filtrado + detalle; repone stock del camión al guardar |
+| `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
 | `auth` | 🟡 Solo modelo | `UsuarioModel` en Isar, sin UI ni flujo |
 | `suppliers` | 🟡 Solo modelo | `ProveedorModel` + `HistorialPreciosModel` en Isar, sin UI |
-| `returns` | 🟡 Solo modelo | `DevolucionModel` en Isar, sin UI |
 | Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
 | Sincronización bidireccional | ❌ No implementada | Estrategia de conflictos pendiente |
 
@@ -124,7 +124,7 @@ super_motos/
 - AppBar con título `MotoRuta Pro` y badge "Online" decorativo
 - 2 métricas en duro: `Venta Total $0.00` y `Pendientes de Sinc. 0`
 - Grid 3×1: Inventario, Clientes, Historial (los 3 funcionales)
-- Card "Operaciones de Ruta": Nueva Venta (abre `FacturaFormPage`), Devolución (dialog informativo)
+- Card "Operaciones de Ruta": Nueva Venta (abre `FacturaFormPage`), Devolución (abre `DevolucionFormPage`)
 
 ### 5.3 `customers` — módulo completo
 
@@ -148,7 +148,7 @@ Factory con import condicional: `createClientesRepository()`.
 
 ### 5.4 Stubs (modelos sin UI)
 
-`auth`, `suppliers`, `returns`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
+`auth`, `suppliers`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
 
 ### 5.5 `billing` — módulo completo
 
@@ -169,6 +169,26 @@ FacturasRepository (contrato abstracto)
 **Enums nuevos:** `TipoPago { contado, credito, transferencia }` (mapeado a `String` en Isar para no regenerar el `.g.dart`).
 
 **Tests:** `test/features/billing/facturas_test.dart` — 7 tests cubriendo CRUD + stock decrement (happy path, insufficient, missing record).
+
+### 5.6 `returns` — módulo completo
+
+**Pantallas:**
+- `DevolucionesPage`: historial con búsqueda (por `facturaId`, `motivo` o `numeroCanastaDestino`), card por devolución con factura, producto, motivo, fecha, canasta destino y badge "+N" de cantidad. FAB "+ Nueva Devolucion".
+- `DevolucionFormPage`: secciones progresivas (Factura → Producto → Detalle → Motivo). Producto se filtra automáticamente por la factura seleccionada, mostrando "(facturado: N)" en cada opción. Cantidad se valida contra el máximo facturado. Motivo es DropdownButton con 4 opciones comunes + "Otro" que revela TextField multiline. Footer muestra preview "+N al stock del camion". **Repone stock del camión al guardar**.
+- `DevolucionDetailPage`: header con id + "STOCK REPUESTO +N"; rows de detalles (factura, producto, cantidad, canasta, motivo); footer con fecha + estado sync. Botón eliminar (sin descontar stock).
+
+**Capa de datos:** mismo patrón.
+```text
+DevolucionesRepository (contrato abstracto)
+  ├── IsarDevolucionesRepository   → Android / nativo
+  └── WebDevolucionesRepository    → Chrome (localStorage con JSON)
+```
+
+**Cross-module:** al guardar una devolución se invoca `InventoryRepository.incrementCamionStock(productoId, cantidad)`. Inverso del decrement de facturación.
+
+**Tipo de IDs:** `facturaId` y `productoId` son `String` (no se regeneró el `.g.dart` existente). Se serializa con `.toString()` al guardar y `int.tryParse` al leer.
+
+**Tests:** `test/features/returns/devoluciones_test.dart` — 6 tests cubriendo CRUD + incrementCamionStock.
 
 ---
 
@@ -317,7 +337,7 @@ flutter clean && flutter pub get
 **Fase 3 — Módulos reales**
 - ✅ Clientes (UI + CRUD) — completado
 - ✅ Facturación (UI + flujo de venta + descuento de stock) — completado
-- Devoluciones (UI + flujo de retorno a canasta)
+- ✅ Devoluciones (UI + flujo de retorno a canasta + reposición de stock) — completado
 - Autenticación (login + roles: `RolUsuario`, `EstadoCuenta` ya existen como enums)
 
 **Fase 4 — Operación en ruta**
@@ -353,6 +373,13 @@ flutter clean && flutter pub get
 | `lib/features/billing/data/repositories/facturas_repository_io.dart` | Impl nativa (Isar) |
 | `lib/features/billing/data/repositories/facturas_repository_web.dart` | Impl web (localStorage + JSON) |
 | `lib/features/billing/data/services/facturas_seed_data.dart` | 2 facturas demo (contado + credito) |
+| `lib/features/returns/presentation/pages/devoluciones_page.dart` | Historial de devoluciones con búsqueda |
+| `lib/features/returns/presentation/pages/devolucion_form_page.dart` | Form crear devolucion con factura/producto filtrado + restock |
+| `lib/features/returns/presentation/pages/devolucion_detail_page.dart` | Detalle de devolucion con delete |
+| `lib/features/returns/data/repositories/devoluciones_repository.dart` | Contrato abstracto |
+| `lib/features/returns/data/repositories/devoluciones_repository_io.dart` | Impl nativa (Isar) |
+| `lib/features/returns/data/repositories/devoluciones_repository_web.dart` | Impl web (localStorage + JSON) |
+| `lib/features/returns/data/services/devoluciones_seed_data.dart` | 2 devoluciones demo (defecto + producto incorrecto) |
 | `lib/features/inventory/presentation/pages/web_storage_stub.dart` | Stub de localStorage para Android |
 | `lib/features/inventory/presentation/pages/web_storage_web.dart` | Impl localStorage para Chrome |
 | `lib/features/inventory/data/repositories/inventory_repository.dart` | Contrato abstracto |
