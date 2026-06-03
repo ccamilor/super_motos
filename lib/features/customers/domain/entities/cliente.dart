@@ -22,4 +22,28 @@ class Cliente {
     required this.saldoPendiente,
     required this.estadoCuenta,
   });
+
+  Cliente copyWith({
+    int? id,
+    String? nombre,
+    String? identificadorFiscal,
+    String? direccion,
+    double? latitud,
+    double? longitud,
+    double? limiteCredito,
+    double? saldoPendiente,
+    EstadoCuenta? estadoCuenta,
+  }) {
+    return Cliente(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      identificadorFiscal: identificadorFiscal ?? this.identificadorFiscal,
+      direccion: direccion ?? this.direccion,
+      latitud: latitud ?? this.latitud,
+      longitud: longitud ?? this.longitud,
+      limiteCredito: limiteCredito ?? this.limiteCredito,
+      saldoPendiente: saldoPendiente ?? this.saldoPendiente,
+      estadoCuenta: estadoCuenta ?? this.estadoCuenta,
+    );
+  }
 }

@@ -6,6 +6,7 @@ import 'package:super_motos/features/customers/data/repositories/clientes_reposi
 import 'package:super_motos/features/customers/data/repositories/clientes_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/customers/data/repositories/clientes_repository_io.dart';
 import 'package:super_motos/features/customers/domain/entities/cliente.dart';
+import 'package:super_motos/features/customers/presentation/pages/cliente_form_page.dart';
 
 class ClientesPage extends StatefulWidget {
   const ClientesPage({super.key});
@@ -46,6 +47,17 @@ class _ClientesPageState extends State<ClientesPage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _openForm({Cliente? cliente}) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ClienteFormPage(cliente: cliente),
+      ),
+    );
+    if (saved == true) {
+      await _loadClientes();
     }
   }
 
@@ -204,18 +216,7 @@ class _ClientesPageState extends State<ClientesPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: colorScheme.primary,
-              content: const Text(
-                'Proximamente: crear cliente',
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              ),
-              duration: const Duration(seconds: 1),
-            ),
-          );
-        },
+        onPressed: () => _openForm(),
         backgroundColor: colorScheme.primary,
         foregroundColor: Colors.black,
         icon: const Icon(Icons.add),
@@ -231,18 +232,7 @@ class _ClientesPageState extends State<ClientesPage> {
         : colorScheme.outlineVariant.withValues(alpha: 0.3);
 
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: colorScheme.secondary,
-            content: Text(
-              'Proximamente: editar "${cliente.nombre}"',
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-            ),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
+      onTap: () => _openForm(cliente: cliente),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
