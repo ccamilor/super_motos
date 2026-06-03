@@ -272,7 +272,7 @@ class DashboardPage extends StatelessWidget {
                               onPressed: () => _showActionDialog(
                                 context,
                                 'Devolucion',
-                                'ðŸ”„ Registrar devoluciÃ³n fÃ­sica de repuesto en canasta de destino.',
+                                'Registrar devolucion fisica de repuesto en canasta de destino.',
                               ),
                               icon: const Icon(Icons.replay_outlined, size: 20),
                               label: const Text('Devolucion'),
