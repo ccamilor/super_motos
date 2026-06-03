@@ -91,6 +91,26 @@ class IsarInventoryRepository implements InventoryRepository {
       await isar.inventarioCamionModels.put(model);
     });
   }
+
+  @override
+  Future<void> incrementCamionStock(int productoId, int cantidad) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no esta inicializado.');
+    }
+
+    await isar.writeTxn(() async {
+      final model = await isar.inventarioCamionModels
+          .filter()
+          .productoIdEqualTo(productoId)
+          .findFirst();
+      if (model == null) {
+        throw StateError('No hay registro de stock en el camion para producto $productoId');
+      }
+      model.cantidad += cantidad;
+      await isar.inventarioCamionModels.put(model);
+    });
+  }
 }
 
 InventoryRepository createInventoryRepository() => IsarInventoryRepository();

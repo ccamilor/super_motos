@@ -86,6 +86,21 @@ class WebInventoryRepository implements InventoryRepository {
       ..cantidad = model.cantidad - cantidad;
     _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
   }
+
+  @override
+  Future<void> incrementCamionStock(int productoId, int cantidad) async {
+    final idx = _camion.indexWhere((c) => c.productoId == productoId);
+    if (idx == -1) {
+      throw StateError('No hay registro de stock en el camion para producto $productoId');
+    }
+    final model = _camion[idx];
+    final updated = InventarioCamionModel()
+      ..id = model.id
+      ..productoId = model.productoId
+      ..numeroCanasta = model.numeroCanasta
+      ..cantidad = model.cantidad + cantidad;
+    _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
+  }
 }
 
 InventoryRepository createInventoryRepository() => WebInventoryRepository();

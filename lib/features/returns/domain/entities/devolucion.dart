@@ -8,7 +8,7 @@ class Devolucion {
   final String motivo;
   final bool isSynced;
 
-  Devolucion({
+  const Devolucion({
     required this.id,
     required this.facturaId,
     required this.productoId,
@@ -18,4 +18,26 @@ class Devolucion {
     required this.motivo,
     this.isSynced = false,
   });
+
+  Devolucion copyWith({
+    int? id,
+    String? facturaId,
+    String? productoId,
+    int? cantidad,
+    String? numeroCanastaDestino,
+    DateTime? fechaDevolucion,
+    String? motivo,
+    bool? isSynced,
+  }) {
+    return Devolucion(
+      id: id ?? this.id,
+      facturaId: facturaId ?? this.facturaId,
+      productoId: productoId ?? this.productoId,
+      cantidad: cantidad ?? this.cantidad,
+      numeroCanastaDestino: numeroCanastaDestino ?? this.numeroCanastaDestino,
+      fechaDevolucion: fechaDevolucion ?? this.fechaDevolucion,
+      motivo: motivo ?? this.motivo,
+      isSynced: isSynced ?? this.isSynced,
+    );
+  }
 }

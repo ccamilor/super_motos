@@ -4,4 +4,5 @@ abstract class InventoryRepository {
   Future<InventorySnapshot> loadInventory();
   Future<InventorySnapshot> importCsv(String csvContent);
   Future<void> decrementCamionStock(int productoId, int cantidad);
+  Future<void> incrementCamionStock(int productoId, int cantidad);
 }
