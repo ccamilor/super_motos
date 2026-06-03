@@ -445,3 +445,88 @@ flutter run -d emulator-5554 --no-enable-impeller
 | `test_data/inventario_prueba.csv` | **Nuevo** | CSV de prueba con 12 productos COP |
 | `lib/core/database/isar_service.dart` | Sin cambios | Servicio Isar (referencia) |
 | `lib/main.dart` | Sin cambios | Entry point (referencia) |
+
+---
+
+## Sesión 2 — 3 de junio de 2026
+
+### Objetivos de la sesión
+- Verificar que la app corre en el emulador Android
+- Documentar el estado actual y decisiones de la sesión anterior
+- Actualizar `agent.md` con el progreso completo
+
+### Lo realizado
+
+**Revisión de estado del proyecto:**
+- Se verificó `agent.md` (402 líneas, 14 secciones) — refleja correctamente el estado: 4 módulos ✅, dashboard ✅, stubs auth/suppliers 🟡
+- git log: 29 commits ahead de `origin/codex-local-first`, branch `codex-local-first`, working tree limpio
+
+**Build y ejecución en Android:**
+- `flutter run -d emulator-5554 --no-enable-impeller` → ✅ exitoso
+- APK construido: `build/app/outputs/flutter-apk/app-debug.apk`
+- Tiempo de compilación: ~117s para Gradle + ~1.5s install
+- Isar Inspector disponible en: `https://inspect.isar.dev/3.1.0+1/#/61442/s1N9Ma66yxw`
+- App corriendo correctamente en emulador `sdk gphone x86 64` (Android 11 / API 30)
+
+**Problema encontrado — Chrome no compila:**
+- Error: `The integer literal X can't be represented exactly in JavaScript` en 9 archivos `.g.dart`
+- Causa: Isar genera IDs int64 que JavaScript no puede representar (±2⁵³)
+- Solución documentada: correr en Android (emulador o dispositivo físico)
+- No requiere cambio de código — es limitación conocida de Isar v3 en web
+
+**Warnings de compilación (no bloqueantes):**
+- AGP version 8.7.3 — próximo a ser removido, migrar a ≥8.11.1
+- `file_picker` usa Kotlin Gradle Plugin — futuro problema si no se actualiza
+- `--no-enable-impeller` flag deprecated — remover en próximas versiones de Flutter
+
+### Decisiones tomadas
+- Se mantiene el branch `codex-local-first` — no se merging a main
+- `agent.md` queda como documento vivo; `docs/historical.md` acumula el registro histórico
+- Para desarrollo local: usar `flutter run -d emulator-5554 --no-enable-impeller` (Android)
+- Para web: no soportado actualmente por incompatibilidad de IDs Isar con JS
+
+### Archivos modificados en esta sesión
+| Archivo | Tipo | Descripción |
+|---|---|---|
+| `agent.md` | Modificado | Secciones 2 y 5.5/5.6 reflejan estado completo; sección 13 añade tabla de archivos de billing y returns |
+| `docs/historical.md` | Modificado | Añadida esta entrada de sesión |
+
+### Commit
+```
+docs: documentar sesión 2026-06-03 + verificar app en emulador Android
+```
+
+---
+
+### Notas para la próxima sesión
+
+**Lo que funciona (listo para probar):**
+- Dashboard → navegación a los 4 módulos reales
+- Inventario (6 productos demo, CSV import funcional)
+- Clientes (3 clientes demo, CRUD completo)
+- Facturación (2 facturas demo, stock decrementa al guardar)
+- Devoluciones (2 devoluciones demo, stock repone al guardar)
+
+**Próximos pasos sugeridos (del plan original):**
+1. Auth — Login local con usuarios hardcoded (preparación para Supabase)
+2. Suppliers — CRUD proveedores + historial precios
+3. Métricas dashboard — conectar a datos reales (reemplazar valores hardcoded)
+4. Supabase — backend + auth + sync bidireccional
+
+**Comandos útiles para la próxima sesión:**
+```bash
+# Correr en Android
+flutter run -d emulator-5554 --no-enable-impeller
+
+# Ver devices disponibles
+flutter devices
+
+# Análisis estático
+flutter analyze
+
+# Tests
+flutter test
+
+# Build release APK
+flutter build apk --release
+```

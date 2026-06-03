@@ -399,4 +399,10 @@ flutter clean && flutter pub get
 ## Ver también
 
 - [`README.md`](./README.md) — Índice rápido y comandos de uso
-- [`docs/historical.md`](./docs/historical.md) — Walkthrough técnico del refactor (migración de APIs, problemas, soluciones)
+- [`docs/historical.md`](./docs/historical.md) — Walkthrough técnico del refactor + registro de sesiones
+
+---
+
+## Nota sobre ejecución en Chrome
+
+> ⚠️ **No soportado actualmente.** Los archivos `.g.dart` generados por Isar contienen IDs int64 que JavaScript no puede representar (±2⁵³). Intentar `flutter run -d chrome` produce errores `The integer literal X can't be represented exactly in JavaScript` en 9 archivos. **Usar Android** (`flutter run -d emulator-5554 --no-enable-impeller` o dispositivo físico) para desarrollo local.
