@@ -10,6 +10,7 @@ import 'package:super_motos/features/inventory/data/models/inventario_bodega_mod
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
+import 'package:super_motos/core/utils/currency_formatter.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -119,13 +120,6 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     }
   }
 
-  String _formatCOP(double precio) {
-    final valorEntero = precio.toInt();
-    final reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    final formateado = valorEntero.toString().replaceAllMapped(reg, (match) => '${match[1]}.');
-    return '\$ $formateado COP';
-  }
-
   List<ProductoModel> get _filteredProductos {
     if (_searchQuery.isEmpty) return _productos;
     final q = _searchQuery.toLowerCase();
@@ -215,7 +209,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         return _inventoryCard(
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
-          price: _formatCOP(producto.precio),
+          price: formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
           alertText: bajoStock ? 'STOCK BAJO (Min: ${producto.stockMinimo})' : null,
@@ -250,7 +244,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         return _inventoryCard(
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
-          price: _formatCOP(producto.precio),
+          price: formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
           alertText: 'ALMACÃ‰N CENTRAL',
