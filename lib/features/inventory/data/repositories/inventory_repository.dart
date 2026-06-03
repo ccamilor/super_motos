@@ -3,4 +3,5 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_snaps
 abstract class InventoryRepository {
   Future<InventorySnapshot> loadInventory();
   Future<InventorySnapshot> importCsv(String csvContent);
+  Future<void> decrementCamionStock(int productoId, int cantidad);
 }

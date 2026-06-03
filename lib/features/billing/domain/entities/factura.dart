@@ -1,15 +1,31 @@
+import 'package:super_motos/core/enums/tipo_pago.dart';
+
 class DetalleFactura {
   final int productoId;
   final int cantidad;
   final double precioUnitario;
   final double subtotal;
 
-  DetalleFactura({
+  const DetalleFactura({
     required this.productoId,
     required this.cantidad,
     required this.precioUnitario,
     required this.subtotal,
   });
+
+  DetalleFactura copyWith({
+    int? productoId,
+    int? cantidad,
+    double? precioUnitario,
+    double? subtotal,
+  }) {
+    return DetalleFactura(
+      productoId: productoId ?? this.productoId,
+      cantidad: cantidad ?? this.cantidad,
+      precioUnitario: precioUnitario ?? this.precioUnitario,
+      subtotal: subtotal ?? this.subtotal,
+    );
+  }
 }
 
 class Factura {
@@ -18,13 +34,13 @@ class Factura {
   final int vendedorId;
   final DateTime fecha;
   final double total;
-  final String tipoPago;
+  final TipoPago tipoPago;
   final double? latitudVenta;
   final double? longitudVenta;
   final List<DetalleFactura> detalles;
   final bool isSynced;
 
-  Factura({
+  const Factura({
     required this.numeroFactura,
     required this.clienteId,
     required this.vendedorId,
@@ -36,4 +52,30 @@ class Factura {
     required this.detalles,
     this.isSynced = false,
   });
+
+  Factura copyWith({
+    int? numeroFactura,
+    int? clienteId,
+    int? vendedorId,
+    DateTime? fecha,
+    double? total,
+    TipoPago? tipoPago,
+    double? latitudVenta,
+    double? longitudVenta,
+    List<DetalleFactura>? detalles,
+    bool? isSynced,
+  }) {
+    return Factura(
+      numeroFactura: numeroFactura ?? this.numeroFactura,
+      clienteId: clienteId ?? this.clienteId,
+      vendedorId: vendedorId ?? this.vendedorId,
+      fecha: fecha ?? this.fecha,
+      total: total ?? this.total,
+      tipoPago: tipoPago ?? this.tipoPago,
+      latitudVenta: latitudVenta ?? this.latitudVenta,
+      longitudVenta: longitudVenta ?? this.longitudVenta,
+      detalles: detalles ?? this.detalles,
+      isSynced: isSynced ?? this.isSynced,
+    );
+  }
 }

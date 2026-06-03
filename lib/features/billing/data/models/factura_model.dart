@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/enums/tipo_pago.dart';
 import 'package:super_motos/features/billing/domain/entities/factura.dart';
 
 part 'factura_model.g.dart';
@@ -50,7 +51,10 @@ class FacturaModel {
       vendedorId: vendedorId,
       fecha: fecha,
       total: total,
-      tipoPago: tipoPago,
+      tipoPago: TipoPago.values.firstWhere(
+        (e) => e.name == tipoPago,
+        orElse: () => TipoPago.contado,
+      ),
       latitudVenta: latitudVenta,
       longitudVenta: longitudVenta,
       detalles: detalles?.map((d) => d.toDomain()).toList() ?? [],
@@ -65,7 +69,7 @@ class FacturaModel {
       ..vendedorId = domain.vendedorId
       ..fecha = domain.fecha
       ..total = domain.total
-      ..tipoPago = domain.tipoPago
+      ..tipoPago = domain.tipoPago.name
       ..latitudVenta = domain.latitudVenta
       ..longitudVenta = domain.longitudVenta
       ..detalles = domain.detalles.map((d) => DetalleFacturaModel.fromDomain(d)).toList()

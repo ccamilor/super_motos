@@ -66,6 +66,31 @@ class IsarInventoryRepository implements InventoryRepository {
       }
     });
   }
+
+  @override
+  Future<void> decrementCamionStock(int productoId, int cantidad) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no esta inicializado.');
+    }
+
+    await isar.writeTxn(() async {
+      final model = await isar.inventarioCamionModels
+          .filter()
+          .productoIdEqualTo(productoId)
+          .findFirst();
+      if (model == null) {
+        throw StateError('No hay registro de stock en el camion para producto $productoId');
+      }
+      if (model.cantidad < cantidad) {
+        throw StateError(
+          'Stock insuficiente en el camion para producto $productoId (disponible: ${model.cantidad}, requerido: $cantidad)',
+        );
+      }
+      model.cantidad -= cantidad;
+      await isar.inventarioCamionModels.put(model);
+    });
+  }
 }
 
 InventoryRepository createInventoryRepository() => IsarInventoryRepository();
