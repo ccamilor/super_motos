@@ -530,3 +530,79 @@ flutter test
 # Build release APK
 flutter build apk --release
 ```
+
+---
+
+## Sesión 3 — 3 de junio de 2026 (tarde)
+
+### Objetivos de la sesión
+- Implementar Auth completo (login con 2 usuarios hardcoded, logout)
+- Actualizar documentación
+
+### Lo realizado
+
+**Auth implementado:**
+- `AuthSession` singleton en `lib/core/services/auth_session.dart` — gestiona usuario activo, login/logout
+- 2 usuarios hardcoded: Mayra (admin) y Mateo (vendedor)
+- `LoginPage` con 2 cards — tap en card → entra directo (sin password)
+- `AuthWrapper` StatelessWidget — redirige a LoginPage si no hay sesión, a DashboardPage si hay sesión
+- `main.dart` conectado con `AuthWrapper` + rutas `/` y `/home`
+- Dashboard `AppBar` reemplazó badge "Online" por nombre de usuario + dropdown logout
+- Tests de `AuthSession` (5 tests)
+- `widget_test.dart` actualizado para flujo con login
+
+**Decisiones tomadas:**
+- Sesión en memoria (no persiste en Isar) — suficiente para MVP local
+- Login sin password — solo selector de usuario (tap → entra)
+- Logout via `PopupMenuButton` en AppBar que muestra nombre + rol
+- El badge de usuario usa color primary para admin, secondary para vendedor
+
+### Archivos modificados/creados
+| Archivo | Tipo | Descripción |
+|---|---|---|
+| `lib/core/services/auth_session.dart` | **Nuevo** | Singleton AuthSession con usuarios hardcoded |
+| `lib/features/auth/presentation/pages/login_page.dart` | **Nuevo** | Login con 2 cards (Mayra/Mateo) |
+| `lib/features/auth/presentation/widgets/auth_wrapper.dart` | **Nuevo** | Route guard StatelessWidget |
+| `lib/main.dart` | Modificado | AuthWrapper + rutas / y /home |
+| `lib/features/home/presentation/pages/dashboard_page.dart` | Modificado | UserBadge + logout en AppBar |
+| `test/features/auth/auth_session_test.dart` | **Nuevo** | 5 tests de AuthSession |
+| `test/widget_test.dart` | Modificado | Login flow en widget test |
+| `agent.md` | Modificado | auth: 🟡 → ✅ |
+| `docs/historical.md` | Modificado | Añadida esta entrada |
+
+### Commits
+```
+661accc refactor(core): extract AuthSession singleton
+6ae095f test(auth): add AuthSession tests + fix widget_test for login flow
+```
+
+### Tests: 31/31 ✅
+
+### Estado actual del proyecto (post-sesión 3)
+| Feature | Estado |
+|---|---|
+| inventory | ✅ Completo |
+| customers | ✅ Completo |
+| billing | ✅ Completo |
+| returns | ✅ Completo |
+| home (dashboard) | ✅ UI |
+| **auth** | **✅ Completo** |
+| suppliers | 🟡 Solo modelo |
+| Backend (Supabase) | ❌ No conectado |
+
+### Notas para la próxima sesión
+1. **Suppliers** — CRUD proveedores + historial precios (ubicación: sección Inventario del dashboard)
+2. Métricas dashboard — conectar a datos reales (pendiente, requiere Supabase o agregaciones locales)
+3. Supabase fase 2
+
+### Comandos útiles
+```bash
+# Correr en Android
+flutter run -d emulator-5554 --no-enable-impeller
+
+# Tests
+flutter test
+
+# Análisis estático
+flutter analyze
+```

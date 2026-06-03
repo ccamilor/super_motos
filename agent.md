@@ -26,7 +26,7 @@
 | `billing` | ✅ Completo | Listado + crear con line items + detalle; descuenta stock del camión al guardar |
 | `returns` | ✅ Completo | Listado + crear con factura/producto filtrado + detalle; repone stock del camión al guardar |
 | `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
-| `auth` | 🟡 Solo modelo | `UsuarioModel` en Isar, sin UI ni flujo |
+| `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | 🟡 Solo modelo | `ProveedorModel` + `HistorialPreciosModel` en Isar, sin UI |
 | Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
 | Sincronización bidireccional | ❌ No implementada | Estrategia de conflictos pendiente |
