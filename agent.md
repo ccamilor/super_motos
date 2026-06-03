@@ -27,7 +27,7 @@
 | `returns` | ✅ Completo | Listado + crear con factura/producto filtrado + detalle; repone stock del camión al guardar |
 | `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
-| `suppliers` | 🟡 Solo modelo | `ProveedorModel` + `HistorialPreciosModel` en Isar, sin UI |
+| `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
 | Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
 | Sincronización bidireccional | ❌ No implementada | Estrategia de conflictos pendiente |
 
@@ -189,6 +189,32 @@ DevolucionesRepository (contrato abstracto)
 **Tipo de IDs:** `facturaId` y `productoId` son `String` (no se regeneró el `.g.dart` existente). Se serializa con `.toString()` al guardar y `int.tryParse` al leer.
 
 **Tests:** `test/features/returns/devoluciones_test.dart` — 6 tests cubriendo CRUD + incrementCamionStock.
+
+### 5.7 `suppliers` — módulo completo
+
+**Pantallas:**
+- `ProveedoresPage`: lista con búsqueda (por `nombre` o `nit`), card por proveedor con nit, dirección y teléfono. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
+- `ProveedorFormPage`: 2 secciones (Datos del proveedor, Historial de precios). Datos: nombre, nit, teléfono, dirección. Historial: sección colapsable que permite agregar múltiples registros de precio (producto dropdown del inventario + precio). Solo se guarda historial al guardar el proveedor (no es independiente).
+
+**Capa de datos:** mismo patrón que inventory/customers/billing.
+```text
+ProveedoresRepository (contrato abstracto)
+  ├── IsarProveedoresRepository   → Android / nativo
+  └── WebProveedoresRepository    → Chrome (localStorage con JSON)
+
+HistorialPreciosRepository (contrato abstracto)
+  ├── IsarHistorialPreciosRepository   → Android / nativo
+  └── WebHistorialPreciosRepository    → Chrome (localStorage con JSON)
+```
+Factory con import condicional: `createProveedoresRepository()` y `createHistorialPreciosRepository()`.
+
+**Entidades:** `Proveedor` (4 campos + copyWith), `HistorialPrecio` (4 campos + copyWith).
+
+**Cross-module:** el form de proveedor usa `InventoryRepository.loadInventory().productos` para el dropdown de productos. No modifica stock.
+
+**Seed demo (3 proveedores):** Repuestos Moto JC (Bogotá), Distribuidora Pegasus (Medellín), Importados El Sol (Cali). Además 3 registros de historial de precios demo (precio compra por producto/proveedor).
+
+**Tests:** `test/features/suppliers/proveedores_test.dart` — 4 tests cubriendo CRUD.
 
 ---
 

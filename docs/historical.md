@@ -606,3 +606,91 @@ flutter test
 # Análisis estático
 flutter analyze
 ```
+
+---
+
+## Sesión 4 — 3 de junio de 2026 (tarde)
+
+### Objetivos de la sesión
+- Implementar módulo Suppliers completo (CRUD + historial de precios)
+- Actualizar documentación
+
+### Lo realizado
+
+**Proveedores implementado:**
+- `HistorialPrecio` domain entity (4 campos + copyWith)
+- `Proveedor` entity con copyWith
+- `HistorialPreciosModel` completo con toDomain/fromDomain
+- `HistorialPreciosRepository` (contract + IO + Web)
+- `ProveedoresRepository` (contract + IO + Web + seed de 3 proveedores)
+- `HistorialPreciosSeedData` (3 registros demo de precios)
+- `ProveedoresSeedData` (3 proveedores: Repuestos Moto JC, Distribuidora Pegasus, Importados El Sol)
+- `ProveedoresPage` (lista con búsqueda por nombre/nit, FAB, delete con confirmación)
+- `ProveedorFormPage` (crear/editar + sección historial colapsable con dropdown de productos del inventario + precios)
+- Dashboard: grid 2x2 con tarjeta "Proveedores" (color morado) en Accesos Rápidos
+- Tests: 4 tests de CRUD
+
+**Decisiones tomadas:**
+- Historial de precios vive dentro del ProveedorFormPage como sección colapsable (no tiene página propia)
+- El dropdown de productos del historial reutiliza `InventoryRepository.loadInventory().productos` (cross-module)
+- Al guardar proveedor se guardan todos los registros de precio del historial (no son editables independientemente)
+- Dashboard: grid de 3x → 2x2 para agregar "Proveedores" sin perder layout
+
+### Archivos modificados/creados
+| Archivo | Tipo | Descripción |
+|---|---|---|
+| `lib/features/suppliers/domain/entities/historial_precio.dart` | **Nuevo** | Entidad dominio historial precios |
+| `lib/features/suppliers/domain/entities/proveedor.dart` | Modificado | copyWith agregado |
+| `lib/features/suppliers/data/models/historial_precios_model.dart` | Modificado | toDomain/fromDomain agregados |
+| `lib/features/suppliers/data/repositories/historial_precios_repository.dart` | **Nuevo** | Contrato |
+| `lib/features/suppliers/data/repositories/historial_precios_repository_io.dart` | **Nuevo** | Isar impl |
+| `lib/features/suppliers/data/repositories/historial_precios_repository_web.dart` | **Nuevo** | Web impl |
+| `lib/features/suppliers/data/repositories/proveedores_repository.dart` | **Nuevo** | Contrato |
+| `lib/features/suppliers/data/repositories/proveedores_repository_io.dart` | **Nuevo** | Isar impl |
+| `lib/features/suppliers/data/repositories/proveedores_repository_web.dart` | **Nuevo** | Web impl |
+| `lib/features/suppliers/data/services/historial_precios_seed_data.dart` | **Nuevo** | 3 registros demo |
+| `lib/features/suppliers/data/services/proveedores_seed_data.dart` | **Nuevo** | 3 proveedores demo |
+| `lib/features/suppliers/presentation/pages/proveedores_page.dart` | **Nuevo** | Lista + búsqueda + delete |
+| `lib/features/suppliers/presentation/pages/proveedor_form_page.dart` | **Nuevo** | Crear/editar + historial |
+| `lib/features/home/presentation/pages/dashboard_page.dart` | Modificado | Grid 2x2 + tarjeta Proveedores |
+| `test/features/suppliers/proveedores_test.dart` | **Nuevo** | 4 tests CRUD |
+| `agent.md` | Modificado | suppliers: 🟡 → ✅, sección 5.7添 |
+| `docs/historical.md` | Modificado | Esta entrada |
+
+### Commits
+```
+92fd41c refactor(suppliers): add copyWith on Proveedor + HistorialPrecio entity + complete HistorialPreciosModel
+a452400 feat(suppliers): add ProveedoresRepository, ProveedoresPage, ProveedorFormPage + wire dashboard card
+1904978 test(suppliers): add ProveedoresRepository CRUD tests (4 scenarios)
+c02a217 docs: update agent.md + historical.md for suppliers
+```
+
+### Tests: 35/35 ✅
+
+### Estado actual del proyecto (post-sesión 4)
+| Feature | Estado |
+|---|---|
+| inventory | ✅ Completo |
+| customers | ✅ Completo |
+| billing | ✅ Completo |
+| returns | ✅ Completo |
+| home (dashboard) | ✅ UI |
+| auth | ✅ Completo |
+| **suppliers** | **✅ Completo** |
+| Backend (Supabase) | ❌ No conectado |
+
+### Próximos pasos pendientes
+1. Supabase — backend + auth real + sync bidireccional
+2. Métricas dashboard — conectar a datos reales
+
+### Comandos útiles
+```bash
+# Correr en Android
+flutter run -d emulator-5554 --no-enable-impeller
+
+# Tests
+flutter test
+
+# Análisis estático
+flutter analyze
+```
