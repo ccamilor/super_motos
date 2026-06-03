@@ -6,6 +6,7 @@ import 'package:super_motos/features/billing/data/repositories/facturas_reposito
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
 import 'package:super_motos/features/billing/domain/entities/factura.dart';
+import 'package:super_motos/features/billing/presentation/pages/factura_detail_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository_web.dart'
@@ -71,16 +72,14 @@ class _FacturasPageState extends State<FacturasPage> {
   }
 
   Future<void> _openDetail(Factura factura) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: colorScheme(context).secondary,
-        content: Text(
-          'Proximamente: detalle de factura #${factura.numeroFactura}',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        duration: const Duration(seconds: 1),
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FacturaDetailPage(factura: factura),
       ),
     );
+    if (changed == true) {
+      await _loadFacturas();
+    }
   }
 
   ColorScheme colorScheme(BuildContext context) => Theme.of(context).colorScheme;
