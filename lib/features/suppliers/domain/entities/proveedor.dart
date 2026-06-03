@@ -12,4 +12,20 @@ class Proveedor {
     required this.telefono,
     required this.direccion,
   });
+
+  Proveedor copyWith({
+    int? id,
+    String? nombre,
+    String? nit,
+    String? telefono,
+    String? direccion,
+  }) {
+    return Proveedor(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      nit: nit ?? this.nit,
+      telefono: telefono ?? this.telefono,
+      direccion: direccion ?? this.direccion,
+    );
+  }
 }
