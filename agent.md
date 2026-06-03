@@ -23,9 +23,9 @@
 |---|---|---|
 | `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas |
 | `customers` | ✅ Completo | CRUD: lista con búsqueda, crear/editar/eliminar, formato COP, soporte Isar + web |
-| `home` (dashboard) | 🟡 UI | Métricas en duro, navegación parcial; sólo "Historial" sigue como `SnackBar` |
+| `billing` | ✅ Completo | Listado + crear con line items + detalle; descuenta stock del camión al guardar |
+| `home` (dashboard) | 🟡 UI | Métricas en duro; sólo "Devolución" sigue como AlertDialog stub |
 | `auth` | 🟡 Solo modelo | `UsuarioModel` en Isar, sin UI ni flujo |
-| `billing` | 🟡 Solo modelo | `FacturaModel` en Isar, sin UI ni flujo |
 | `suppliers` | 🟡 Solo modelo | `ProveedorModel` + `HistorialPreciosModel` en Isar, sin UI |
 | `returns` | 🟡 Solo modelo | `DevolucionModel` en Isar, sin UI |
 | Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
@@ -123,8 +123,8 @@ super_motos/
 
 - AppBar con título `MotoRuta Pro` y badge "Online" decorativo
 - 2 métricas en duro: `Venta Total $0.00` y `Pendientes de Sinc. 0`
-- Grid 3×1: Inventario (funcional), Clientes (funcional), Historial (stub)
-- Card "Operaciones de Ruta": Nueva Venta (dialog informativo), Devolución (dialog informativo)
+- Grid 3×1: Inventario, Clientes, Historial (los 3 funcionales)
+- Card "Operaciones de Ruta": Nueva Venta (abre `FacturaFormPage`), Devolución (dialog informativo)
 
 ### 5.3 `customers` — módulo completo
 
@@ -148,7 +148,27 @@ Factory con import condicional: `createClientesRepository()`.
 
 ### 5.4 Stubs (modelos sin UI)
 
-`auth`, `billing`, `suppliers`, `returns`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
+`auth`, `suppliers`, `returns`: sólo existe el modelo Isar + entidad de dominio. **No tocar** salvo que se vaya a implementar la UI o el flujo.
+
+### 5.5 `billing` — módulo completo
+
+**Pantallas:**
+- `FacturasPage`: historial con búsqueda (por `numeroFactura` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago y total COP. FAB "+ Nueva Venta".
+- `FacturaFormPage`: 3 secciones (Cliente, Productos, Pago). Cliente via `DropdownButtonFormField`. Productos via modal con lista buscable. Pago via `DropdownButtonFormField<TipoPago>`. Footer sticky con total. **Descuenta stock del camión al guardar**.
+- `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor/estado sync. Botón eliminar (sin restaurar stock).
+
+**Capa de datos:** mismo patrón que inventory/customers.
+```text
+FacturasRepository (contrato abstracto)
+  ├── IsarFacturasRepository   → Android / nativo
+  └── WebFacturasRepository    → Chrome (localStorage con JSON)
+```
+
+**Cross-module:** al guardar una factura se invoca `InventoryRepository.decrementCamionStock(productoId, cantidad)` por cada línea. Si el stock decrement falla, se registra warning pero la factura queda guardada con `isSynced=false` para reproceso manual.
+
+**Enums nuevos:** `TipoPago { contado, credito, transferencia }` (mapeado a `String` en Isar para no regenerar el `.g.dart`).
+
+**Tests:** `test/features/billing/facturas_test.dart` — 7 tests cubriendo CRUD + stock decrement (happy path, insufficient, missing record).
 
 ---
 
@@ -296,7 +316,7 @@ flutter clean && flutter pub get
 
 **Fase 3 — Módulos reales**
 - ✅ Clientes (UI + CRUD) — completado
-- Facturación (UI + flujo de venta)
+- ✅ Facturación (UI + flujo de venta + descuento de stock) — completado
 - Devoluciones (UI + flujo de retorno a canasta)
 - Autenticación (login + roles: `RolUsuario`, `EstadoCuenta` ya existen como enums)
 
@@ -315,6 +335,8 @@ flutter clean && flutter pub get
 | `lib/core/database/isar_service.dart` | Apertura de Isar con 9 schemas |
 | `lib/core/theme/app_theme.dart` | Tema dark `JapaniRacerTheme` |
 | `lib/core/utils/currency_formatter.dart` | `formatCOP(double)` — formato monetario COP |
+| `lib/core/enums/tipo_pago.dart` | `TipoPago { contado, credito, transferencia }` |
+| `lib/core/constants/vendedor.dart` | `kVendedorPorDefecto = 1` (placeholder hasta auth) |
 | `lib/core/services/sync_service.dart` | Placeholder de sync (fase 2) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
 | `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs |
@@ -324,6 +346,13 @@ flutter clean && flutter pub get
 | `lib/features/customers/data/repositories/clientes_repository_web.dart` | Impl web (localStorage + JSON) |
 | `lib/features/customers/data/repositories/clientes_repository_io.dart` | Impl nativa (Isar) |
 | `lib/features/customers/data/services/clientes_seed_data.dart` | 3 clientes demo cubriendo los 3 estados |
+| `lib/features/billing/presentation/pages/facturas_page.dart` | Historial de ventas con búsqueda |
+| `lib/features/billing/presentation/pages/factura_form_page.dart` | Form crear venta con line items + stock decrement |
+| `lib/features/billing/presentation/pages/factura_detail_page.dart` | Detalle de factura con delete |
+| `lib/features/billing/data/repositories/facturas_repository.dart` | Contrato abstracto |
+| `lib/features/billing/data/repositories/facturas_repository_io.dart` | Impl nativa (Isar) |
+| `lib/features/billing/data/repositories/facturas_repository_web.dart` | Impl web (localStorage + JSON) |
+| `lib/features/billing/data/services/facturas_seed_data.dart` | 2 facturas demo (contado + credito) |
 | `lib/features/inventory/presentation/pages/web_storage_stub.dart` | Stub de localStorage para Android |
 | `lib/features/inventory/presentation/pages/web_storage_web.dart` | Impl localStorage para Chrome |
 | `lib/features/inventory/data/repositories/inventory_repository.dart` | Contrato abstracto |
