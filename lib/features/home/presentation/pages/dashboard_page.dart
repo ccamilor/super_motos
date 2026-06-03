@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -218,7 +219,9 @@ class DashboardPage extends StatelessWidget {
                     icon: Icons.people_outline_rounded,
                     bgColor: colorScheme.secondary.withValues(alpha: 0.1),
                     iconColor: colorScheme.secondary,
-                    onTap: () => _showSnackBar(context, 'Modulo de clientes en preparacion'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ClientesPage()),
+                    ),
                   ),
                   _buildShortcutCard(
                     context,
