@@ -1,8 +1,11 @@
-# 🏍️ Super Motos App — Documentación Técnica Completa
+# 📜 Historial del Refactor — Super Motos
 
-> **Stack:** Flutter 3.44 · Dart 3.12 · Isar 3.1 · CSV · file_picker · package:web  
-> **Plataformas:** Android (Isar nativo) + Web/Chrome (localStorage)  
-> **Ruta del proyecto:** `C:\Users\crisn\.gemini\antigravity\scratch\super_motos`
+> **Registro histórico del refactor inicial.** Este documento preserva el walkthrough técnico original (migración de APIs, tests creados, problemas resueltos).
+> Para el estado actual del proyecto, consultar [`agent.md`](../agent.md) en la raíz.
+
+**Stack al momento del refactor:** Flutter 3.44 · Dart 3.12 · Isar 3.1 · CSV · file_picker · package:web  
+**Plataformas:** Android (Isar nativo) + Web/Chrome (localStorage)  
+**Ruta del proyecto:** `C:\Users\crisn\.gemini\antigravity\scratch\super_motos`
 
 ---
 

@@ -113,5 +113,6 @@ The current strategy is local-first: local data first, remote backend later.
 
 ## Extra Docs
 
-- [`documentacion_refactor.md`](./documentacion_refactor.md)
+- [`agent.md`](./agent.md) — Guía canónica del proyecto (estado actual, arquitectura, comandos).
+- [`docs/historical.md`](./docs/historical.md) — Walkthrough histórico del refactor inicial.
 
