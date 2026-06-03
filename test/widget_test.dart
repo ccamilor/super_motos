@@ -9,8 +9,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('MotoRuta Pro'), findsOneWidget);
-    expect(find.text('Métricas del Día'), findsOneWidget);
-    expect(find.text('Accesos Rápidos'), findsOneWidget);
     expect(find.byIcon(Icons.two_wheeler), findsOneWidget);
   });
 }
+

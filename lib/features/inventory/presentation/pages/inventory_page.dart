@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 
 import 'inventory_file_reader_stub.dart'
     if (dart.library.io) 'inventory_file_reader_io.dart';
+import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
-import 'package:super_motos/features/inventory/data/repositories/inventory_repository_provider.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
