@@ -7,6 +7,7 @@ import 'package:super_motos/features/billing/presentation/pages/facturas_page.da
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
+import 'package:super_motos/features/suppliers/presentation/pages/proveedores_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -148,11 +149,11 @@ class DashboardPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+const SizedBox(height: 28),
 
-              // Main Grid: 3 tarjetas con iconos (Inventario, Clientes, Historial)
+              // Main Grid: 2x2 tarjetas (Inventario, Clientes, Historial, Proveedores)
               Text(
-                'Accesos RÃ¡pidos',
+                'Accesos Rapidos',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -162,10 +163,10 @@ class DashboardPage extends StatelessWidget {
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3,
+                crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 0.95,
+                childAspectRatio: 1.4,
                 children: [
                   _buildShortcutCard(
                     context,
@@ -196,6 +197,16 @@ class DashboardPage extends StatelessWidget {
                     iconColor: colorScheme.error,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => const FacturasPage()),
+                    ),
+                  ),
+                  _buildShortcutCard(
+                    context,
+                    title: 'Proveedores',
+                    icon: Icons.local_shipping_outlined,
+                    bgColor: Colors.purple.withValues(alpha: 0.1),
+                    iconColor: Colors.purple,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ProveedoresPage()),
                     ),
                   ),
                 ],

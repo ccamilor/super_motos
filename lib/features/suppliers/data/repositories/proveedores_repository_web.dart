@@ -1,0 +1,92 @@
+import 'dart:convert';
+import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
+import 'package:super_motos/features/suppliers/data/services/proveedores_seed_data.dart';
+import 'package:super_motos/features/suppliers/domain/entities/proveedor.dart';
+import 'package:super_motos/features/inventory/presentation/pages/web_storage_stub.dart'
+    if (dart.library.js_interop) 'package:super_motos/features/inventory/presentation/pages/web_storage_web.dart';
+
+const String _proveedoresStorageKey = 'super_motos_proveedores_data';
+
+class WebProveedoresRepository implements ProveedoresRepository {
+  static List<Proveedor> _proveedores = [];
+  static int _nextId = 0;
+
+  @override
+  Future<List<Proveedor>> loadAll() async {
+    if (_proveedores.isEmpty) {
+      final savedData = getWebStorage().getItem(_proveedoresStorageKey);
+      if (savedData != null && savedData.isNotEmpty) {
+        _proveedores = _decode(savedData);
+        if (_proveedores.isNotEmpty) {
+          _nextId = _proveedores.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+        }
+      }
+      if (_proveedores.isEmpty) {
+        _proveedores = List<Proveedor>.from(ProveedoresSeedData.demoProveedores);
+        _nextId = _proveedores.length + 1;
+        getWebStorage().setItem(_proveedoresStorageKey, _encode(_proveedores));
+      }
+    }
+    final sorted = List<Proveedor>.from(_proveedores)
+      ..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+    return sorted;
+  }
+
+  @override
+  Future<Proveedor> create(Proveedor proveedor) async {
+    final created = proveedor.copyWith(id: _nextId++);
+    _proveedores = [..._proveedores, created];
+    _persist();
+    return created;
+  }
+
+  @override
+  Future<Proveedor> update(Proveedor proveedor) async {
+    _proveedores = _proveedores
+        .map((p) => p.id == proveedor.id ? proveedor : p)
+        .toList();
+    _persist();
+    return proveedor;
+  }
+
+  @override
+  Future<void> delete(int id) async {
+    _proveedores = _proveedores.where((p) => p.id != id).toList();
+    _persist();
+  }
+
+  void _persist() {
+    getWebStorage().setItem(_proveedoresStorageKey, _encode(_proveedores));
+  }
+
+  String _encode(List<Proveedor> list) {
+    return jsonEncode(list.map(_toMap).toList());
+  }
+
+  List<Proveedor> _decode(String raw) {
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list.map((e) => _fromMap(e as Map<String, dynamic>)).toList();
+  }
+
+  Map<String, dynamic> _toMap(Proveedor p) {
+    return {
+      'id': p.id,
+      'nombre': p.nombre,
+      'nit': p.nit,
+      'telefono': p.telefono,
+      'direccion': p.direccion,
+    };
+  }
+
+  Proveedor _fromMap(Map<String, dynamic> m) {
+    return Proveedor(
+      id: m['id'] as int,
+      nombre: m['nombre'] as String,
+      nit: m['nit'] as String,
+      telefono: m['telefono'] as String,
+      direccion: m['direccion'] as String,
+    );
+  }
+}
+
+ProveedoresRepository createProveedoresRepository() => WebProveedoresRepository();
