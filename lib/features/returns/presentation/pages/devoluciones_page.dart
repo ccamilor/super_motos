@@ -8,6 +8,7 @@ import 'package:super_motos/features/returns/data/repositories/devoluciones_repo
 import 'package:super_motos/features/returns/data/repositories/devoluciones_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/returns/data/repositories/devoluciones_repository_io.dart';
 import 'package:super_motos/features/returns/domain/entities/devolucion.dart';
+import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
 
 class DevolucionesPage extends StatefulWidget {
   const DevolucionesPage({super.key});
@@ -61,16 +62,12 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
   }
 
   Future<void> _openForm() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        content: const Text(
-          'Proximamente: crear devolucion',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        duration: const Duration(seconds: 1),
-      ),
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const DevolucionFormPage()),
     );
+    if (saved == true) {
+      await _loadData();
+    }
   }
 
   Future<void> _openDetail(Devolucion devolucion) async {
