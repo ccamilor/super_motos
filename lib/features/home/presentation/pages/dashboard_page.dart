@@ -3,8 +3,12 @@ import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/sync_service.dart';
+import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/auth/presentation/pages/login_page.dart';
+import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
+import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
 import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
@@ -19,15 +23,34 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
+  final FacturasRepository _facturasRepo = createFacturasRepository();
   int _pendingCount = 0;
   int _lowStockCount = 0;
+  double _ventaTotalDia = 0.0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _updatePendingCount();
     _updateLowStockCount();
+    _loadVentaTotal();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _updatePendingCount();
+      _updateLowStockCount();
+      _loadVentaTotal();
+    }
   }
 
   void _updatePendingCount() {
@@ -44,6 +67,26 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _lowStockCount = count;
       });
+    }
+  }
+
+  Future<void> _loadVentaTotal() async {
+    try {
+      final facturas = await _facturasRepo.loadAll();
+      final hoy = DateTime.now();
+      final total = facturas
+          .where((f) =>
+              f.fecha.year == hoy.year &&
+              f.fecha.month == hoy.month &&
+              f.fecha.day == hoy.day)
+          .fold(0.0, (sum, f) => sum + f.total);
+      if (mounted) {
+        setState(() {
+          _ventaTotalDia = total;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error calculando venta total: $e');
     }
   }
 
@@ -124,7 +167,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '\$0.00',
+                              formatCOP(_ventaTotalDia),
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,

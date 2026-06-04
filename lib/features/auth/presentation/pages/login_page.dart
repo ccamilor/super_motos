@@ -20,8 +20,8 @@ class _LoginPageState extends State<LoginPage> {
   String? _errorMessage;
 
   static const List<_QuickUser> _quickUsers = [
-    _QuickUser(email: 'admin@super_motos.com', password: 'super_motos2024', nombre: 'Mayra', rol: RolUsuario.admin),
-    _QuickUser(email: 'vendedor@super_motos.com', password: 'super_motos2024', nombre: 'Mateo', rol: RolUsuario.vendedor),
+    _QuickUser(email: 'mayra@supermotos.com', password: 'super_motos2024', nombre: 'Mayra', rol: RolUsuario.admin),
+    _QuickUser(email: 'mateo@supermotos.com', password: 'super_motos2024', nombre: 'Mateo', rol: RolUsuario.vendedor),
   ];
 
   @override
@@ -32,9 +32,25 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginWithQuickUser(_QuickUser user) async {
-    _emailCtrl.text = user.email;
-    _passwordCtrl.text = user.password;
-    await _login();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final hardcodedUser = AuthSession.instance.hardcodedUsers.firstWhere(
+        (u) => u.email == user.email,
+        orElse: () => throw Exception('Usuario no encontrado'),
+      );
+      AuthSession.instance.setUsuario(hardcodedUser);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/home');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Error: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _login() async {

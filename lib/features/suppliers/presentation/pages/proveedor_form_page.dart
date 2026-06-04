@@ -251,7 +251,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _productosById.containsKey(entry.productoId)
+                        initialValue: _productosById.containsKey(entry.productoId)
                             ? entry.productoId
                             : (_productosById.keys.isNotEmpty
                                 ? _productosById.keys.first

@@ -22,13 +22,13 @@ class AuthSession {
     Usuario(
       id: 1,
       nombre: 'Mayra',
-      email: 'admin@super_motos.com',
+      email: 'mayra@supermotos.com',
       rol: RolUsuario.admin,
     ),
     Usuario(
       id: 2,
       nombre: 'Mateo',
-      email: 'vendedor@super_motos.com',
+      email: 'mateo@supermotos.com',
       rol: RolUsuario.vendedor,
     ),
   ];

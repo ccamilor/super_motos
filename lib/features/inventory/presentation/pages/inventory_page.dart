@@ -10,8 +10,6 @@ import 'package:super_motos/features/inventory/data/models/inventario_bodega_mod
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
-import 'package:super_motos/core/utils/currency_formatter.dart';
-import 'package:super_motos/core/widgets/sync_status_badge.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -121,6 +119,13 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     }
   }
 
+  String _formatCOP(double precio) {
+    final valorEntero = precio.toInt();
+    final reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final formateado = valorEntero.toString().replaceAllMapped(reg, (match) => '${match[1]}.');
+    return '\$ $formateado COP';
+  }
+
   List<ProductoModel> get _filteredProductos {
     if (_searchQuery.isEmpty) return _productos;
     final q = _searchQuery.toLowerCase();
@@ -210,7 +215,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         return _inventoryCard(
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
-          price: formatCOP(producto.precio),
+          price: _formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
           alertText: bajoStock ? 'STOCK BAJO (Min: ${producto.stockMinimo})' : null,
@@ -221,7 +226,6 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           rightValueColor: bajoStock ? colorScheme.error : colorScheme.primary,
           borderColor: bajoStock ? colorScheme.error.withValues(alpha: 0.35) : colorScheme.outlineVariant.withValues(alpha: 0.3),
           colorScheme: colorScheme,
-          isSynced: producto.isSynced,
         );
       },
     );
@@ -246,7 +250,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         return _inventoryCard(
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
-          price: formatCOP(producto.precio),
+          price: _formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
           alertText: 'ALMACÃ‰N CENTRAL',
@@ -257,7 +261,6 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           rightValueColor: colorScheme.primary,
           borderColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
           colorScheme: colorScheme,
-          isSynced: producto.isSynced,
         );
       },
     );
@@ -322,18 +325,12 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: producto.isOriginal ? colorScheme.primary : Colors.white54,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SyncStatusBadge(isSynced: producto.isSynced, compact: true),
-                          ],
+                        Text(
+                          producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: producto.isOriginal ? colorScheme.primary : Colors.white54,
+                          ),
                         ),
                         if (sugerir)
                           Text(
@@ -413,7 +410,6 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     required Color rightValueColor,
     required Color borderColor,
     required ColorScheme colorScheme,
-    bool isSynced = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -429,19 +425,13 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor)),
-                  ),
-                  const SizedBox(width: 6),
-                  SyncStatusBadge(isSynced: isSynced, compact: true),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor)),
               ),
               if (alertText != null)
                 Text(
