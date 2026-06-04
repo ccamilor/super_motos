@@ -28,8 +28,8 @@
 | `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
-| Backend remoto (Supabase) | 🟡 Inicializado | `supabase_flutter` instalado, `SupabaseService` singleton, LoginPage con email/password, credenciales configuradas |
-| Sincronización bidireccional | ❌ No implementada | Estrategia: last-write-wins (pending) |
+| Backend remoto (Supabase) | ✅ Funcional | `SupabaseService` singleton, credenciales configuradas, `supabase_flutter` conectado |
+| Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at` |
 
 **Leyenda:** ✅ funcional · 🟡 parcial / sólo esqueleto · ❌ no iniciado
 
@@ -110,9 +110,9 @@ super_motos/
 
 | Pestaña | Contenido | Alerta visual |
 |---|---|---|
-| Mi Camión | Producto + cantidad + número de canasta | `STOCK BAJO` si `cantidad < stockMinimo` |
-| Bodega Central | Producto + stock bodega | Indicador "ALMACÉN CENTRAL" |
-| Inventario Total | Camión + Bodega consolidados | `REABASTECIMIENTO SUGERIDO` si camión bajo y bodega con stock |
+| Mi Camión | Producto + cantidad + número de canasta + `SyncStatusBadge` (compact) | `STOCK BAJO` si `cantidad < stockMinimo` |
+| Bodega Central | Producto + stock bodega + `SyncStatusBadge` (compact) | Indicador "ALMACÉN CENTRAL" |
+| Inventario Total | Camión + Bodega consolidados + `SyncStatusBadge` en badge ORIGINAL/GENÉRICO | `REABASTECIMIENTO SUGERIDO` si camión bajo y bodega con stock |
 
 **Capacidades:**
 - Búsqueda por `nombre` o `motos_compatibles`
@@ -121,15 +121,16 @@ super_motos/
 
 ### 5.2 `home` (dashboard)
 
-- AppBar con título `MotoRuta Pro` y badge "Online" decorativo
-- 2 métricas en duro: `Venta Total $0.00` y `Pendientes de Sinc. 0`
-- Grid 3×1: Inventario, Clientes, Historial (los 3 funcionales)
+- AppBar con título `MotoRuta Pro` y `_UserBadge` con nombre + rol
+- Cabecera `SyncIndicator(pendingCount: SyncService.instance.queueLength)` — badge dinámico "Todo sincronizado" o "N pendientes"
+- 2 métricas: `Venta Total $0.00` (estática) y `Pendientes de Sinc.` con contador dinámico
+- Grid 3×1: Inventario, Clientes, Historial (Facturas)
 - Card "Operaciones de Ruta": Nueva Venta (abre `FacturaFormPage`), Devolución (abre `DevolucionFormPage`)
 
 ### 5.3 `customers` — módulo completo
 
 **Pantallas:**
-- `ClientesPage`: lista con búsqueda (por `nombre` o `identificadorFiscal`), card por cliente con badge de estado, NIT, dirección, saldo y límite en COP. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
+- `ClientesPage`: lista con búsqueda (por `nombre` o `identificadorFiscal`), card por cliente con badge de estado + `SyncStatusBadge` (compact), NIT, dirección, saldo y límite en COP. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
 - `ClienteFormPage`: 3 secciones (Datos básicos, Crédito, Estado). Validadores en cada campo. Saldo pendiente en modo edición es read-only (lo modifica facturación). Confirmación al descartar con cambios.
 
 **Capa de datos:** mismo patrón que inventario.
@@ -153,9 +154,9 @@ Factory con import condicional: `createClientesRepository()`.
 ### 5.5 `billing` — módulo completo
 
 **Pantallas:**
-- `FacturasPage`: historial con búsqueda (por `numeroFactura` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago y total COP. FAB "+ Nueva Venta".
+- `FacturasPage`: historial con búsqueda (por `numeroFactura` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago + `SyncStatusBadge` (compact) y total COP. FAB "+ Nueva Venta".
 - `FacturaFormPage`: 3 secciones (Cliente, Productos, Pago). Cliente via `DropdownButtonFormField`. Productos via modal con lista buscable. Pago via `DropdownButtonFormField<TipoPago>`. Footer sticky con total. **Descuenta stock del camión al guardar**.
-- `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor/estado sync. Botón eliminar (sin restaurar stock).
+- `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor + `SyncStatusBadge` (no highlight). Botón eliminar (sin restaurar stock).
 
 **Capa de datos:** mismo patrón que inventory/customers.
 ```text
@@ -173,9 +174,9 @@ FacturasRepository (contrato abstracto)
 ### 5.6 `returns` — módulo completo
 
 **Pantallas:**
-- `DevolucionesPage`: historial con búsqueda (por `facturaId`, `motivo` o `numeroCanastaDestino`), card por devolución con factura, producto, motivo, fecha, canasta destino y badge "+N" de cantidad. FAB "+ Nueva Devolucion".
+- `DevolucionesPage`: historial con búsqueda (por `facturaId`, `motivo` o `numeroCanastaDestino`), card por devolución con factura, producto, motivo, fecha, canasta destino + `SyncStatusBadge` (compact) y badge "+N" de cantidad. FAB "+ Nueva Devolucion".
 - `DevolucionFormPage`: secciones progresivas (Factura → Producto → Detalle → Motivo). Producto se filtra automáticamente por la factura seleccionada, mostrando "(facturado: N)" en cada opción. Cantidad se valida contra el máximo facturado. Motivo es DropdownButton con 4 opciones comunes + "Otro" que revela TextField multiline. Footer muestra preview "+N al stock del camion". **Repone stock del camión al guardar**.
-- `DevolucionDetailPage`: header con id + "STOCK REPUESTO +N"; rows de detalles (factura, producto, cantidad, canasta, motivo); footer con fecha + estado sync. Botón eliminar (sin descontar stock).
+- `DevolucionDetailPage`: header con id + "STOCK REPUESTO +N"; rows de detalles (factura, producto, cantidad, canasta, motivo); footer con fecha + `SyncStatusBadge` (no highlight). Botón eliminar (sin descontar stock).
 
 **Capa de datos:** mismo patrón.
 ```text
@@ -193,7 +194,7 @@ DevolucionesRepository (contrato abstracto)
 ### 5.7 `suppliers` — módulo completo
 
 **Pantallas:**
-- `ProveedoresPage`: lista con búsqueda (por `nombre` o `nit`), card por proveedor con nit, dirección y teléfono. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
+- `ProveedoresPage`: lista con búsqueda (por `nombre` o `nit`), card por proveedor con nombre + `SyncStatusBadge` (compact), nit, dirección y teléfono. FAB "+ Nuevo" y tap en card abren el form. Icono papelera con confirmación.
 - `ProveedorFormPage`: 2 secciones (Datos del proveedor, Historial de precios). Datos: nombre, nit, teléfono, dirección. Historial: sección colapsable que permite agregar múltiples registros de precio (producto dropdown del inventario + precio). Solo se guarda historial al guardar el proveedor (no es independiente).
 
 **Capa de datos:** mismo patrón que inventory/customers/billing.
@@ -222,19 +223,21 @@ Factory con import condicional: `createProveedoresRepository()` y `createHistori
 
 ### 6.1 Colecciones Isar (9)
 
-Registradas en `lib/core/database/isar_service.dart`:
+Registadas en `lib/core/database/isar_service.dart`:
 
-| Colección | Archivo | Propósito |
-|---|---|---|
-| `ProductoModel` | `features/inventory/data/models/producto_model.dart` | Catálogo de repuestos |
-| `InventarioCamionModel` | `features/inventory/data/models/inventario_camion_model.dart` | Stock en el camión del vendedor |
-| `InventarioBodegaModel` | `features/inventory/data/models/inventario_bodega_model.dart` | Stock en bodega central |
-| `ClienteModel` | `features/customers/data/models/cliente_model.dart` | Clientes |
-| `FacturaModel` | `features/billing/data/models/factura_model.dart` | Facturas de venta |
-| `UsuarioModel` | `features/auth/data/models/usuario_model.dart` | Usuarios del sistema |
-| `ProveedorModel` | `features/suppliers/data/models/proveedor_model.dart` | Proveedores |
-| `HistorialPreciosModel` | `features/suppliers/data/models/historial_precios_model.dart` | Historial de precios |
-| `DevolucionModel` | `features/returns/data/models/devolucion_model.dart` | Devoluciones |
+| Colección | Archivo | Propósito | Campo sync |
+|---|---|---|---|
+| `ProductoModel` | `features/inventory/data/models/producto_model.dart` | Catálogo de repuestos | `isSynced` |
+| `InventarioCamionModel` | `features/inventory/data/models/inventario_camion_model.dart` | Stock en el camión del vendedor | `isSynced` |
+| `InventarioBodegaModel` | `features/inventory/data/models/inventario_bodega_model.dart` | Stock en bodega central | `isSynced` |
+| `ClienteModel` | `features/customers/data/models/cliente_model.dart` | Clientes | `isSynced` |
+| `FacturaModel` | `features/billing/data/models/factura_model.dart` | Facturas de venta | `isSynced` |
+| `UsuarioModel` | `features/auth/data/models/usuario_model.dart` | Usuarios del sistema | — |
+| `ProveedorModel` | `features/suppliers/data/models/proveedor_model.dart` | Proveedores | `isSynced` |
+| `HistorialPreciosModel` | `features/suppliers/data/models/historial_precios_model.dart` | Historial de precios | `isSynced` |
+| `DevolucionModel` | `features/returns/data/models/devolucion_model.dart` | Devoluciones | `isSynced` |
+
+Todos los modelos con `isSynced` incluyen `updatedAt` en `toJson()` para conflict detection.
 
 ### 6.2 Entidades de dominio
 
@@ -353,23 +356,23 @@ flutter clean && flutter pub get
 **Fase 1 — Local-first inventario** ✅ (completada)
 - Repositorio abstracto, parser CSV, seed demo, soporte web con `localStorage`.
 
-**Fase 2 — Backend remoto (Supabase)** ⏭️ (siguiente)
-- Crear cuenta y proyecto Supabase
-- Diseñar schema remoto equivalente al Isar
-- Conectar primero inventario, después facturación y devoluciones
-- Definir estrategia de sincronización bidireccional
-- Definir estrategia de resolución de conflictos (pendiente)
+**Fase 2 — Backend remoto (Supabase)** ✅ (completada)
+- `SupabaseService` singleton con `supabase_flutter`
+- `SyncService` con cola offline en SharedPreferences
+- Push automático cada 10s, pull manual con `pullAll()`
+- Conflict detection via `updated_at` con estrategia `lastWriteWins`
+- `isSynced` en todos los modelos, `updatedAt` en `toJson()` de todos los modelos
 
 **Fase 3 — Módulos reales**
 - ✅ Clientes (UI + CRUD) — completado
 - ✅ Facturación (UI + flujo de venta + descuento de stock) — completado
 - ✅ Devoluciones (UI + flujo de retorno a canasta + reposición de stock) — completado
-- Autenticación (login + roles: `RolUsuario`, `EstadoCuenta` ya existen como enums)
+- ✅ Autenticación (login + roles: `RolUsuario`, `EstadoCuenta` ya existen como enums) — completado
 
 **Fase 4 — Operación en ruta**
+- ✅ Sincronización bidireccional (UI badges en todas las pantallas)
 - Geoposicionamiento en factura (ya mencionado en el dashboard)
 - Notificaciones de stock bajo en tiempo real
-- Sincronización en background
 
 ---
 
@@ -383,7 +386,8 @@ flutter clean && flutter pub get
 | `lib/core/utils/currency_formatter.dart` | `formatCOP(double)` — formato monetario COP |
 | `lib/core/enums/tipo_pago.dart` | `TipoPago { contado, credito, transferencia }` |
 | `lib/core/constants/vendedor.dart` | `kVendedorPorDefecto = 1` (placeholder hasta auth) |
-| `lib/core/services/sync_service.dart` | Placeholder de sync (fase 2) |
+| `lib/core/services/sync_service.dart` | Cola offline + push automático cada 10s + conflict detection + query methods (`getUnsyncedCount`, `isRecordPending`) |
+| `lib/core/widgets/sync_status_badge.dart` | Widgets `SyncStatusBadge` (compact chip + full badge) y `SyncIndicator` (pending count header) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
 | `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs |
 | `lib/features/customers/presentation/pages/clientes_page.dart` | Lista de clientes con búsqueda |
