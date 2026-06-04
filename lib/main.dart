@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
+import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/theme/app_theme.dart';
@@ -12,6 +13,8 @@ void main() async {
   await isarService.init();
   await SyncService.instance.init();
   SyncService.instance.pullAll();
+  await StockAlertService.instance.init();
+  await StockAlertService.instance.requestPermissions();
 
   runApp(const MyApp());
 }

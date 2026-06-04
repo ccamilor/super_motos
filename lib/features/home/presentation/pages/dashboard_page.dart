@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
+import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/auth/presentation/pages/login_page.dart';
@@ -20,17 +21,28 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _pendingCount = 0;
+  int _lowStockCount = 0;
 
   @override
   void initState() {
     super.initState();
     _updatePendingCount();
+    _updateLowStockCount();
   }
 
   void _updatePendingCount() {
     if (mounted) {
       setState(() {
         _pendingCount = SyncService.instance.queueLength;
+      });
+    }
+  }
+
+  Future<void> _updateLowStockCount() async {
+    final count = await StockAlertService.instance.getLowStockAlertCount();
+    if (mounted) {
+      setState(() {
+        _lowStockCount = count;
       });
     }
   }
@@ -175,7 +187,74 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ],
               ),
-const SizedBox(height: 28),
+              if (_lowStockCount > 0) ...[
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const InventoryPage()),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.amber,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Alertas de Stock',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$_lowStockCount producto${_lowStockCount > 1 ? 's' : ''} bajo stock minimo',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Colors.amber,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
 
               // Main Grid: 2x2 tarjetas (Inventario, Clientes, Historial, Proveedores)
               Text(

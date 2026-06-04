@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
@@ -89,6 +90,16 @@ class IsarInventoryRepository implements InventoryRepository {
       }
       model.cantidad -= cantidad;
       await isar.inventarioCamionModels.put(model);
+
+      final producto = await isar.productoModels.get(productoId);
+      if (producto != null) {
+        await StockAlertService.instance.checkAndNotify(
+          productoId: productoId,
+          productoNombre: producto.nombre,
+          nuevaCantidad: model.cantidad,
+          stockMinimo: producto.stockMinimo,
+        );
+      }
     });
   }
 
