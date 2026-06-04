@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:super_motos/core/constants/vendedor.dart';
 import 'package:super_motos/core/enums/tipo_pago.dart';
+import 'package:super_motos/core/services/location_service.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
@@ -200,6 +201,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     setState(() => _isSaving = true);
     final stockWarnings = <String>[];
     try {
+      final position = await LocationService.instance.getCurrentPosition();
       final factura = Factura(
         numeroFactura: 0,
         clienteId: _clienteSeleccionado!.id,
@@ -208,6 +210,8 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
         total: _total,
         tipoPago: _tipoPago,
         detalles: _lineas.map((l) => l.toDetalle()).toList(),
+        latitudVenta: position?.latitude,
+        longitudVenta: position?.longitude,
       );
 
       await _facturasRepo.create(factura);

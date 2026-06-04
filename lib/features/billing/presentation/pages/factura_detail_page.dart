@@ -306,6 +306,25 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
           _footerRow('Fecha', _formatFechaCompleta(f.fecha), colorScheme),
           const SizedBox(height: 8),
           _footerRow('Vendedor', '#${f.vendedorId}', colorScheme),
+          if (f.latitudVenta != null && f.longitudVenta != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Ubicacion', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, color: colorScheme.secondary, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${f.latitudVenta!.toStringAsFixed(4)}, ${f.longitudVenta!.toStringAsFixed(4)}',
+                      style: TextStyle(color: colorScheme.secondary, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
