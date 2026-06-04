@@ -28,8 +28,8 @@
 | `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
-| Backend remoto (Supabase) | ❌ No conectado | Planificado en fase 2 |
-| Sincronización bidireccional | ❌ No implementada | Estrategia de conflictos pendiente |
+| Backend remoto (Supabase) | 🟡 Inicializado | `supabase_flutter` instalado, `SupabaseService` singleton, LoginPage con email/password, credenciales configuradas |
+| Sincronización bidireccional | ❌ No implementada | Estrategia: last-write-wins (pending) |
 
 **Leyenda:** ✅ funcional · 🟡 parcial / sólo esqueleto · ❌ no iniciado
 
@@ -417,7 +417,8 @@ flutter clean && flutter pub get
 | `lib/features/inventory/domain/entities/inventory_entry.dart` | DTO común de fila de inventario |
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |
 | `test_data/inventario_prueba.csv` | CSV de prueba con 12 productos COP |
-| `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider` |
+| `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter` |
+| `lib/core/services/supabase_service.dart` | Cliente singleton Supabase (URL + anon key hardcoded) |
 | `docs/historical.md` | Registro histórico del refactor inicial |
 
 ---

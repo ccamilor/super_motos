@@ -677,10 +677,10 @@ c02a217 docs: update agent.md + historical.md for suppliers
 | home (dashboard) | ✅ UI |
 | auth | ✅ Completo |
 | **suppliers** | **✅ Completo** |
-| Backend (Supabase) | ❌ No conectado |
+| Backend (Supabase) | 🟡 Auth conectado, Sync pendiente |
 
 ### Próximos pasos pendientes
-1. Supabase — backend + auth real + sync bidireccional
+1. SyncService — cola offline + push cuando hay red + pull al arrancar (estrategia: last-write-wins)
 2. Métricas dashboard — conectar a datos reales
 
 ### Comandos útiles
@@ -693,4 +693,62 @@ flutter test
 
 # Análisis estático
 flutter analyze
+
+# Ver devices
+flutter devices
 ```
+
+---
+
+## Sesión 5 — 3 de junio de 2026 (noche)
+
+### Objetivos de la sesión
+- Integrar Supabase Auth (login real con email/password)
+- Actualizar AGP para soportar nuevas dependencias
+
+### Lo realizado
+
+**Supabase Auth implementado:**
+- `supabase_flutter` agregado al `pubspec.yaml`
+- `SupabaseService` singleton (`lib/core/services/supabase_service.dart`) — cliente Supabase con URL y anon key hardcoded
+- `main.dart` actualizado — `SupabaseService.instance.init()` antes de Isar
+- `LoginPage` reescrita — email/password fields + 2 quick users (Mayra/Mateo sin guion: `supermotos.com`)
+- Credenciales Supabase configuradas: `https://skybcdetpah1btakusyf.supabase.co`
+
+**Usuarios creados en Supabase:**
+- `mayra@supermotos.com` / `super_motos2024` (rol: admin)
+- `mateo@supermotos.com` / `super_motos2024` (rol: vendedor)
+
+**AGP actualizado:**
+- `android/settings.gradle.kts`: 8.7.3 → 8.9.1 (requerido por `androidx.browser` y `androidx.core`)
+
+**DNS del emulador:**
+- El emulador no puede resolver `skybcdetpah1btakusyf.supabase.co`
+- El login real aún no se pudo verificar end-to-end
+
+### Archivos modificados/creados
+| Archivo | Tipo | Descripción |
+|---|---|---|
+| `pubspec.yaml` | Modificado | Agregado `supabase_flutter: ^2.5.0` |
+| `lib/core/services/supabase_service.dart` | **Nuevo** | Cliente singleton Supabase |
+| `lib/main.dart` | Modificado | `SupabaseService.instance.init()` |
+| `lib/features/auth/presentation/pages/login_page.dart` | Modificado | Email/password + quick users |
+| `android/settings.gradle.kts` | Modificado | AGP 8.7.3 → 8.9.1 |
+
+### Commit
+```
+703ef26 chore: add supabase_flutter + SupabaseService + update AGP to 8.9.1
+```
+
+### Estado actual del proyecto (post-sesión 5)
+| Feature | Estado |
+|---|---|
+| inventory | ✅ Completo |
+| customers | ✅ Completo |
+| billing | ✅ Completo |
+| returns | ✅ Completo |
+| home (dashboard) | ✅ UI |
+| auth | ✅ Login real via Supabase |
+| suppliers | ✅ Completo |
+| **Supabase** | **🟡 Auth conectado, Sync pendiente** |
+| Sync bidireccional | ❌ No implementada |
