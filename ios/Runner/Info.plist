@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MotoRuta Pro necesita tu ubicacion para registrar las coordenadas de cada venta realizada en ruta.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>MotoRuta Pro necesita tu ubicacion para registrar las coordenadas de cada venta realizada en ruta.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

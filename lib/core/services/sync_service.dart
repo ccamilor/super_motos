@@ -36,12 +36,14 @@ class SyncService {
   List<SyncQueueItem> _queue = [];
   Timer? _pushTimer;
   bool _initialized = false;
+  bool _canSync = false;
   ConflictResolution _conflictResolution = ConflictResolution.lastWriteWins;
 
   Future<void> init() async {
     if (_initialized) return;
     await _loadQueue();
     _startPushTimer();
+    _canSync = true;
     _initialized = true;
   }
 
@@ -77,8 +79,10 @@ class SyncService {
       createdAt: DateTime.now(),
     );
     _queue.add(item);
-    _saveQueue();
-    _tryPushOne();
+    if (_canSync) {
+      _saveQueue();
+      _tryPushOne();
+    }
   }
 
   void _startPushTimer() {

@@ -9,11 +9,11 @@
 
 - **App:** MotoRuta Pro
 - **Dominio:** Repuestos de moto — inventario de camión del vendedor + bodega central + ventas en ruta
-- **Stack:** Flutter 3.44 · Dart 3.12 · Isar 3.1
+- **Stack:** Flutter 3.44 · Dart 3.12 · Isar 3.1 · Supabase (postgresql)
 - **Plataformas soportadas:**
   - **Android / nativo:** Isar como base local
   - **Chrome / web:** `localStorage` mediante `package:web` (Isar v3 no soporta web)
-- **Estrategia actual:** *local-first*, sin backend remoto conectado
+- **Estrategia:** *local-first*, sync bidireccional con Supabase
 
 ---
 
@@ -23,13 +23,15 @@
 |---|---|---|
 | `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas |
 | `customers` | ✅ Completo | CRUD: lista con búsqueda, crear/editar/eliminar, formato COP, soporte Isar + web |
-| `billing` | ✅ Completo | Listado + crear con line items + detalle; descuenta stock del camión al guardar |
+| `billing` | ✅ Completo | Listado + crear con line items + detalle + geolocalizacion; descuenta stock del camión al guardar |
 | `returns` | ✅ Completo | Listado + crear con factura/producto filtrado + detalle; repone stock del camión al guardar |
-| `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales |
+| `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales; tarjeta Alertas de Stock dinamica |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
 | Backend remoto (Supabase) | ✅ Funcional | `SupabaseService` singleton, credenciales configuradas, `supabase_flutter` conectado |
 | Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at` |
+| Notificaciones de stock bajo | ✅ Implementado | `StockAlertService` singleton, verificacion en `decrementCamionStock`, notificacion local, tarjeta amber en dashboard |
+| Geoposicionamiento en factura | ✅ Implementado | `LocationService` singleton, captura coords al guardar factura, muestra icono+coords en detalle |
 
 **Leyenda:** ✅ funcional · 🟡 parcial / sólo esqueleto · ❌ no iniciado
 
@@ -124,6 +126,7 @@ super_motos/
 - AppBar con título `MotoRuta Pro` y `_UserBadge` con nombre + rol
 - Cabecera `SyncIndicator(pendingCount: SyncService.instance.queueLength)` — badge dinámico "Todo sincronizado" o "N pendientes"
 - 2 métricas: `Venta Total $0.00` (estática) y `Pendientes de Sinc.` con contador dinámico
+- Tarjeta ámbar "Alertas de Stock" (visible solo si `_lowStockCount > 0`), tap navega a Inventario
 - Grid 3×1: Inventario, Clientes, Historial (Facturas)
 - Card "Operaciones de Ruta": Nueva Venta (abre `FacturaFormPage`), Devolución (abre `DevolucionFormPage`)
 
@@ -155,8 +158,8 @@ Factory con import condicional: `createClientesRepository()`.
 
 **Pantallas:**
 - `FacturasPage`: historial con búsqueda (por `numeroFactura` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago + `SyncStatusBadge` (compact) y total COP. FAB "+ Nueva Venta".
-- `FacturaFormPage`: 3 secciones (Cliente, Productos, Pago). Cliente via `DropdownButtonFormField`. Productos via modal con lista buscable. Pago via `DropdownButtonFormField<TipoPago>`. Footer sticky con total. **Descuenta stock del camión al guardar**.
-- `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor + `SyncStatusBadge` (no highlight). Botón eliminar (sin restaurar stock).
+- `FacturaFormPage`: 3 secciones (Cliente, Productos, Pago). Cliente via `DropdownButtonFormField`. Productos via modal con lista buscable. Pago via `DropdownButtonFormField<TipoPago>`. Footer sticky con total. **Descuenta stock del camión al guardar**. Al guardar obtiene geolocalización via `LocationService.instance.getCurrentPosition()` y la asigna a `latitudVenta`/`longitudVenta` (nul si falla/deniega).
+- `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor + `SyncStatusBadge` + icono ubicación + coordenadas cuando estan disponibles. Botón eliminar (sin restaurar stock).
 
 **Capa de datos:** mismo patrón que inventory/customers.
 ```text
@@ -284,6 +287,9 @@ Todos los modelos con `isSynced` incluyen `updatedAt` en `toJson()` para conflic
 | `FilePicker.withData` | `true` en web (carga bytes), `false` en móvil (usa path) |
 | `dart:io` vs `dart:js_interop` | Selección de archivo de import condicional |
 | Almacenamiento web | Clave única: `super_motos_csv_data` (CSV completo en `localStorage`) |
+| Geolocator + Permission Handler | Solo en plataformas nativas; fails silently en web/chrome |
+| iOS location permissions | `NSLocationWhenInUseUsageDescription` y `NSLocationAlwaysAndWhenInUseUsageDescription` en `Info.plist` |
+| Android location permissions | `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` en `AndroidManifest.xml` |
 
 ---
 
@@ -333,8 +339,13 @@ flutter clean && flutter pub get
 | Archivo | Cobertura | Estado |
 |---|---|---|
 | `test/csv_import_test.dart` | 10 tests: parseo, header, mapeo, seed, formato COP, simulación completa | ✅ 10/10 |
-| `test/widget_test.dart` | Smoke test de la app real (reemplazó el obsoleto del counter) | ✅ |
-| `test/features/inventory/inventory_test.dart` | Tests por feature (parser/snapshot) | ✅ |
+| `test/widget_test.dart` | Smoke test de la app real | ✅ |
+| `test/features/inventory/inventory_test.dart` | Persistencia y consulta de inventario por canasta | ✅ |
+| `test/features/auth/auth_session_test.dart` | Singleton AuthSession: login, logout, hardcoded users | ✅ |
+| `test/features/billing/facturas_test.dart` | CRUD facturas + decrementCamionStock (happy path, insufficient, missing record) | ✅ |
+| `test/features/customers/clientes_test.dart` | CRUD clientes | ✅ |
+| `test/features/returns/devoluciones_test.dart` | CRUD devoluciones + incrementCamionStock | ✅ |
+| `test/features/suppliers/proveedores_test.dart` | CRUD proveedores | ✅ |
 
 > Detalle exhaustivo de cada test en [`docs/historical.md`](./docs/historical.md).
 
@@ -347,7 +358,7 @@ flutter clean && flutter pub get
 | `IsarError: Collection id is invalid` en emulador | BD del emulador con schemas antiguos incompatibles | `flutter clean` + `build_runner build` + reinstalar app |
 | Crash de Impeller en emulador x86 (API 30) | Backend GLES del emulador no enlaza shaders de Impeller | `flutter run --no-enable-impeller` (en físico funciona bien) |
 | `package:web` rompe compilación Android | Tipos `JSAny`/`JSObject` no existen en runtime nativo | Patrón de import condicional con `web_storage_stub.dart` |
-| `flutter test` y `dart analyze` se cuelgan en sesión | Observado en `documentacion_refactor.md` (ya no aplica) | Re-ejecutar tras unos segundos; alternar con `flutter test --no-pub` |
+| Errores `LateInitializationError` en `flutter test` | SyncService intentaba pushear/salvar cola sin binding ni Supabase inicializado | Flag `_canSync` en `SyncService.init()` — solo activa push/save cuando está completamente inicializado |
 
 ---
 
@@ -371,8 +382,8 @@ flutter clean && flutter pub get
 
 **Fase 4 — Operación en ruta**
 - ✅ Sincronización bidireccional (UI badges en todas las pantallas)
-- Geoposicionamiento en factura (ya mencionado en el dashboard)
-- Notificaciones de stock bajo en tiempo real
+- ✅ Notificaciones de stock bajo en tiempo real (`StockAlertService`, tarjeta amber en dashboard)
+- ✅ Geoposicionamiento en factura (`LocationService`, captura coords al guardar, muestra en detalle)
 
 ---
 
@@ -380,13 +391,16 @@ flutter clean && flutter pub get
 
 | Ruta | Propósito |
 |---|---|
-| `lib/main.dart` | Entry point — inicializa Isar y lanza `MyApp` |
+| `lib/main.dart` | Entry point — inicializa Supabase → Isar → SyncService → pullAll + StockAlertService + permisos |
 | `lib/core/database/isar_service.dart` | Apertura de Isar con 9 schemas |
 | `lib/core/theme/app_theme.dart` | Tema dark `JapaniRacerTheme` |
 | `lib/core/utils/currency_formatter.dart` | `formatCOP(double)` — formato monetario COP |
 | `lib/core/enums/tipo_pago.dart` | `TipoPago { contado, credito, transferencia }` |
 | `lib/core/constants/vendedor.dart` | `kVendedorPorDefecto = 1` (placeholder hasta auth) |
-| `lib/core/services/sync_service.dart` | Cola offline + push automático cada 10s + conflict detection + query methods (`getUnsyncedCount`, `isRecordPending`) |
+| `lib/core/services/sync_service.dart` | Cola offline + push automático cada 10s + conflict detection + `_canSync` guard; query methods (`getUnsyncedCount`, `isRecordPending`) |
+| `lib/core/services/supabase_service.dart` | Cliente singleton Supabase (URL + anon key hardcoded) |
+| `lib/core/services/stock_alert_service.dart` | Notificaciones locales de stock bajo; verificacion en `decrementCamionStock`, persistencia de count en SharedPreferences |
+| `lib/core/services/location_service.dart` | Geolocalizacion (singleton); requestPermission, isPermissionGranted, getCurrentPosition (medium accuracy, 10s timeout) |
 | `lib/core/widgets/sync_status_badge.dart` | Widgets `SyncStatusBadge` (compact chip + full badge) y `SyncIndicator` (pending count header) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
 | `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs |
@@ -421,7 +435,7 @@ flutter clean && flutter pub get
 | `lib/features/inventory/domain/entities/inventory_entry.dart` | DTO común de fila de inventario |
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |
 | `test_data/inventario_prueba.csv` | CSV de prueba con 12 productos COP |
-| `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter` |
+| `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter`, `flutter_local_notifications`, `geolocator`, `permission_handler` |
 | `lib/core/services/supabase_service.dart` | Cliente singleton Supabase (URL + anon key hardcoded) |
 | `docs/historical.md` | Registro histórico del refactor inicial |
 
