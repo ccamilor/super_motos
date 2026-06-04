@@ -75,4 +75,19 @@ class FacturaModel {
       ..detalles = domain.detalles.map((d) => DetalleFacturaModel.fromDomain(d)).toList()
       ..isSynced = domain.isSynced;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'numero_factura': numeroFactura,
+      'cliente_id': clienteId,
+      'vendedor_id': vendedorId,
+      'fecha': fecha.toIso8601String(),
+      'total': total,
+      'tipo_pago': tipoPago,
+      'latitud_venta': latitudVenta,
+      'longitud_venta': longitudVenta,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 }

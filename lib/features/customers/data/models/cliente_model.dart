@@ -45,4 +45,19 @@ class ClienteModel {
       ..saldoPendiente = domain.saldoPendiente
       ..estadoCuenta = domain.estadoCuenta.name;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'identificador_fiscal': identificadorFiscal,
+      'direccion': direccion,
+      'latitud': latitud,
+      'longitud': longitud,
+      'limite_credito': limiteCredito,
+      'saldo_pendiente': saldoPendiente,
+      'estado_cuenta': estadoCuenta,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 }

@@ -29,4 +29,15 @@ class ProveedorModel {
       ..telefono = domain.telefono
       ..direccion = domain.direccion;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'nit': nit,
+      'telefono': telefono,
+      'direccion': direccion,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 }

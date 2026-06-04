@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/suppliers/data/models/proveedor_model.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
 import 'package:super_motos/features/suppliers/data/services/proveedores_seed_data.dart';
@@ -28,7 +31,8 @@ class IsarProveedoresRepository implements ProveedoresRepository {
       await isar.proveedorModels.put(model);
     });
     final saved = await isar.proveedorModels.get(model.id);
-    return saved!.toDomain();
+    SyncService.instance.enqueue('proveedores', SyncOperation.insert, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
   }
 
   @override
@@ -39,6 +43,7 @@ class IsarProveedoresRepository implements ProveedoresRepository {
     await isar.writeTxn(() async {
       await isar.proveedorModels.put(model);
     });
+    SyncService.instance.enqueue('proveedores', SyncOperation.update, jsonEncode(model.toJson()));
     return model.toDomain();
   }
 
@@ -46,9 +51,12 @@ class IsarProveedoresRepository implements ProveedoresRepository {
   Future<void> delete(int id) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
+    final model = await isar.proveedorModels.get(id);
+    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
     await isar.writeTxn(() async {
       await isar.proveedorModels.delete(id);
     });
+    SyncService.instance.enqueue('proveedores', SyncOperation.delete, json);
   }
 
   Future<void> _seedDemoData(Isar isar) async {

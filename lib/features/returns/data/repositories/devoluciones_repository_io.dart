@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/returns/data/models/devolucion_model.dart';
 import 'package:super_motos/features/returns/data/repositories/devoluciones_repository.dart';
 import 'package:super_motos/features/returns/data/services/devoluciones_seed_data.dart';
@@ -35,7 +38,8 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
       await isar.devolucionModels.put(model);
     });
     final saved = await isar.devolucionModels.get(model.id);
-    return saved!.toDomain();
+    SyncService.instance.enqueue('devoluciones', SyncOperation.insert, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
   }
 
   @override
@@ -56,9 +60,13 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
+    final model = await isar.devolucionModels.get(id);
+    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+
     await isar.writeTxn(() async {
       await isar.devolucionModels.delete(id);
     });
+    SyncService.instance.enqueue('devoluciones', SyncOperation.delete, json);
   }
 
   Future<void> _seedDemoData(Isar isar) async {

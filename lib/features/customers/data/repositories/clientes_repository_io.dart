@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/customers/data/models/cliente_model.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
 import 'package:super_motos/features/customers/data/services/clientes_seed_data.dart';
@@ -35,7 +38,8 @@ class IsarClientesRepository implements ClientesRepository {
       await isar.clienteModels.put(model);
     });
     final saved = await isar.clienteModels.get(model.id);
-    return saved!.toDomain();
+    SyncService.instance.enqueue('clientes', SyncOperation.insert, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
   }
 
   @override
@@ -49,6 +53,7 @@ class IsarClientesRepository implements ClientesRepository {
     await isar.writeTxn(() async {
       await isar.clienteModels.put(model);
     });
+    SyncService.instance.enqueue('clientes', SyncOperation.update, jsonEncode(model.toJson()));
     return model.toDomain();
   }
 
@@ -59,9 +64,13 @@ class IsarClientesRepository implements ClientesRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
+    final model = await isar.clienteModels.get(id);
+    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+
     await isar.writeTxn(() async {
       await isar.clienteModels.delete(id);
     });
+    SyncService.instance.enqueue('clientes', SyncOperation.delete, json);
   }
 
   Future<void> _seedDemoData(Isar isar) async {

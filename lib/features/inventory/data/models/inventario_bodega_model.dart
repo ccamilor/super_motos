@@ -21,4 +21,12 @@ class InventarioBodegaModel {
       ..productoId = domain.productoId
       ..cantidad = domain.cantidad;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'cantidad': cantidad,
+    };
+  }
 }

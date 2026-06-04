@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
 import 'package:super_motos/core/services/supabase_service.dart';
-import 'package:super_motos/features/auth/domain/entities/usuario.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

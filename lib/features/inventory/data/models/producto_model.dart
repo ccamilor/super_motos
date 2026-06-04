@@ -37,4 +37,16 @@ class ProductoModel {
       ..motosCompatibles = domain.motosCompatibles
       ..stockMinimo = domain.stockMinimo;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'precio': precio,
+      'imagen_url': imagenUrl,
+      'is_original': isOriginal,
+      'motos_compatibles': motosCompatibles,
+      'stock_minimo': stockMinimo,
+    };
+  }
 }

@@ -24,4 +24,13 @@ class InventarioCamionModel {
       ..numeroCanasta = domain.numeroCanasta
       ..cantidad = domain.cantidad;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'numero_canasta': numeroCanasta,
+      'cantidad': cantidad,
+    };
+  }
 }

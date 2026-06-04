@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/billing/data/models/factura_model.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/services/facturas_seed_data.dart';
@@ -35,7 +38,8 @@ class IsarFacturasRepository implements FacturasRepository {
       await isar.facturaModels.put(model);
     });
     final saved = await isar.facturaModels.get(model.numeroFactura);
-    return saved!.toDomain();
+    SyncService.instance.enqueue('facturas', SyncOperation.insert, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
   }
 
   @override
@@ -56,9 +60,13 @@ class IsarFacturasRepository implements FacturasRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
+    final model = await isar.facturaModels.get(numeroFactura);
+    final json = model != null ? jsonEncode(model.toJson()) : '{"numero_factura":"$numeroFactura"}';
+
     await isar.writeTxn(() async {
       await isar.facturaModels.delete(numeroFactura);
     });
+    SyncService.instance.enqueue('facturas', SyncOperation.delete, json);
   }
 
   Future<void> _seedDemoData(Isar isar) async {

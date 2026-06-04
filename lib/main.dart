@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
 import 'package:super_motos/core/services/supabase_service.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/theme/app_theme.dart';
 import 'package:super_motos/features/auth/presentation/widgets/auth_wrapper.dart';
 
@@ -9,6 +10,8 @@ void main() async {
   await SupabaseService.instance.init();
   final isarService = IsarService();
   await isarService.init();
+  await SyncService.instance.init();
+  SyncService.instance.pullAll();
 
   runApp(const MyApp());
 }

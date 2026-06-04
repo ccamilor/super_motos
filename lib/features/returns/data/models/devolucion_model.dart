@@ -38,4 +38,18 @@ class DevolucionModel {
       ..motivo = domain.motivo
       ..isSynced = domain.isSynced;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'factura_id': facturaId,
+      'producto_id': productoId,
+      'cantidad': cantidad,
+      'numero_canasta_destino': numeroCanastaDestino,
+      'fecha_devolucion': fechaDevolucion.toIso8601String(),
+      'motivo': motivo,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 }

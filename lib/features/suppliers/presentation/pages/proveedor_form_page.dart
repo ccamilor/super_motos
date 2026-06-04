@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
@@ -34,7 +33,6 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
   late final TextEditingController _telefonoCtrl;
   late final TextEditingController _direccionCtrl;
 
-  List<HistorialPrecio> _historialList = [];
   Map<int, ProductoModel> _productosById = {};
   List<_PrecioEntry> _precioEntries = [];
 
@@ -75,7 +73,6 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
       if (_isEdit) {
         final historial = await _historialRepo.loadByProveedorId(widget.proveedor!.id);
         if (!mounted) return;
-        _historialList = historial;
         _precioEntries = historial
             .where((h) => h.productoId.isNotEmpty)
             .map((h) => _PrecioEntry(

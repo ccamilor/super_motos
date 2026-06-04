@@ -29,4 +29,14 @@ class HistorialPreciosModel {
       ..precioCompra = domain.precioCompra
       ..fechaRegistro = domain.fechaRegistro;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'producto_id': productoId,
+      'proveedor_id': proveedorId,
+      'precio_compra': precioCompra,
+      'fecha_registro': fechaRegistro.toIso8601String(),
+    };
+  }
 }
