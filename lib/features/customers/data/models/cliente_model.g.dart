@@ -32,28 +32,33 @@ const ClienteModelSchema = CollectionSchema(
       name: r'identificadorFiscal',
       type: IsarType.string,
     ),
-    r'latitud': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 3,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'latitud': PropertySchema(
+      id: 4,
       name: r'latitud',
       type: IsarType.double,
     ),
     r'limiteCredito': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'limiteCredito',
       type: IsarType.double,
     ),
     r'longitud': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'longitud',
       type: IsarType.double,
     ),
     r'nombre': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'saldoPendiente': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'saldoPendiente',
       type: IsarType.double,
     )
@@ -94,11 +99,12 @@ void _clienteModelSerialize(
   writer.writeString(offsets[0], object.direccion);
   writer.writeString(offsets[1], object.estadoCuenta);
   writer.writeString(offsets[2], object.identificadorFiscal);
-  writer.writeDouble(offsets[3], object.latitud);
-  writer.writeDouble(offsets[4], object.limiteCredito);
-  writer.writeDouble(offsets[5], object.longitud);
-  writer.writeString(offsets[6], object.nombre);
-  writer.writeDouble(offsets[7], object.saldoPendiente);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeDouble(offsets[4], object.latitud);
+  writer.writeDouble(offsets[5], object.limiteCredito);
+  writer.writeDouble(offsets[6], object.longitud);
+  writer.writeString(offsets[7], object.nombre);
+  writer.writeDouble(offsets[8], object.saldoPendiente);
 }
 
 ClienteModel _clienteModelDeserialize(
@@ -112,11 +118,12 @@ ClienteModel _clienteModelDeserialize(
   object.estadoCuenta = reader.readString(offsets[1]);
   object.id = id;
   object.identificadorFiscal = reader.readString(offsets[2]);
-  object.latitud = reader.readDoubleOrNull(offsets[3]);
-  object.limiteCredito = reader.readDouble(offsets[4]);
-  object.longitud = reader.readDoubleOrNull(offsets[5]);
-  object.nombre = reader.readString(offsets[6]);
-  object.saldoPendiente = reader.readDouble(offsets[7]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.latitud = reader.readDoubleOrNull(offsets[4]);
+  object.limiteCredito = reader.readDouble(offsets[5]);
+  object.longitud = reader.readDoubleOrNull(offsets[6]);
+  object.nombre = reader.readString(offsets[7]);
+  object.saldoPendiente = reader.readDouble(offsets[8]);
   return object;
 }
 
@@ -134,14 +141,16 @@ P _clienteModelDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readDouble(offset)) as P;
-    case 5:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 5:
+      return (reader.readDouble(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -704,6 +713,16 @@ extension ClienteModelQueryFilter
   }
 
   QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
       latitudIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1186,6 +1205,18 @@ extension ClienteModelQuerySortBy
     });
   }
 
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByLatitud() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'latitud', Sort.asc);
@@ -1303,6 +1334,18 @@ extension ClienteModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByLatitud() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'latitud', Sort.asc);
@@ -1391,6 +1434,12 @@ extension ClienteModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ClienteModel, ClienteModel, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QDistinct> distinctByLatitud() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'latitud');
@@ -1449,6 +1498,12 @@ extension ClienteModelQueryProperty
       identificadorFiscalProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'identificadorFiscal');
+    });
+  }
+
+  QueryBuilder<ClienteModel, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

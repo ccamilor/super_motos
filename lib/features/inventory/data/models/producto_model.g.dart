@@ -27,23 +27,28 @@ const ProductoModelSchema = CollectionSchema(
       name: r'isOriginal',
       type: IsarType.bool,
     ),
-    r'motosCompatibles': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 2,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'motosCompatibles': PropertySchema(
+      id: 3,
       name: r'motosCompatibles',
       type: IsarType.string,
     ),
     r'nombre': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'precio': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'precio',
       type: IsarType.double,
     ),
     r'stockMinimo': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'stockMinimo',
       type: IsarType.long,
     )
@@ -87,10 +92,11 @@ void _productoModelSerialize(
 ) {
   writer.writeString(offsets[0], object.imagenUrl);
   writer.writeBool(offsets[1], object.isOriginal);
-  writer.writeString(offsets[2], object.motosCompatibles);
-  writer.writeString(offsets[3], object.nombre);
-  writer.writeDouble(offsets[4], object.precio);
-  writer.writeLong(offsets[5], object.stockMinimo);
+  writer.writeBool(offsets[2], object.isSynced);
+  writer.writeString(offsets[3], object.motosCompatibles);
+  writer.writeString(offsets[4], object.nombre);
+  writer.writeDouble(offsets[5], object.precio);
+  writer.writeLong(offsets[6], object.stockMinimo);
 }
 
 ProductoModel _productoModelDeserialize(
@@ -103,10 +109,11 @@ ProductoModel _productoModelDeserialize(
   object.id = id;
   object.imagenUrl = reader.readStringOrNull(offsets[0]);
   object.isOriginal = reader.readBool(offsets[1]);
-  object.motosCompatibles = reader.readString(offsets[2]);
-  object.nombre = reader.readString(offsets[3]);
-  object.precio = reader.readDouble(offsets[4]);
-  object.stockMinimo = reader.readLong(offsets[5]);
+  object.isSynced = reader.readBool(offsets[2]);
+  object.motosCompatibles = reader.readString(offsets[3]);
+  object.nombre = reader.readString(offsets[4]);
+  object.precio = reader.readDouble(offsets[5]);
+  object.stockMinimo = reader.readLong(offsets[6]);
   return object;
 }
 
@@ -122,12 +129,14 @@ P _productoModelDeserializeProp<P>(
     case 1:
       return (reader.readBool(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
+      return (reader.readDouble(offset)) as P;
+    case 6:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -443,6 +452,16 @@ extension ProductoModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isOriginal',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
         value: value,
       ));
     });
@@ -877,6 +896,19 @@ extension ProductoModelQuerySortBy
     });
   }
 
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy>
       sortByMotosCompatibles() {
     return QueryBuilder.apply(this, (query) {
@@ -969,6 +1001,19 @@ extension ProductoModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy>
       thenByMotosCompatibles() {
     return QueryBuilder.apply(this, (query) {
@@ -1036,6 +1081,12 @@ extension ProductoModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProductoModel, ProductoModel, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QDistinct>
       distinctByMotosCompatibles({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1082,6 +1133,12 @@ extension ProductoModelQueryProperty
   QueryBuilder<ProductoModel, bool, QQueryOperations> isOriginalProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isOriginal');
+    });
+  }
+
+  QueryBuilder<ProductoModel, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

@@ -15,6 +15,7 @@ class ClienteModel {
   late double limiteCredito;
   late double saldoPendiente;
   late String estadoCuenta;
+  bool isSynced = false;
 
   Cliente toDomain() {
     return Cliente(
@@ -30,6 +31,7 @@ class ClienteModel {
         (e) => e.name == estadoCuenta,
         orElse: () => EstadoCuenta.activo,
       ),
+      isSynced: isSynced,
     );
   }
 
@@ -43,7 +45,8 @@ class ClienteModel {
       ..longitud = domain.longitud
       ..limiteCredito = domain.limiteCredito
       ..saldoPendiente = domain.saldoPendiente
-      ..estadoCuenta = domain.estadoCuenta.name;
+      ..estadoCuenta = domain.estadoCuenta.name
+      ..isSynced = domain.isSynced;
   }
 
   Map<String, dynamic> toJson() {
@@ -57,6 +60,7 @@ class ClienteModel {
       'limite_credito': limiteCredito,
       'saldo_pendiente': saldoPendiente,
       'estado_cuenta': estadoCuenta,
+      'is_synced': isSynced,
       'updated_at': DateTime.now().toIso8601String(),
     };
   }

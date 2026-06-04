@@ -23,13 +23,18 @@ const InventarioCamionModelSchema = CollectionSchema(
       name: r'cantidad',
       type: IsarType.long,
     ),
-    r'numeroCanasta': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 1,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'numeroCanasta': PropertySchema(
+      id: 2,
       name: r'numeroCanasta',
       type: IsarType.long,
     ),
     r'productoId': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'productoId',
       type: IsarType.long,
     )
@@ -64,8 +69,9 @@ void _inventarioCamionModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.cantidad);
-  writer.writeLong(offsets[1], object.numeroCanasta);
-  writer.writeLong(offsets[2], object.productoId);
+  writer.writeBool(offsets[1], object.isSynced);
+  writer.writeLong(offsets[2], object.numeroCanasta);
+  writer.writeLong(offsets[3], object.productoId);
 }
 
 InventarioCamionModel _inventarioCamionModelDeserialize(
@@ -77,8 +83,9 @@ InventarioCamionModel _inventarioCamionModelDeserialize(
   final object = InventarioCamionModel();
   object.cantidad = reader.readLong(offsets[0]);
   object.id = id;
-  object.numeroCanasta = reader.readLong(offsets[1]);
-  object.productoId = reader.readLong(offsets[2]);
+  object.isSynced = reader.readBool(offsets[1]);
+  object.numeroCanasta = reader.readLong(offsets[2]);
+  object.productoId = reader.readLong(offsets[3]);
   return object;
 }
 
@@ -92,8 +99,10 @@ P _inventarioCamionModelDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 2:
+      return (reader.readLong(offset)) as P;
+    case 3:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -310,6 +319,16 @@ extension InventarioCamionModelQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
       QAfterFilterCondition> numeroCanastaEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -445,6 +464,20 @@ extension InventarioCamionModelQuerySortBy
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       sortByNumeroCanasta() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numeroCanasta', Sort.asc);
@@ -504,6 +537,20 @@ extension InventarioCamionModelQuerySortThenBy
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       thenByNumeroCanasta() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'numeroCanasta', Sort.asc);
@@ -542,6 +589,13 @@ extension InventarioCamionModelQueryWhereDistinct
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
       distinctByNumeroCanasta() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'numeroCanasta');
@@ -568,6 +622,13 @@ extension InventarioCamionModelQueryProperty on QueryBuilder<
       cantidadProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cantidad');
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

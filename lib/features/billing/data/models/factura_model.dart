@@ -86,7 +86,7 @@ class FacturaModel {
       'tipo_pago': tipoPago,
       'latitud_venta': latitudVenta,
       'longitud_venta': longitudVenta,
-      'is_synced': true,
+      'is_synced': isSynced,
       'updated_at': DateTime.now().toIso8601String(),
     };
   }

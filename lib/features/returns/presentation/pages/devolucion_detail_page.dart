@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
@@ -239,7 +240,13 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
         children: [
           _footerRow('Fecha', _formatFechaCompleta(d.fechaDevolucion), colorScheme),
           const SizedBox(height: 8),
-          _footerRow('Estado sync', d.isSynced ? 'Sincronizado' : 'Pendiente', colorScheme, highlight: !d.isSynced),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Estado sync', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+              SyncStatusBadge(isSynced: d.isSynced),
+            ],
+          ),
         ],
       ),
     );

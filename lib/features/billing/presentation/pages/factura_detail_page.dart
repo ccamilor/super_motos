@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/estado_cuenta.dart';
 import 'package:super_motos/core/enums/tipo_pago.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
@@ -306,7 +307,13 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
           const SizedBox(height: 8),
           _footerRow('Vendedor', '#${f.vendedorId}', colorScheme),
           const SizedBox(height: 8),
-          _footerRow('Estado sync', f.isSynced ? 'Sincronizado' : 'Pendiente', colorScheme, highlight: !f.isSynced),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Estado sync', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+              SyncStatusBadge(isSynced: f.isSynced),
+            ],
+          ),
         ],
       ),
     );

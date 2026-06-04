@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:super_motos/core/enums/estado_cuenta.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/customers/data/repositories/clientes_repository_io.dart';
@@ -248,40 +249,50 @@ class _ClientesPageState extends State<ClientesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _estadoColor(cliente.estadoCuenta, colorScheme).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _estadoColor(cliente.estadoCuenta, colorScheme).withValues(alpha: 0.4),
+                Row(
+                  children: [
+                    Text(
+                      cliente.nombre,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  child: Text(
-                    _estadoLabel(cliente.estadoCuenta),
-                    style: TextStyle(
-                      color: _estadoColor(cliente.estadoCuenta, colorScheme),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                    const SizedBox(width: 8),
+                    SyncStatusBadge(isSynced: cliente.isSynced, compact: true),
+                  ],
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
-                  onPressed: () => _deleteCliente(cliente),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _estadoColor(cliente.estadoCuenta, colorScheme).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _estadoColor(cliente.estadoCuenta, colorScheme).withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Text(
+                        _estadoLabel(cliente.estadoCuenta),
+                        style: TextStyle(
+                          color: _estadoColor(cliente.estadoCuenta, colorScheme),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
+                      onPressed: () => _deleteCliente(cliente),
+                    ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              cliente.nombre,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
             Text(
               'NIT: ${cliente.identificadorFiscal}',
               style: const TextStyle(color: Colors.white70, fontSize: 13),

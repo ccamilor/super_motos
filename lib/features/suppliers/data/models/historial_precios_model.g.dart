@@ -23,18 +23,23 @@ const HistorialPreciosModelSchema = CollectionSchema(
       name: r'fechaRegistro',
       type: IsarType.dateTime,
     ),
-    r'precioCompra': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 1,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'precioCompra': PropertySchema(
+      id: 2,
       name: r'precioCompra',
       type: IsarType.double,
     ),
     r'productoId': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'productoId',
       type: IsarType.string,
     ),
     r'proveedorId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'proveedorId',
       type: IsarType.string,
     )
@@ -71,9 +76,10 @@ void _historialPreciosModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.fechaRegistro);
-  writer.writeDouble(offsets[1], object.precioCompra);
-  writer.writeString(offsets[2], object.productoId);
-  writer.writeString(offsets[3], object.proveedorId);
+  writer.writeBool(offsets[1], object.isSynced);
+  writer.writeDouble(offsets[2], object.precioCompra);
+  writer.writeString(offsets[3], object.productoId);
+  writer.writeString(offsets[4], object.proveedorId);
 }
 
 HistorialPreciosModel _historialPreciosModelDeserialize(
@@ -85,9 +91,10 @@ HistorialPreciosModel _historialPreciosModelDeserialize(
   final object = HistorialPreciosModel();
   object.fechaRegistro = reader.readDateTime(offsets[0]);
   object.id = id;
-  object.precioCompra = reader.readDouble(offsets[1]);
-  object.productoId = reader.readString(offsets[2]);
-  object.proveedorId = reader.readString(offsets[3]);
+  object.isSynced = reader.readBool(offsets[1]);
+  object.precioCompra = reader.readDouble(offsets[2]);
+  object.productoId = reader.readString(offsets[3]);
+  object.proveedorId = reader.readString(offsets[4]);
   return object;
 }
 
@@ -101,10 +108,12 @@ P _historialPreciosModelDeserializeProp<P>(
     case 0:
       return (reader.readDateTime(offset)) as P;
     case 1:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -316,6 +325,16 @@ extension HistorialPreciosModelQueryFilter on QueryBuilder<
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
       ));
     });
   }
@@ -686,6 +705,20 @@ extension HistorialPreciosModelQuerySortBy
   }
 
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
       sortByPrecioCompra() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'precioCompra', Sort.asc);
@@ -759,6 +792,20 @@ extension HistorialPreciosModelQuerySortThenBy
   }
 
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
       thenByPrecioCompra() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'precioCompra', Sort.asc);
@@ -811,6 +858,13 @@ extension HistorialPreciosModelQueryWhereDistinct
   }
 
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QDistinct>
       distinctByPrecioCompra() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'precioCompra');
@@ -844,6 +898,13 @@ extension HistorialPreciosModelQueryProperty on QueryBuilder<
       fechaRegistroProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fechaRegistro');
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

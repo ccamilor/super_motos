@@ -5,6 +5,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/supabase_service.dart';
 
+enum ConflictResolution { serverWins, lastWriteWins }
+
+class ConflictInfo {
+  final String table;
+  final int recordId;
+  final DateTime localUpdatedAt;
+  final DateTime serverUpdatedAt;
+  final Map<String, dynamic> serverRecord;
+
+  const ConflictInfo({
+    required this.table,
+    required this.recordId,
+    required this.localUpdatedAt,
+    required this.serverUpdatedAt,
+    required this.serverRecord,
+  });
+
+  bool get serverIsNewer => serverUpdatedAt.isAfter(localUpdatedAt);
+  bool get localIsNewer => localUpdatedAt.isAfter(serverUpdatedAt);
+}
+
 class SyncService {
   SyncService._();
   static final SyncService instance = SyncService._();
@@ -15,6 +36,7 @@ class SyncService {
   List<SyncQueueItem> _queue = [];
   Timer? _pushTimer;
   bool _initialized = false;
+  ConflictResolution _conflictResolution = ConflictResolution.lastWriteWins;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -93,14 +115,21 @@ class SyncService {
     try {
       final client = SupabaseService.instance.client;
 
-      switch (item.operation) {
-        case SyncOperation.insert:
-        case SyncOperation.update:
-          await _upsertRecord(client, item);
-          break;
-        case SyncOperation.delete:
-          await _deleteRecord(client, item);
-          break;
+      if (item.operation == SyncOperation.insert || item.operation == SyncOperation.update) {
+        final conflict = await _checkForConflict(client, item);
+        if (conflict != null) {
+          if (conflict.serverIsNewer && _conflictResolution == ConflictResolution.serverWins) {
+            debugPrint('SyncService: conflict detected, server wins for ${item.table}/${item.recordJson.hashCode}');
+            item.markSynced();
+            return true;
+          }
+          if (conflict.serverIsNewer && _conflictResolution == ConflictResolution.lastWriteWins) {
+            debugPrint('SyncService: conflict detected, local is older — pushing anyway (last-write-wins)');
+          }
+        }
+        await _upsertRecord(client, item);
+      } else {
+        await _deleteRecord(client, item);
       }
 
       item.markSynced();
@@ -111,6 +140,43 @@ class SyncService {
     }
   }
 
+  Future<ConflictInfo?> _checkForConflict(dynamic client, SyncQueueItem item) async {
+    final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
+    final idField = item.table == 'facturas' ? 'numero_factura' : 'id';
+    final id = record[idField]?.toString();
+    if (id == null) return null;
+
+    try {
+      dynamic response;
+      if (item.table == 'facturas') {
+        response = await client.from(item.table).select().eq('numero_factura', id).maybeSingle();
+      } else {
+        response = await client.from(item.table).select().eq('id', id).maybeSingle();
+      }
+      if (response == null) return null;
+
+      final serverUpdatedAtStr = response['updated_at'] as String?;
+      final localUpdatedAtStr = record['updated_at'] as String?;
+      if (serverUpdatedAtStr == null || localUpdatedAtStr == null) return null;
+
+      final serverUpdatedAt = DateTime.parse(serverUpdatedAtStr);
+      final localUpdatedAt = DateTime.parse(localUpdatedAtStr);
+
+      if (serverUpdatedAt.isAfter(localUpdatedAt)) {
+        return ConflictInfo(
+          table: item.table,
+          recordId: int.tryParse(id) ?? 0,
+          localUpdatedAt: localUpdatedAt,
+          serverUpdatedAt: serverUpdatedAt,
+          serverRecord: Map<String, dynamic>.from(response),
+        );
+      }
+    } catch (e) {
+      // No conflict check possible, proceed with push
+    }
+    return null;
+  }
+
   Future<void> _upsertRecord(dynamic client, SyncQueueItem item) async {
     final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
     switch (item.table) {
@@ -118,7 +184,7 @@ class SyncService {
         await client.from('clientes').upsert(record, onConflict: 'id');
         break;
       case 'facturas':
-        await client.from('facturas').upsert(record, onConflict: 'id');
+        await client.from('facturas').upsert(record, onConflict: 'numero_factura');
         break;
       case 'detalles_factura':
         await client.from('detalles_factura').upsert(record, onConflict: 'id');
@@ -135,12 +201,19 @@ class SyncService {
       case 'productos':
         await client.from('productos').upsert(record, onConflict: 'id');
         break;
+      case 'inventario_camion':
+        await client.from('inventario_camion').upsert(record, onConflict: 'id');
+        break;
+      case 'inventario_bodega':
+        await client.from('inventario_bodega').upsert(record, onConflict: 'id');
+        break;
     }
   }
 
   Future<void> _deleteRecord(dynamic client, SyncQueueItem item) async {
     final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
-    final id = record['id']?.toString();
+    final idField = item.table == 'facturas' ? 'numero_factura' : 'id';
+    final id = record[idField]?.toString();
     if (id == null) return;
 
     switch (item.table) {
@@ -148,13 +221,19 @@ class SyncService {
         await client.from('clientes').delete().eq('id', id);
         break;
       case 'facturas':
-        await client.from('facturas').delete().eq('id', id);
+        await client.from('facturas').delete().eq('numero_factura', id);
         break;
       case 'devoluciones':
         await client.from('devoluciones').delete().eq('id', id);
         break;
       case 'proveedores':
         await client.from('proveedores').delete().eq('id', id);
+        break;
+      case 'historial_precios':
+        await client.from('historial_precios').delete().eq('id', id);
+        break;
+      case 'productos':
+        await client.from('productos').delete().eq('id', id);
         break;
     }
   }
@@ -167,6 +246,9 @@ class SyncService {
       await _pullTable(client, 'devoluciones');
       await _pullTable(client, 'proveedores');
       await _pullTable(client, 'historial_precios');
+      await _pullTable(client, 'productos');
+      await _pullTable(client, 'inventario_camion');
+      await _pullTable(client, 'inventario_bodega');
     } catch (e) {
       debugPrint('SyncService: pullAll failed: $e');
     }
@@ -182,7 +264,27 @@ class SyncService {
   }
 
   int get queueLength => _queue.length;
+
   List<SyncQueueItem> get pendingItems => List.unmodifiable(_queue);
+
+  int getUnsyncedCount(String table) {
+    return _queue.where((item) => item.table == table && !item.synced).length;
+  }
+
+  List<SyncQueueItem> getUnsyncedItems(String table) {
+    return _queue.where((item) => item.table == table && !item.synced).toList();
+  }
+
+  bool isRecordPending(String table, String recordId) {
+    return _queue.any((item) =>
+        item.table == table &&
+        !item.synced &&
+        item.recordJson.contains(recordId));
+  }
+
+  void setConflictResolution(ConflictResolution resolution) {
+    _conflictResolution = resolution;
+  }
 
   void dispose() {
     _pushTimer?.cancel();

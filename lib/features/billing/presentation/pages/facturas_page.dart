@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:super_motos/core/enums/tipo_pago.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
@@ -226,9 +227,15 @@ class _FacturasPageState extends State<FacturasPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Factura #${factura.numeroFactura}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Text(
+                      'Factura #${factura.numeroFactura}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    SyncStatusBadge(isSynced: factura.isSynced, compact: true),
+                  ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

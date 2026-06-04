@@ -4,6 +4,7 @@ class HistorialPrecio {
   final String proveedorId;
   final double precioCompra;
   final DateTime fechaRegistro;
+  final bool isSynced;
 
   HistorialPrecio({
     required this.id,
@@ -11,6 +12,7 @@ class HistorialPrecio {
     required this.proveedorId,
     required this.precioCompra,
     required this.fechaRegistro,
+    this.isSynced = false,
   });
 
   HistorialPrecio copyWith({
@@ -19,6 +21,7 @@ class HistorialPrecio {
     String? proveedorId,
     double? precioCompra,
     DateTime? fechaRegistro,
+    bool? isSynced,
   }) {
     return HistorialPrecio(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class HistorialPrecio {
       proveedorId: proveedorId ?? this.proveedorId,
       precioCompra: precioCompra ?? this.precioCompra,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 }

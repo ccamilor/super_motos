@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
@@ -200,9 +201,15 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Devolucion #${devolucion.id}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Text(
+                      'Devolucion #${devolucion.id}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    SyncStatusBadge(isSynced: devolucion.isSynced, compact: true),
+                  ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

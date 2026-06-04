@@ -22,18 +22,23 @@ const ProveedorModelSchema = CollectionSchema(
       name: r'direccion',
       type: IsarType.string,
     ),
-    r'nit': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 1,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'nit': PropertySchema(
+      id: 2,
       name: r'nit',
       type: IsarType.string,
     ),
     r'nombre': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'telefono': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'telefono',
       type: IsarType.string,
     )
@@ -72,9 +77,10 @@ void _proveedorModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.direccion);
-  writer.writeString(offsets[1], object.nit);
-  writer.writeString(offsets[2], object.nombre);
-  writer.writeString(offsets[3], object.telefono);
+  writer.writeBool(offsets[1], object.isSynced);
+  writer.writeString(offsets[2], object.nit);
+  writer.writeString(offsets[3], object.nombre);
+  writer.writeString(offsets[4], object.telefono);
 }
 
 ProveedorModel _proveedorModelDeserialize(
@@ -86,9 +92,10 @@ ProveedorModel _proveedorModelDeserialize(
   final object = ProveedorModel();
   object.direccion = reader.readString(offsets[0]);
   object.id = id;
-  object.nit = reader.readString(offsets[1]);
-  object.nombre = reader.readString(offsets[2]);
-  object.telefono = reader.readString(offsets[3]);
+  object.isSynced = reader.readBool(offsets[1]);
+  object.nit = reader.readString(offsets[2]);
+  object.nombre = reader.readString(offsets[3]);
+  object.telefono = reader.readString(offsets[4]);
   return object;
 }
 
@@ -102,10 +109,12 @@ P _proveedorModelDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -395,6 +404,16 @@ extension ProveedorModelQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProveedorModel, ProveedorModel, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
       ));
     });
   }
@@ -829,6 +848,19 @@ extension ProveedorModelQuerySortBy
     });
   }
 
+  QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy> sortByNit() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nit', Sort.asc);
@@ -895,6 +927,19 @@ extension ProveedorModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProveedorModel, ProveedorModel, QAfterSortBy> thenByNit() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nit', Sort.asc);
@@ -943,6 +988,12 @@ extension ProveedorModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProveedorModel, ProveedorModel, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<ProveedorModel, ProveedorModel, QDistinct> distinctByNit(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -976,6 +1027,12 @@ extension ProveedorModelQueryProperty
   QueryBuilder<ProveedorModel, String, QQueryOperations> direccionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'direccion');
+    });
+  }
+
+  QueryBuilder<ProveedorModel, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

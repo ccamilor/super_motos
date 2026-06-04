@@ -12,6 +12,7 @@ class ProductoModel {
   late bool isOriginal;
   late String motosCompatibles;
   late int stockMinimo;
+  bool isSynced = false;
 
   Producto toDomain() {
     return Producto(
@@ -22,6 +23,7 @@ class ProductoModel {
       isOriginal: isOriginal,
       motosCompatibles: motosCompatibles,
       stockMinimo: stockMinimo,
+      isSynced: isSynced,
     );
   }
 
@@ -35,7 +37,8 @@ class ProductoModel {
       ..imagenUrl = domain.imagenUrl
       ..isOriginal = domain.isOriginal
       ..motosCompatibles = domain.motosCompatibles
-      ..stockMinimo = domain.stockMinimo;
+      ..stockMinimo = domain.stockMinimo
+      ..isSynced = domain.isSynced;
   }
 
   Map<String, dynamic> toJson() {
@@ -47,6 +50,8 @@ class ProductoModel {
       'is_original': isOriginal,
       'motos_compatibles': motosCompatibles,
       'stock_minimo': stockMinimo,
+      'is_synced': isSynced,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 }

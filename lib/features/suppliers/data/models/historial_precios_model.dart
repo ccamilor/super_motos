@@ -10,6 +10,7 @@ class HistorialPreciosModel {
   late String proveedorId;
   late double precioCompra;
   late DateTime fechaRegistro;
+  bool isSynced = false;
 
   HistorialPrecio toDomain() {
     return HistorialPrecio(
@@ -18,6 +19,7 @@ class HistorialPreciosModel {
       proveedorId: proveedorId,
       precioCompra: precioCompra,
       fechaRegistro: fechaRegistro,
+      isSynced: isSynced,
     );
   }
 
@@ -27,7 +29,8 @@ class HistorialPreciosModel {
       ..productoId = domain.productoId
       ..proveedorId = domain.proveedorId
       ..precioCompra = domain.precioCompra
-      ..fechaRegistro = domain.fechaRegistro;
+      ..fechaRegistro = domain.fechaRegistro
+      ..isSynced = domain.isSynced;
   }
 
   Map<String, dynamic> toJson() {
@@ -37,6 +40,8 @@ class HistorialPreciosModel {
       'proveedor_id': proveedorId,
       'precio_compra': precioCompra,
       'fecha_registro': fechaRegistro.toIso8601String(),
+      'is_synced': isSynced,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 }

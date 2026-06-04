@@ -10,6 +10,7 @@ class ProveedorModel {
   late String nit;
   late String telefono;
   late String direccion;
+  bool isSynced = false;
 
   Proveedor toDomain() {
     return Proveedor(
@@ -18,6 +19,7 @@ class ProveedorModel {
       nit: nit,
       telefono: telefono,
       direccion: direccion,
+      isSynced: isSynced,
     );
   }
 
@@ -27,7 +29,8 @@ class ProveedorModel {
       ..nombre = domain.nombre
       ..nit = domain.nit
       ..telefono = domain.telefono
-      ..direccion = domain.direccion;
+      ..direccion = domain.direccion
+      ..isSynced = domain.isSynced;
   }
 
   Map<String, dynamic> toJson() {
@@ -37,6 +40,7 @@ class ProveedorModel {
       'nit': nit,
       'telefono': telefono,
       'direccion': direccion,
+      'is_synced': isSynced,
       'updated_at': DateTime.now().toIso8601String(),
     };
   }

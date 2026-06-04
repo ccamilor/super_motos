@@ -6,6 +6,7 @@ class Producto {
   final bool isOriginal;
   final String motosCompatibles;
   final int stockMinimo;
+  final bool isSynced;
 
   Producto({
     required this.id,
@@ -15,5 +16,6 @@ class Producto {
     required this.isOriginal,
     required this.motosCompatibles,
     required this.stockMinimo,
+    this.isSynced = false,
   });
 }

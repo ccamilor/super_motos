@@ -23,8 +23,13 @@ const InventarioBodegaModelSchema = CollectionSchema(
       name: r'cantidad',
       type: IsarType.long,
     ),
-    r'productoId': PropertySchema(
+    r'isSynced': PropertySchema(
       id: 1,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'productoId': PropertySchema(
+      id: 2,
       name: r'productoId',
       type: IsarType.long,
     )
@@ -59,7 +64,8 @@ void _inventarioBodegaModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.cantidad);
-  writer.writeLong(offsets[1], object.productoId);
+  writer.writeBool(offsets[1], object.isSynced);
+  writer.writeLong(offsets[2], object.productoId);
 }
 
 InventarioBodegaModel _inventarioBodegaModelDeserialize(
@@ -71,7 +77,8 @@ InventarioBodegaModel _inventarioBodegaModelDeserialize(
   final object = InventarioBodegaModel();
   object.cantidad = reader.readLong(offsets[0]);
   object.id = id;
-  object.productoId = reader.readLong(offsets[1]);
+  object.isSynced = reader.readBool(offsets[1]);
+  object.productoId = reader.readLong(offsets[2]);
   return object;
 }
 
@@ -85,6 +92,8 @@ P _inventarioBodegaModelDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
+      return (reader.readBool(offset)) as P;
+    case 2:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -301,6 +310,16 @@ extension InventarioBodegaModelQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<InventarioBodegaModel, InventarioBodegaModel,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel,
       QAfterFilterCondition> productoIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -380,6 +399,20 @@ extension InventarioBodegaModelQuerySortBy
   }
 
   QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
       sortByProductoId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'productoId', Sort.asc);
@@ -425,6 +458,20 @@ extension InventarioBodegaModelQuerySortThenBy
   }
 
   QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QAfterSortBy>
       thenByProductoId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'productoId', Sort.asc);
@@ -449,6 +496,13 @@ extension InventarioBodegaModelQueryWhereDistinct
   }
 
   QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, InventarioBodegaModel, QDistinct>
       distinctByProductoId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'productoId');
@@ -468,6 +522,13 @@ extension InventarioBodegaModelQueryProperty on QueryBuilder<
       cantidadProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cantidad');
+    });
+  }
+
+  QueryBuilder<InventarioBodegaModel, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 

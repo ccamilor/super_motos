@@ -11,6 +11,7 @@ import 'package:super_motos/features/inventory/data/models/inventario_camion_mod
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -220,6 +221,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           rightValueColor: bajoStock ? colorScheme.error : colorScheme.primary,
           borderColor: bajoStock ? colorScheme.error.withValues(alpha: 0.35) : colorScheme.outlineVariant.withValues(alpha: 0.3),
           colorScheme: colorScheme,
+          isSynced: producto.isSynced,
         );
       },
     );
@@ -255,6 +257,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           rightValueColor: colorScheme.primary,
           borderColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
           colorScheme: colorScheme,
+          isSynced: producto.isSynced,
         );
       },
     );
@@ -319,12 +322,18 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: producto.isOriginal ? colorScheme.primary : Colors.white54,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: producto.isOriginal ? colorScheme.primary : Colors.white54,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SyncStatusBadge(isSynced: producto.isSynced, compact: true),
+                          ],
                         ),
                         if (sugerir)
                           Text(
@@ -404,6 +413,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     required Color rightValueColor,
     required Color borderColor,
     required ColorScheme colorScheme,
+    bool isSynced = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -419,13 +429,19 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor)),
+                  ),
+                  const SizedBox(width: 6),
+                  SyncStatusBadge(isSynced: isSynced, compact: true),
+                ],
               ),
               if (alertText != null)
                 Text(

@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
+import 'package:super_motos/core/services/sync_service.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/auth/presentation/pages/login_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
@@ -9,8 +11,29 @@ import 'package:super_motos/features/inventory/presentation/pages/inventory_page
 import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
 import 'package:super_motos/features/suppliers/presentation/pages/proveedores_page.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  int _pendingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _updatePendingCount();
+  }
+
+  void _updatePendingCount() {
+    if (mounted) {
+      setState(() {
+        _pendingCount = SyncService.instance.queueLength;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +68,8 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Metrics Section: Dos Cards (Venta Total, Pendientes)
+              SyncIndicator(pendingCount: _pendingCount),
+              const SizedBox(height: 16),
               Text(
                 'MÃ©tricas del DÃ­a',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -56,7 +80,6 @@ class DashboardPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  // Tarjeta Venta Total (Verde NeÃ³n)
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
@@ -102,14 +125,15 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Tarjeta Pendientes (Cian Cyberpunk)
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
                         color: colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: colorScheme.secondary.withValues(alpha: 0.3),
+                          color: _pendingCount > 0
+                              ? colorScheme.secondary.withValues(alpha: 0.5)
+                              : colorScheme.primary.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                         boxShadow: [
@@ -135,11 +159,13 @@ class DashboardPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '0',
+                              '$_pendingCount',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
-                                color: colorScheme.secondary,
+                                color: _pendingCount > 0
+                                    ? colorScheme.secondary
+                                    : colorScheme.primary,
                               ),
                             ),
                           ],

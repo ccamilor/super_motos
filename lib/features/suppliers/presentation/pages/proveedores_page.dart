@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/suppliers/data/repositories/proveedores_repository_io.dart';
@@ -216,11 +217,17 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    proveedor.nombre,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        proveedor.nombre,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SyncStatusBadge(isSynced: proveedor.isSynced, compact: true),
+                  ],
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,

@@ -10,6 +10,7 @@ class Cliente {
   final double limiteCredito;
   final double saldoPendiente;
   final EstadoCuenta estadoCuenta;
+  final bool isSynced;
 
   const Cliente({
     required this.id,
@@ -21,6 +22,7 @@ class Cliente {
     required this.limiteCredito,
     required this.saldoPendiente,
     required this.estadoCuenta,
+    this.isSynced = false,
   });
 
   Cliente copyWith({
@@ -33,6 +35,7 @@ class Cliente {
     double? limiteCredito,
     double? saldoPendiente,
     EstadoCuenta? estadoCuenta,
+    bool? isSynced,
   }) {
     return Cliente(
       id: id ?? this.id,
@@ -44,6 +47,7 @@ class Cliente {
       limiteCredito: limiteCredito ?? this.limiteCredito,
       saldoPendiente: saldoPendiente ?? this.saldoPendiente,
       estadoCuenta: estadoCuenta ?? this.estadoCuenta,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 }

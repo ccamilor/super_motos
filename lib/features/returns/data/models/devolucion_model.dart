@@ -48,7 +48,7 @@ class DevolucionModel {
       'numero_canasta_destino': numeroCanastaDestino,
       'fecha_devolucion': fechaDevolucion.toIso8601String(),
       'motivo': motivo,
-      'is_synced': true,
+      'is_synced': isSynced,
       'updated_at': DateTime.now().toIso8601String(),
     };
   }
