@@ -20,8 +20,8 @@ class _LoginPageState extends State<LoginPage> {
   String? _errorMessage;
 
   static const List<_QuickUser> _quickUsers = [
-    _QuickUser(email: 'mayra@supermotos.com', password: 'super_motos2024', nombre: 'Mayra', rol: RolUsuario.admin),
-    _QuickUser(email: 'mateo@supermotos.com', password: 'super_motos2024', nombre: 'Mateo', rol: RolUsuario.vendedor),
+    _QuickUser(email: 'admin@super_motos.com', password: 'super_motos2024', nombre: 'Mayra', rol: RolUsuario.admin),
+    _QuickUser(email: 'vendedor@super_motos.com', password: 'super_motos2024', nombre: 'Mateo', rol: RolUsuario.vendedor),
   ];
 
   @override
