@@ -173,3 +173,4 @@ class WebInventoryRepository implements InventoryRepository {
   }
 }
 
+InventoryRepository createInventoryRepository() => WebInventoryRepository();

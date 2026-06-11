@@ -103,9 +103,6 @@ class _ProductoFormPageState extends State<ProductoFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Editar Producto' : 'Nuevo Producto'),
