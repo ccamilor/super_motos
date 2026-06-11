@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -34,6 +35,20 @@ class LocationService {
       );
     } catch (e) {
       debugPrint('LocationService: failed to get position: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getCityName() async {
+    try {
+      final pos = await getCurrentPosition();
+      if (pos == null) return null;
+      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (placemarks.isEmpty) return null;
+      final p = placemarks.first;
+      return p.locality ?? p.subAdministrativeArea ?? p.administrativeArea;
+    } catch (e) {
+      debugPrint('LocationService: failed to get city name: $e');
       return null;
     }
   }

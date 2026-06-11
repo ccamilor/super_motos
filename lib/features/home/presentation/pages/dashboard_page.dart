@@ -41,6 +41,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   int _totalProductos = 0;
   double? _latitud;
   double? _longitud;
+  String? _ciudad;
 
   @override
   void initState() {
@@ -131,10 +132,14 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     try {
       final pos = await LocationService.instance.getCurrentPosition();
       if (mounted && pos != null) {
-        setState(() {
-          _latitud = pos.latitude;
-          _longitud = pos.longitude;
-        });
+        final cityName = await LocationService.instance.getCityName();
+        if (mounted) {
+          setState(() {
+            _latitud = pos.latitude;
+            _longitud = pos.longitude;
+            _ciudad = cityName;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error cargando ubicación: $e');
@@ -213,7 +218,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                       colorScheme: colorScheme,
                       label: 'Total Productos',
                       value: '$_totalProductos',
-                      valueColor: colorScheme.primary,
+                      valueColor: colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -507,9 +512,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
             const SizedBox(height: 8),
             if (hasLocation)
               Text(
-                '${_latitud!.toStringAsFixed(3)}° N / ${_longitud!.toStringAsFixed(3)}° W',
+                _ciudad ?? '${_latitud!.toStringAsFixed(3)}° / ${_longitud!.toStringAsFixed(3)}°',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
                   color: colorScheme.secondary,
                 ),
