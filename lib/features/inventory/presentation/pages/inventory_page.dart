@@ -177,6 +177,13 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manejo de Inventario', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(
+            onPressed: () => _importCSV(colorScheme),
+            icon: const Icon(Icons.upload_file_outlined),
+            tooltip: 'Cargar CSV',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -238,8 +245,14 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final producto = filtered[index];
@@ -275,8 +288,14 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final producto = filtered[index];
@@ -310,29 +329,18 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _importCSV(colorScheme),
-                  icon: const Icon(Icons.upload_file_outlined),
-                  label: const Text('Cargar CSV'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final producto = filtered[index];
-              final camion = _camion.firstWhere(
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final producto = filtered[index];
+        final camion = _camion.firstWhere(
                 (item) => item.productoId == producto.id,
                 orElse: () => InventarioCamionModel()
                   ..productoId = producto.id
@@ -477,10 +485,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                   ],
                 ),
               );
-            },
-          ),
-        ),
-      ],
+      },
     );
   }
 
@@ -510,7 +515,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     required ColorScheme colorScheme,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
