@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
@@ -20,7 +20,8 @@ class InventoryPage extends StatefulWidget {
   State<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends State<InventoryPage> with SingleTickerProviderStateMixin {
+class _InventoryPageState extends State<InventoryPage>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   final InventoryRepository _repository = createInventoryRepository();
@@ -74,7 +75,10 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         withData: kIsWeb,
       );
 
-      if (result == null || (kIsWeb ? result.files.single.bytes == null : result.files.single.path == null)) {
+      if (result == null ||
+          (kIsWeb
+              ? result.files.single.bytes == null
+              : result.files.single.path == null)) {
         return;
       }
 
@@ -100,7 +104,10 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
             duration: const Duration(seconds: 3),
             content: const Text(
               'EXITO: Inventario cargado y guardado satisfactoriamente.',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         );
@@ -113,7 +120,10 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
             duration: const Duration(seconds: 4),
             content: Text(
               'ERROR al importar archivo: $e',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         );
@@ -141,10 +151,16 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         title: const Text('Eliminar producto'),
         content: Text('¿Eliminar "${entry.nombre}" permanentemente?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Eliminar', style: TextStyle(color: theme.colorScheme.error)),
+            child: Text(
+              'Eliminar',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
           ),
         ],
       ),
@@ -155,7 +171,10 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
   String _formatCOP(double precio) {
     final valorEntero = precio.toInt();
     final reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    final formateado = valorEntero.toString().replaceAllMapped(reg, (match) => '${match[1]}.');
+    final formateado = valorEntero.toString().replaceAllMapped(
+      reg,
+      (match) => '${match[1]}.',
+    );
     return '\$ $formateado COP';
   }
 
@@ -176,7 +195,10 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manejo de Inventario', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Manejo de Inventario',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         actions: [
           IconButton(
             onPressed: () => _importCSV(colorScheme),
@@ -187,9 +209,18 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.local_shipping_outlined, size: 20), text: 'Mi Camión'),
-            Tab(icon: Icon(Icons.warehouse_outlined, size: 20), text: 'Bodega Central'),
-            Tab(icon: Icon(Icons.analytics_outlined, size: 20), text: 'Inventario Total'),
+            Tab(
+              icon: Icon(Icons.local_shipping_outlined, size: 20),
+              text: 'Mi Camión',
+            ),
+            Tab(
+              icon: Icon(Icons.warehouse_outlined, size: 20),
+              text: 'Bodega Central',
+            ),
+            Tab(
+              icon: Icon(Icons.analytics_outlined, size: 20),
+              text: 'Inventario Total',
+            ),
           ],
         ),
       ),
@@ -202,17 +233,23 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           : null,
       body: SafeArea(
         child: _isLoading
-            ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+            ? Center(
+                child: CircularProgressIndicator(color: colorScheme.primary),
+              )
             : Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: TextField(
                       controller: _searchController,
-                      onChanged: (value) => setState(() => _searchQuery = value),
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Buscar por repuesto o modelo de moto...',
-                        prefixIcon: Icon(Icons.search, color: colorScheme.primary),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: colorScheme.primary,
+                        ),
                         suffixIcon: _searchQuery.isEmpty
                             ? null
                             : IconButton(
@@ -251,7 +288,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.85,
       ),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
@@ -270,14 +307,20 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           subtitle: producto.motosCompatibles,
           price: _formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
-          badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
-          alertText: bajoStock ? 'STOCK BAJO (Min: ${producto.stockMinimo})' : null,
+          badgeColor: producto.isOriginal
+              ? colorScheme.primary
+              : Colors.white54,
+          alertText: bajoStock
+              ? 'STOCK BAJO (Min: ${producto.stockMinimo})'
+              : null,
           leftLabel: 'Canasta #${camion.numeroCanasta}',
           leftValue: '${camion.cantidad} und',
           rightLabel: 'Disponible',
           rightValue: '${camion.cantidad} und',
           rightValueColor: bajoStock ? colorScheme.error : colorScheme.primary,
-          borderColor: bajoStock ? colorScheme.error.withValues(alpha: 0.35) : colorScheme.outlineVariant.withValues(alpha: 0.3),
+          borderColor: bajoStock
+              ? colorScheme.error.withValues(alpha: 0.35)
+              : colorScheme.outlineVariant.withValues(alpha: 0.3),
           colorScheme: colorScheme,
         );
       },
@@ -294,7 +337,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.85,
       ),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
@@ -311,7 +354,9 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           subtitle: producto.motosCompatibles,
           price: _formatCOP(producto.precio),
           badge: producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
-          badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
+          badgeColor: producto.isOriginal
+              ? colorScheme.primary
+              : Colors.white54,
           alertText: 'ALMACÉN CENTRAL',
           leftLabel: 'Sujeto a despacho',
           leftValue: '${bodega.cantidad} und',
@@ -335,156 +380,219 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.85,
       ),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final camion = _camion.firstWhere(
-                (item) => item.productoId == producto.id,
-                orElse: () => InventarioCamionModel()
-                  ..productoId = producto.id
-                  ..cantidad = 0
-                  ..numeroCanasta = 0,
-              );
-              final bodega = _bodega.firstWhere(
-                (item) => item.productoId == producto.id,
-                orElse: () => InventarioBodegaModel()
-                  ..productoId = producto.id
-                  ..cantidad = 0,
-              );
+          (item) => item.productoId == producto.id,
+          orElse: () => InventarioCamionModel()
+            ..productoId = producto.id
+            ..cantidad = 0
+            ..numeroCanasta = 0,
+        );
+        final bodega = _bodega.firstWhere(
+          (item) => item.productoId == producto.id,
+          orElse: () => InventarioBodegaModel()
+            ..productoId = producto.id
+            ..cantidad = 0,
+        );
 
-              final stockTotal = camion.cantidad + bodega.cantidad;
-              final sugerir = camion.cantidad < producto.stockMinimo && bodega.cantidad > 0;
+        final stockTotal = camion.cantidad + bodega.cantidad;
+        final sugerir =
+            camion.cantidad < producto.stockMinimo && bodega.cantidad > 0;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: sugerir ? colorScheme.secondary.withValues(alpha: 0.4) : colorScheme.outlineVariant.withValues(alpha: 0.3),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: sugerir
+                  ? colorScheme.secondary.withValues(alpha: 0.4)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: producto.isOriginal
+                          ? colorScheme.primary
+                          : Colors.white54,
+                    ),
                   ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (sugerir)
+                        Icon(
+                          Icons.upgrade_rounded,
+                          size: 14,
+                          color: colorScheme.secondary,
+                        ),
+                      InkWell(
+                        onTap: () => _openForm(
+                          entry: InventoryEntry(
+                            id: producto.id,
+                            nombre: producto.nombre,
+                            precio: producto.precio,
+                            isOriginal: producto.isOriginal,
+                            motosCompatibles: producto.motosCompatibles,
+                            stockMinimo: producto.stockMinimo,
+                            cantidadCamion: camion.cantidad,
+                            numeroCanasta: camion.numeroCanasta,
+                            cantidadBodega: bodega.cantidad,
+                          ),
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: () async {
+                          final confirm = await _confirmDelete(
+                            InventoryEntry(
+                              id: producto.id,
+                              nombre: producto.nombre,
+                              precio: producto.precio,
+                              isOriginal: producto.isOriginal,
+                              motosCompatibles: producto.motosCompatibles,
+                              stockMinimo: producto.stockMinimo,
+                              cantidadCamion: camion.cantidad,
+                              numeroCanasta: camion.numeroCanasta,
+                              cantidadBodega: bodega.cantidad,
+                            ),
+                          );
+                          if (confirm) {
+                            await _repository.deleteProduct(producto.id);
+                            _loadInventory();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                producto.nombre,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                producto.motosCompatibles,
+                style: const TextStyle(color: Colors.white54),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatCOP(producto.precio),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const Text(
+                          'En mi Camión',
+                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
+                          '${camion.cantidad} und',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: producto.isOriginal ? colorScheme.primary : Colors.white54,
+                            color: camion.cantidad < producto.stockMinimo
+                                ? colorScheme.error
+                                : Colors.white,
                           ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (sugerir)
-                              Text(
-                                'REABASTECIMIENTO SUGERIDO',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.secondary, fontSize: 11),
-                              ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () => _openForm(entry: InventoryEntry(
-                                id: producto.id,
-                                nombre: producto.nombre,
-                                precio: producto.precio,
-                                isOriginal: producto.isOriginal,
-                                motosCompatibles: producto.motosCompatibles,
-                                stockMinimo: producto.stockMinimo,
-                                cantidadCamion: camion.cantidad,
-                                numeroCanasta: camion.numeroCanasta,
-                                cantidadBodega: bodega.cantidad,
-                              )),
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Icon(Icons.edit_outlined, size: 16, color: colorScheme.primary),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            InkWell(
-                              onTap: () async {
-                                final confirm = await _confirmDelete(InventoryEntry(
-                                  id: producto.id,
-                                  nombre: producto.nombre,
-                                  precio: producto.precio,
-                                  isOriginal: producto.isOriginal,
-                                  motosCompatibles: producto.motosCompatibles,
-                                  stockMinimo: producto.stockMinimo,
-                                  cantidadCamion: camion.cantidad,
-                                  numeroCanasta: camion.numeroCanasta,
-                                  cantidadBodega: bodega.cantidad,
-                                ));
-                                if (confirm) {
-                                  await _repository.deleteProduct(producto.id);
-                                  _loadInventory();
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.error.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Icon(Icons.delete_outline, size: 16, color: colorScheme.error),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(producto.nombre, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(producto.motosCompatibles, style: const TextStyle(color: Colors.white54)),
-                    const SizedBox(height: 4),
-                    Text(_formatCOP(producto.precio), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.primary)),
-                    Row(
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('En mi Camión', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                              const SizedBox(height: 4),
-                              Text('${camion.cantidad} und', style: TextStyle(fontWeight: FontWeight.bold, color: camion.cantidad < producto.stockMinimo ? colorScheme.error : Colors.white)),
-                            ],
-                          ),
+                        const Text(
+                          'Bodega Central',
+                          style: TextStyle(color: Colors.white38, fontSize: 11),
                         ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Bodega Central', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                              const SizedBox(height: 4),
-                              Text('${bodega.cantidad} und', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${bodega.cantidad} und',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('STOCK TOTAL DISPONIBLE', style: TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.bold)),
-                        Text('$stockTotal unidades', style: TextStyle(fontWeight: FontWeight.w900, color: colorScheme.primary)),
-                      ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'STOCK TOTAL DISPONIBLE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white60,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
-              );
+                  ),
+                  Text(
+                    '$stockTotal unidades',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -534,36 +642,85 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                   color: badgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor)),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: badgeColor,
+                  ),
+                ),
               ),
               if (alertText != null)
-                Text(
-                  alertText,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: alertText == 'ALMACÉN CENTRAL' ? colorScheme.primary : colorScheme.error),
+                Flexible(
+                  child: Text(
+                    alertText,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: alertText == 'ALMACÉN CENTRAL'
+                          ? colorScheme.primary
+                          : colorScheme.error,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               const SizedBox(width: 8),
-              Text(price, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+              Text(
+                price,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
-          const Divider(height: 24),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 11, color: Colors.white54),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Divider(height: 12),
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(leftLabel, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                    Text(
+                      leftLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white38,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(leftValue, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text(
+                      leftValue,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -571,9 +728,22 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(rightLabel, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                    Text(
+                      rightLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white38,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(rightValue, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: rightValueColor)),
+                    Text(
+                      rightValue,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: rightValueColor,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -584,4 +754,3 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     );
   }
 }
-
