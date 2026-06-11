@@ -11,8 +11,16 @@ class SupabaseService {
 
   SupabaseClient get client => _client;
 
-  static const String _supabaseUrl = 'https://zkabiilslxsfjwomxtkk.supabase.co';
-  static const String _supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprYWJpaWxzbHhzZmp3b214dGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NjUwNDcsImV4cCI6MjA5NjI0MTA0N30.oa1reEriD47N7M54wKcubRxfv2XDRVDKk03GvHYYhwg';
+  // --- CONFIGURACION DE SUPABASE ---
+  // 1. Crea un proyecto en https://supabase.com
+  // 2. Anda a Settings > API en el panel de Supabase
+  // 3. Copia "Project URL" y pegalo abajo (reemplaza el valor actual)
+  // 4. Copia "anon public key" y pegalo abajo
+  // 5. Ejecuta database/schema.sql en el SQL Editor de Supabase
+  // 6. Crea los usuarios desde Authentication > Users
+  static const String _supabaseUrl = 'https://woavslmapkhtjrjrcnwo.supabase.co';
+  static const String _supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvYXZzbG1hcGtodGpyanJjbndvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNDgwMTMsImV4cCI6MjA5NjcyNDAxM30.K37BgRTT1jN23MXWZ2RFJ1nRx3WavNvdNrUrMlaDJjg';
 
   Future<void> init() async {
     if (_initialized) return;
