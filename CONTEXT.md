@@ -24,7 +24,7 @@
 | Fase 1 — Local-first inventario | ✅ | Parser CSV, seed demo, soporte web con localStorage |
 | Fase 2 — Backend remoto (Supabase) | ✅ | SupabaseService singleton, SyncService cola offline, conflict detection |
 | Fase 3 — Módulos reales | ✅ | Inventory, Clientes, Facturación, Devoluciones, Auth, Proveedores |
-| Fase 4 — Operación en ruta | 🟡 Parcial | Sync bidireccional ✅, Notificaciones stock bajo ⏳, Geoposicionamiento ⏳ |
+| Fase 4 — Operación en ruta | ✅ | Sync bidireccional, Notificaciones stock bajo, Geoposicionamiento |
 
 ---
 
@@ -33,11 +33,11 @@
 ### Plugins principales
 - `isar` + `isar_flutter_libs` — base de datos local (Android)
 - `supabase_flutter` — backend remoto
-- `flutter_local_notifications` — notificaciones locales (pendiente implementar)
+- `flutter_local_notifications` — notificaciones locales de stock bajo
 - `shared_preferences` — cola de sync offline
 - `file_picker` — importación CSV
 - `path_provider` — rutas de archivo
-- `geolocator` — geoposicionamiento (pendiente)
+- `geolocator` — geoposicionamiento en facturas
 
 ### Estructura de datos
 ```
@@ -50,7 +50,8 @@ lib/
 │   │   ├── auth_session.dart      # Singleton session
 │   │   ├── supabase_service.dart  # Cliente Supabase
 │   │   ├── sync_service.dart      # Cola offline + push/pull + conflict detection
-│   │   └── stock_alert_service.dart  # (pendiente implementar)
+│   │   ├── stock_alert_service.dart  # Notificaciones de stock bajo
+│   │   ├── location_service.dart     # Geolocalización GPS
 │   ├── widgets/
 │   │   └── sync_status_badge.dart   # SyncStatusBadge + SyncIndicator
 │   └── utils/
@@ -134,9 +135,10 @@ Singleton que guarda el usuario logueado actual.
 - `clear()` → logout
 
 ### LoginPage (lib/features/auth/presentation/pages/login_page.dart)
-- Acceso rápido (tarjetas Mayra/Mateo): usa los mismos emails que AuthSession
+- Acceso rápido (tarjetas Mayra/Mateo): usa directamente `AuthSession.hardcodedUsers` sin pasar por Supabase
 - Login por email/password → Supabase → AuthSession.setUsuario()
-- Nombres de usuario hardcoded: "admin@super_motos.com" y "vendedor@super_motos.com"
+- Usuarios: `mayra@supermotos.com` y `mateo@supermotos.com`
+- Login offline funcional sin conexión a Supabase
 
 ### Roles (lib/core/enums/rol_usuario.dart)
 ```dart
@@ -149,14 +151,15 @@ enum RolUsuario { admin, vendedor }
 
 ### Supabase
 - URL y anon key hardcoded en `lib/core/services/supabase_service.dart`
+- Script SQL completo en `database/schema.sql` — ejecutar en SQL Editor de Supabase
 - Tablas en Supabase: clientes, facturas, detalles_factura, devoluciones, proveedores, historial_precios, productos, inventario_camion, inventario_bodega
 - Conflict resolution: `onConflict: 'id'` (o `numero_factura` para facturas)
 
 ### Usuarios de login
 | Nombre | Email | Password | Rol |
 |---|---|---|---|
-| Mayra | admin@super_motos.com | super_motos2024 | admin |
-| Mateo | vendedor@super_motos.com | super_motos2024 | vendedor |
+| Mayra | mayra@supermotos.com | super_motos2024 | admin |
+| Mateo | mateo@supermotos.com | super_motos2024 | vendedor |
 
 ### Dashboard
 - `SyncIndicator(pendingCount: SyncService.instance.queueLength)` en cabecera
@@ -165,40 +168,24 @@ enum RolUsuario { admin, vendedor }
 
 ---
 
-## 7. Pending: Notificaciones de stock bajo
+## 7. Notificaciones de stock bajo
 
-### Estado: Pendiente (no implementado)
+### Estado: Implementado
 
-### Plan
-1. Agregar `flutter_local_notifications` en pubspec.yaml
-2. Crear `lib/core/services/stock_alert_service.dart`
-3. En `InventoryRepository.decrementCamionStock()`, después de decrementar verificar si nueva cantidad < stockMinimo
-4. Si bajo umbral → mostrar notificación local
-5. Agregar tarjeta "Alertas de Stock" en dashboard con count de productos bajo stock
-
-### Archivos a tocar
-- `pubspec.yaml` — + flutter_local_notifications
-- `lib/core/services/stock_alert_service.dart` — NUEVO
-- `lib/features/inventory/data/repositories/inventory_repository_io.dart` — integrar servicio
-- `lib/main.dart` — inicializar plugin
-- `lib/features/home/presentation/pages/dashboard_page.dart` — tarjeta de alertas
-
-### Código existente a reutilizar
-- `inventory_page.dart:_buildCamionTab()` — ya muestra "STOCK BAJO (Min: N)" como alerta visual
-- `ProductoModel.stockMinimo` — umbral por producto
-- `decrementCamionStock()` en `inventory_repository_io.dart:71` — lugar donde detectar
+- `StockAlertService` singleton en `lib/core/services/stock_alert_service.dart`
+- Verificación en `inventory_repository_io.dart:decrementCamionStock()` — si nueva cantidad < stockMinimo, dispara notificación local
+- Tarjeta ámbar en dashboard con conteo persistente via SharedPreferences
 
 ---
 
-## 8. Pending: Geoposicionamiento
+## 8. Geoposicionamiento
 
-### Estado: Pendiente (no implementado)
+### Estado: Implementado
 
-### Plan
-1. Agregar `geolocator` + `permission_handler`
-2. En `FacturaFormPage` obtener ubicación antes de guardar
-3. Campos `latitudVenta` / `longitudVenta` ya existen en `FacturaModel` (nullable)
-4. Mostrar ícono de ubicación en `FacturaDetailPage` header
+- `LocationService` singleton en `lib/core/services/location_service.dart`
+- Captura de coordenadas al guardar factura en `FacturaFormPage`
+- Muestra icono + coordenadas en `FacturaDetailPage` footer
+- Permisos: `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` en `AndroidManifest.xml`, `NSLocationWhenInUseUsageDescription` en `Info.plist`
 
 ---
 
@@ -247,22 +234,28 @@ flutter clean && flutter pub get
 ## 11. Problemas conocidos
 
 | Problema | Workaround |
-|---|---|
+|---|---|---|
 | IsarError: Collection id is invalid | `flutter clean` + `build_runner` + reinstalar |
 | Impeller crash en emulador x86 | `flutter run --no-enable-impeller` |
 | package:web rompe compilación Android | Import condicional con `web_storage_stub.dart` |
 | Isar no soporta web | Usar localStorage en Chrome via `package:web` |
+| Supabase Auth schema no inicializado en proyecto nuevo | Crear proyecto nuevo y esperar ~2 min a que esté activo antes de ejecutar SQL. Usar Dashboard (no SQL) para crear usuarios auth |
 
 ---
 
 ## 12. Estado de git (al día de hoy)
 
 Commits principales (sesión actual):
-- `9be2257` — toJson en todos los modelos + wire sync HistorialPreciosRepository + quick fixes
-- `7a15525` — isSynced en todos los modelos + UI sync badges + conflict detection
-- `d8840c6` — docs: update agent.md
+- `c268302` — feat: add database/schema.sql + fix Supabase URL for login
+- `47d76e4` — docs: update agent + historical with Supabase project recreation session
+- `3d3072d` — fix(sync_status_badge): missing closing parens in Border.all calls
+- `ffb8f19` — fix(login): quick login bypasses Supabase using hardcoded users
+- `bf4f1df` — fix(tests): silence SyncService push errors in test environment
+- `cbabcd5` — feat(geolocation): add LocationService + capture coords on factura save
+- `08457f3` — feat(notifications): add stock alert service + dashboard card
 
-Rama: `codex-local-first`
+Rama principal: `conociendo_agentes_back`
+Rama U/I: `U/I_details`
 
 ---
 
@@ -270,7 +263,7 @@ Rama: `codex-local-first`
 
 ```bash
 # 1. Obtener última versión
-git pull origin codex-local-first
+git pull origin conociendo_agentes_back
 
 # 2. Instalar deps
 flutter pub get

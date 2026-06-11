@@ -849,3 +849,77 @@ ffb8f19 fix(login): quick login bypasses Supabase using hardcoded users
 | Geoposicionamiento | ✅ Implementado |
 | Sync bidireccional | ✅ Implementado (+ badges en UI) |
 | **Supabase** | **🟡 Auth schema no inicializado — requiere recrear proyecto** |
+
+---
+
+## Sesión 7 — 10 de junio de 2026
+
+### Objetivos de la sesión
+- Crear script SQL completo para configurar Supabase desde cero
+- Solucionar el error `AuthRetryableFetchException: database error querying schema` en login con Supabase
+- Actualizar documentación y reorganizar ramas de git
+
+### Lo realizado
+
+**Script SQL completo:**
+- `database/schema.sql` — script de 14 KB con todo lo necesario para inicializar Supabase
+- 9 tablas con BIGSERIAL primary keys, foreign keys (donde aplica), CHECK constraints para enums
+- Función trigger `update_updated_at_column()` para auto-actualizar `updated_at` en cada UPDATE
+- Índices en columnas de búsqueda frecuente (producto_id, cliente_id, factura_numero, etc.)
+- RLS policies abiertas para anon y authenticated (modo desarrollo)
+- Creación de usuarios `mayra@supermotos.com` y `mateo@supermotos.com` via `auth.users` (SQL alternativo; recomendado usar Dashboard)
+
+**Fix del problema de login:**
+- La URL de Supabase en `supabase_service.dart` tenía `/rest/v1/` de más → causaba 404
+- El schema `auth` del proyecto `ikylfhkexuxigchwccbu` no se había inicializado correctamente (500: "Database error querying schema")
+- Solución: crear proyecto nuevo en Supabase, esperar a que esté activo, ejecutar schema.sql
+- Login real funcionando end-to-end con ambos usuarios
+
+**Reorganización de ramas:**
+| Operación | Comando |
+|---|---|
+| Renombrar `codex-local-first` | `git branch -m codex-local-first conociendo_agentes_back` |
+| Crear rama UI desde el rename | `git checkout -b U/I_details` |
+
+- `conociendo_agentes_back`: rama principal de desarrollo (backend + agentes)
+- `U/I_details`: rama hija para documentación y próximos trabajos de UI
+
+### Archivos creados
+| Archivo | Descripción |
+|---|---|
+| `database/schema.sql` | Script SQL completo para Supabase (9 tablas, triggers, índices, RLS, auth users) |
+
+### Archivos modificados
+| Archivo | Cambios |
+|---|---|
+| `lib/core/services/supabase_service.dart` | URL corregida (sin `/rest/v1/`), placeholders reemplazados por valores reales del nuevo proyecto |
+| `agent.md` | Problema conocido de `auth` schema eliminado; añadida referencia a `database/schema.sql` |
+| `CONTEXT.md` | Fase 4 → ✅, secciones de stock bajo y geo marcadas como implementadas, emails corregidos, ramas actualizadas |
+| `README.md` | Estado actualizado con todos los módulos completos + backend Supabase conectado |
+| `docs/historical.md` | Esta entrada de sesión |
+
+### Commit (rama `U/I_details`)
+```
+docs: update agent.md, CONTEXT.md, README.md, historical.md — Supabase fix + branch rename
+```
+
+### Estado actual del proyecto (post-sesión 7)
+| Feature | Estado |
+|---|---|
+| inventory | ✅ Completo |
+| customers | ✅ Completo |
+| billing | ✅ Completo (+ geolocalización) |
+| returns | ✅ Completo |
+| home (dashboard) | ✅ UI (+ alertas stock, venta total dinámica) |
+| auth | ✅ Login rápido offline + Login real via Supabase |
+| suppliers | ✅ Completo |
+| Notificaciones stock bajo | ✅ Implementado |
+| Geoposicionamiento | ✅ Implementado |
+| Sync bidireccional | ✅ Implementado (+ badges en UI) |
+| Supabase | ✅ Login real funcionando · Schema.sql listo · RLS configurado |
+| database/schema.sql | ✅ Script completo para recrear backend |
+
+### Notas para la próxima sesión
+- Chrome/web sigue sin soporte (IDs int64 de Isar no caben en JS)
+- `/rest/v1/` en la URL de Supabase rompe el login — siempre usar solo la base URL
+- Crear auth users por Dashboard es más confiable que por SQL directo

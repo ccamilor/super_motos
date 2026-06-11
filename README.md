@@ -6,46 +6,60 @@ Flutter app for inventory and sales operations of motorcycle parts.
 
 - Flutter is the main frontend.
 - Isar is the local database on Android/native.
+- Supabase is the remote backend for auth and bidirectional sync.
 - Web uses local memory plus `localStorage` for imported CSV persistence.
-- Inventory is now decoupled from the UI through a repository layer.
-- No remote backend is connected yet.
+- All modules (inventory, customers, billing, returns, auth, suppliers) are complete.
+- Stock alerts, geolocation, and offline sync queue are implemented.
 
 ## What It Does Today
 
-- Opens a main dashboard.
-- Lets the user enter the inventory module.
-- Shows:
-  - truck inventory,
-  - warehouse inventory,
-  - total inventory.
+- Full inventory management with 3 tabs (Truck, Warehouse, Total).
+- Customer CRUD with credit limits and account status.
+- Billing with line items, stock decrement, and geolocation capture.
+- Returns processing with stock replenishment to truck baskets.
+- Supplier management with purchase price history.
+- Authentication with 2 users (admin + seller) and login via Supabase or offline quick access.
+- Bidirectional sync with Supabase (offline queue, conflict detection).
+- Low-stock push notifications.
 - Imports inventory from CSV files.
 - Searches products by name or motorcycle compatibility.
-- Persists imported CSV data on web across reloads.
-- Seeds demo data when no inventory exists.
+- Seeds demo data when no data exists.
 
 ## Current Architecture
 
 ```text
 UI (Flutter)
-  -> InventoryRepository
-      -> IsarInventoryRepository (Android/native)
-      -> WebInventoryRepository (web/localStorage)
+  -> Per-Module Repository (abstract contract)
+      -> Isar*Repository (Android/native)
+      -> Web*Repository (web/localStorage)
+  -> SupabaseService (remote backend)
+  -> SyncService (offline queue + push/pull)
+  -> StockAlertService (low-stock notifications)
+  -> LocationService (GPS capture)
   -> InventoryCsvParser
   -> InventorySeedData
 ```
 
+**Modules:** inventory · customers · billing · returns · auth · suppliers · home (dashboard)
+
 ## Relevant Files
 
 - `lib/main.dart`: app entry point.
+- `lib/core/services/supabase_service.dart`: Supabase client config.
+- `lib/core/services/sync_service.dart`: offline sync queue + bidirectional push/pull.
+- `lib/core/services/stock_alert_service.dart`: low-stock local notifications.
+- `lib/core/services/location_service.dart`: GPS geolocation service.
+- `lib/core/services/auth_session.dart`: current user session singleton.
 - `lib/core/database/isar_service.dart`: Isar initialization.
 - `lib/core/theme/app_theme.dart`: app theme.
+- `lib/core/widgets/sync_status_badge.dart`: sync status badge widgets.
 - `lib/features/home/presentation/pages/dashboard_page.dart`: main dashboard.
 - `lib/features/inventory/presentation/pages/inventory_page.dart`: inventory module.
 - `lib/features/inventory/data/repositories/`: inventory repositories.
 - `lib/features/inventory/data/services/`: CSV parser and demo seed.
-- `test/csv_import_test.dart`: CSV flow tests.
-- `test/widget_test.dart`: smoke test for the real app.
-- `documentacion_refactor.md`: technical summary of the refactor.
+- `database/schema.sql`: complete Supabase schema script.
+- `agent.md`: canonical project guide (architecture, state, commands).
+- `docs/historical.md`: full development history.
 
 ## Requirements
 
@@ -108,11 +122,13 @@ dart run build_runner build --delete-conflicting-outputs
 
 ## Backend Note
 
-Supabase is not connected yet.
-The current strategy is local-first: local data first, remote backend later.
+Supabase is connected and fully functional for auth and sync.
+The SQL schema is in `database/schema.sql` — run it in the Supabase SQL Editor
+and update `lib/core/services/supabase_service.dart` with your project URL and anon key.
 
 ## Extra Docs
 
 - [`agent.md`](./agent.md) — Guía canónica del proyecto (estado actual, arquitectura, comandos).
-- [`docs/historical.md`](./docs/historical.md) — Walkthrough histórico del refactor inicial.
+- [`docs/historical.md`](./docs/historical.md) — Registro histórico completo del desarrollo.
+- [`CONTEXT.md`](./CONTEXT.md) — Contexto condensado para retomar el proyecto rápidamente.
 

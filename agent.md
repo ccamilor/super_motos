@@ -364,7 +364,6 @@ flutter clean && flutter pub get
 | Crash de Impeller en emulador x86 (API 30) | Backend GLES del emulador no enlaza shaders de Impeller | `flutter run --no-enable-impeller` (en físico funciona bien) |
 | `package:web` rompe compilación Android | Tipos `JSAny`/`JSObject` no existen en runtime nativo | Patrón de import condicional con `web_storage_stub.dart` |
 | Errores `LateInitializationError` en `flutter test` | SyncService intentaba pushear/salvar cola sin binding ni Supabase inicializado | Flag `_canSync` en `SyncService.init()` — solo activa push/save cuando está completamente inicializado |
-| `AuthRetryableFetchException: database error querying schema` (status 500) al hacer login con Supabase | Proyecto Supabase nuevo sin schema `auth` inicializado | Recrear el proyecto de Supabase desde dashbard; el schema `auth` debe crearse automáticamente. Si persiste, verificar extension `pg_net` en Database → Extensions. |
 
 ---
 
@@ -442,6 +441,7 @@ flutter clean && flutter pub get
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |
 | `test_data/inventario_prueba.csv` | CSV de prueba con 12 productos COP |
 | `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter`, `flutter_local_notifications`, `geolocator`, `permission_handler` |
+| `database/schema.sql` | Script SQL completo para crear las 9 tablas en Supabase + RLS + índices |
 | `docs/historical.md` | Registro histórico del refactor inicial |
 
 ---
