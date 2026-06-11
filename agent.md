@@ -74,12 +74,17 @@ super_motos/
 │   ├── core/
 │   │   ├── database/isar_service.dart         # Apertura de Isar con 9 schemas
 │   │   ├── theme/app_theme.dart               # Tema dark "JapaniRacer"
-│   │   ├── enums/                             # estado_cuenta, rol_usuario
-│   │   └── services/sync_service.dart         # (placeholder de sync futura)
+│   │   ├── enums/                             # estado_cuenta, rol_usuario, tipo_pago
+│   │   ├── services/sync_service.dart         # SyncService cola offline + push/pull
+│   │   ├── services/supabase_service.dart     # Cliente singleton Supabase
+│   │   ├── services/stock_alert_service.dart  # Notificaciones stock bajo
+│   │   ├── services/location_service.dart     # GPS geolocalizacion
+│   │   ├── widgets/sync_status_badge.dart     # Badges compact + full + indicator
+│   │   └── utils/currency_formatter.dart      # formatCOP()
 │   └── features/
-│       ├── auth/                              # model + entity
-│       ├── billing/                           # model + entity
-│       ├── customers/                         # model + entity
+│       ├── auth/                              # model + entity + pages
+│       ├── billing/                           # model + entity + pages
+│       ├── customers/                         # model + entity + pages
 │       ├── home/                              # dashboard
 │       ├── inventory/                         # ⭐ módulo principal
 │       │   ├── data/
@@ -88,8 +93,8 @@ super_motos/
 │       │   │   └── services/                  # csv parser + seed data
 │       │   ├── domain/entities/              # inventory_entry, producto, etc.
 │       │   └── presentation/pages/            # inventory_page + web_storage_stub/web
-│       ├── returns/                           # model + entity
-│       └── suppliers/                         # model + entity
+│       ├── returns/                           # model + entity + pages
+│       └── suppliers/                         # model + entity + pages
 ├── test/
 │   ├── csv_import_test.dart                   # 10/10 tests del flujo CSV
 │   ├── widget_test.dart                       # smoke test
@@ -359,6 +364,7 @@ flutter clean && flutter pub get
 | Crash de Impeller en emulador x86 (API 30) | Backend GLES del emulador no enlaza shaders de Impeller | `flutter run --no-enable-impeller` (en físico funciona bien) |
 | `package:web` rompe compilación Android | Tipos `JSAny`/`JSObject` no existen en runtime nativo | Patrón de import condicional con `web_storage_stub.dart` |
 | Errores `LateInitializationError` en `flutter test` | SyncService intentaba pushear/salvar cola sin binding ni Supabase inicializado | Flag `_canSync` en `SyncService.init()` — solo activa push/save cuando está completamente inicializado |
+| `AuthRetryableFetchException: database error querying schema` (status 500) al hacer login con Supabase | Proyecto Supabase nuevo sin schema `auth` inicializado | Recrear el proyecto de Supabase desde dashbard; el schema `auth` debe crearse automáticamente. Si persiste, verificar extension `pg_net` en Database → Extensions. |
 
 ---
 
@@ -436,7 +442,6 @@ flutter clean && flutter pub get
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |
 | `test_data/inventario_prueba.csv` | CSV de prueba con 12 productos COP |
 | `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter`, `flutter_local_notifications`, `geolocator`, `permission_handler` |
-| `lib/core/services/supabase_service.dart` | Cliente singleton Supabase (URL + anon key hardcoded) |
 | `docs/historical.md` | Registro histórico del refactor inicial |
 
 ---

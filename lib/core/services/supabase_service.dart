@@ -11,8 +11,8 @@ class SupabaseService {
 
   SupabaseClient get client => _client;
 
-  static const String _supabaseUrl = 'https://skybcdetpah1btakusyf.supabase.co';
-  static const String _supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNreWJjZGV0cGFobGJ0YWt1c3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTk3OTQsImV4cCI6MjA5NjA5NTc5NH0.QSPTCMpf1vlvEgVzgFDSDTm_lGk7Fa_VZr3zh_hzeDc';
+  static const String _supabaseUrl = 'https://zkabiilslxsfjwomxtkk.supabase.co';
+  static const String _supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprYWJpaWxzbHhzZmp3b214dGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NjUwNDcsImV4cCI6MjA5NjI0MTA0N30.oa1reEriD47N7M54wKcubRxfv2XDRVDKk03GvHYYhwg';
 
   Future<void> init() async {
     if (_initialized) return;

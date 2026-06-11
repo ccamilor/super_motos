@@ -217,17 +217,21 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        proveedor.nombre,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: Text(
+                          proveedor.nombre,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SyncStatusBadge(isSynced: proveedor.isSynced, compact: true),
-                  ],
+                      const SizedBox(width: 8),
+                      SyncStatusBadge(isSynced: proveedor.isSynced, compact: true),
+                    ],
+                  ),
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
