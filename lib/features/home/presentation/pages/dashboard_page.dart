@@ -219,6 +219,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                       label: 'Total Productos',
                       value: '$_totalProductos',
                       valueColor: colorScheme.secondary,
+                      borderColor: colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -421,18 +422,20 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     required String label,
     required String value,
     required Color valueColor,
+    Color? borderColor,
   }) {
+    final border = borderColor ?? colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.3),
+          color: border.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.03),
+            color: border.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -523,7 +526,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               Text(
                 'Sin datos',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
                   color: Colors.white38,
                 ),

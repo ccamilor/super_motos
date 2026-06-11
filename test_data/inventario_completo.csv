@@ -1,0 +1,16 @@
+id,nombre,precio,is_original,motos_compatibles,stock_minimo,cantidad_camion,numero_canasta,cantidad_bodega
+1,Kit de Arrastre Racing Oro,45000,true,Yamaha FZ25 - Honda CB190R,5,8,2,35
+2,Pastillas de Freno Carbono Brembo,18500,false,Pulsar NS200 - KTM Duke 200,10,3,5,75
+3,Bujía Iridium NGK CR9EIX,9990,true,Universal 125cc - 250cc,15,20,1,150
+4,Filtro de Aceite K&N Premium,14990,true,Yamaha R3 - Ninja 300 - Benelli 302S,8,2,3,45
+5,Llantas Pirelli Diablo Rosso Sport,85000,true,R15 - Pulsar RS200 - Suzuki Gixxer SF,4,5,4,18
+6,Manecillas Deportivas Aluminio CNC,22000,false,Yamaha MT03 - Honda CB500X,6,1,2,30
+7,Cadena Reforzada 428H-130L,35000,true,Yamaha YBR125 - Suzuki GN125,3,12,1,50
+8,Aceite Motor 10W40 Sintético 1L,28000,false,Universal 4T,20,40,3,200
+9,Bujía Iridium NGK CR8EIX,12500,true,Universal 125cc - 250cc,15,30,2,150
+10,Tensor Cadena Automático Yamaha,22000,true,Yamaha FZ25 - YBR125,6,10,5,40
+11,Kit Luces LED H4 6000K,38000,false,Universal H4,8,20,1,80
+12,Espejos Retrovisores Deportivos M8,16000,false,Universal M8,10,18,4,70
+13,Amortiguador Trasero Gas Premium,135000,true,Yamaha MT03 - Honda CB500X,4,6,2,18
+14,Manigueta Freno Aluminio CNC,15000,false,Universal 7/8,8,15,3,60
+15,Kit Empaques Motor Completo,92000,true,Yamaha YBR125 - Honda CG150,3,5,1,15

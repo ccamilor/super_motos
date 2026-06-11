@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:isar/isar.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
@@ -55,6 +58,12 @@ class IsarInventoryRepository implements InventoryRepository {
       }
     });
 
+    for (final entry in entries) {
+      SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(entry.toProductoModel().toJson()));
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(entry.toCamionModel().toJson()));
+      SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(entry.toBodegaModel().toJson()));
+    }
+
     return loadInventory();
   }
 
@@ -101,6 +110,14 @@ class IsarInventoryRepository implements InventoryRepository {
         );
       }
     });
+
+    final updated = await isar.inventarioCamionModels
+        .filter()
+        .productoIdEqualTo(productoId)
+        .findFirst();
+    if (updated != null) {
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(updated.toJson()));
+    }
   }
 
   @override
@@ -121,6 +138,14 @@ class IsarInventoryRepository implements InventoryRepository {
       model.cantidad += cantidad;
       await isar.inventarioCamionModels.put(model);
     });
+
+    final updated = await isar.inventarioCamionModels
+        .filter()
+        .productoIdEqualTo(productoId)
+        .findFirst();
+    if (updated != null) {
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(updated.toJson()));
+    }
   }
 }
 

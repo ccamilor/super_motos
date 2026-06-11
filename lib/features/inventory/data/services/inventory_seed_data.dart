@@ -5,7 +5,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 1,
       nombre: 'Kit de Arrastre Racing Oro',
-      precio: 45.00,
+      precio: 45000,
       isOriginal: true,
       motosCompatibles: 'Yamaha FZ25, Honda CB190R',
       stockMinimo: 5,
@@ -16,7 +16,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 2,
       nombre: 'Pastillas de Freno Carbono Brembo',
-      precio: 18.50,
+      precio: 18500,
       isOriginal: false,
       motosCompatibles: 'Pulsar NS200, KTM Duke 200',
       stockMinimo: 10,
@@ -27,7 +27,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 3,
       nombre: 'Bujía Iridium NGK CR9EIX',
-      precio: 9.99,
+      precio: 9990,
       isOriginal: true,
       motosCompatibles: 'Universal 125cc - 250cc',
       stockMinimo: 15,
@@ -38,7 +38,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 4,
       nombre: 'Filtro de Aceite K&N Premium',
-      precio: 14.99,
+      precio: 14990,
       isOriginal: true,
       motosCompatibles: 'Yamaha R3, Ninja 300, Benelli 302S',
       stockMinimo: 8,
@@ -49,7 +49,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 5,
       nombre: 'Llantas Pirelli Diablo Rosso Sport',
-      precio: 85.00,
+      precio: 85000,
       isOriginal: true,
       motosCompatibles: 'R15, Pulsar RS200, Suzuki Gixxer SF',
       stockMinimo: 4,
@@ -60,7 +60,7 @@ class InventorySeedData {
     InventoryEntry(
       id: 6,
       nombre: 'Manecillas Deportivas Aluminio CNC',
-      precio: 22.00,
+      precio: 22000,
       isOriginal: false,
       motosCompatibles: 'Yamaha MT03, Honda CB500X',
       stockMinimo: 6,
