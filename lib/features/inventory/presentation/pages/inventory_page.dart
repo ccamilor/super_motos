@@ -10,6 +10,8 @@ import 'package:super_motos/features/inventory/data/models/inventario_bodega_mod
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
+import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
+import 'package:super_motos/features/inventory/presentation/pages/producto_form_page.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -33,6 +35,9 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadInventory();
   }
 
@@ -119,6 +124,34 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
     }
   }
 
+  Future<void> _openForm({InventoryEntry? entry}) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => ProductoFormPage(entry: entry)),
+    );
+    if (result == true) {
+      _loadInventory();
+    }
+  }
+
+  Future<bool> _confirmDelete(InventoryEntry entry) async {
+    final theme = Theme.of(context);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar producto'),
+        content: Text('¿Eliminar "${entry.nombre}" permanentemente?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Eliminar', style: TextStyle(color: theme.colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   String _formatCOP(double precio) {
     final valorEntero = precio.toInt();
     final reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
@@ -153,6 +186,13 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           ],
         ),
       ),
+      floatingActionButton: _tabController.index == 2
+          ? FloatingActionButton.extended(
+              onPressed: () => _openForm(),
+              icon: const Icon(Icons.add),
+              label: const Text('Nuevo Producto'),
+            )
+          : null,
       body: SafeArea(
         child: _isLoading
             ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
@@ -332,18 +372,76 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                             color: producto.isOriginal ? colorScheme.primary : Colors.white54,
                           ),
                         ),
-                        if (sugerir)
-                          Text(
-                            'REABASTECIMIENTO SUGERIDO',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.secondary),
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (sugerir)
+                              Text(
+                                'REABASTECIMIENTO SUGERIDO',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.secondary, fontSize: 11),
+                              ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () => _openForm(entry: InventoryEntry(
+                                id: producto.id,
+                                nombre: producto.nombre,
+                                precio: producto.precio,
+                                isOriginal: producto.isOriginal,
+                                motosCompatibles: producto.motosCompatibles,
+                                stockMinimo: producto.stockMinimo,
+                                cantidadCamion: camion.cantidad,
+                                numeroCanasta: camion.numeroCanasta,
+                                cantidadBodega: bodega.cantidad,
+                              )),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(Icons.edit_outlined, size: 16, color: colorScheme.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () async {
+                                final confirm = await _confirmDelete(InventoryEntry(
+                                  id: producto.id,
+                                  nombre: producto.nombre,
+                                  precio: producto.precio,
+                                  isOriginal: producto.isOriginal,
+                                  motosCompatibles: producto.motosCompatibles,
+                                  stockMinimo: producto.stockMinimo,
+                                  cantidadCamion: camion.cantidad,
+                                  numeroCanasta: camion.numeroCanasta,
+                                  cantidadBodega: bodega.cantidad,
+                                ));
+                                if (confirm) {
+                                  await _repository.deleteProduct(producto.id);
+                                  _loadInventory();
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.error.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(Icons.delete_outline, size: 16, color: colorScheme.error),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(producto.nombre, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(producto.motosCompatibles, style: const TextStyle(color: Colors.white54)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
+                    Text(_formatCOP(producto.precio), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.primary)),
                     Row(
                       children: [
                         Expanded(

@@ -10,6 +10,7 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
 import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
+import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
 
 class IsarInventoryRepository implements InventoryRepository {
   Isar? get _isar => Isar.getInstance();
@@ -118,6 +119,125 @@ class IsarInventoryRepository implements InventoryRepository {
     if (updated != null) {
       SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(updated.toJson()));
     }
+  }
+
+  @override
+  Future<InventorySnapshot> createProduct(InventoryEntry entry) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no está inicializado.');
+    }
+
+    final maxId = await isar.productoModels.where().idProperty().max();
+    final newId = (maxId ?? 0) + 1;
+
+    final producto = entry.toProductoModel()..id = newId;
+    final camion = entry.toCamionModel()..productoId = newId;
+    final bodega = entry.toBodegaModel()..productoId = newId;
+
+    await isar.writeTxn(() async {
+      await isar.productoModels.put(producto);
+      if (entry.cantidadCamion > 0) {
+        await isar.inventarioCamionModels.put(camion);
+      }
+      if (entry.cantidadBodega > 0) {
+        await isar.inventarioBodegaModels.put(bodega);
+      }
+    });
+
+    SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(producto.toJson()));
+    if (entry.cantidadCamion > 0) {
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(camion.toJson()));
+    }
+    if (entry.cantidadBodega > 0) {
+      SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(bodega.toJson()));
+    }
+
+    return loadInventory();
+  }
+
+  @override
+  Future<InventorySnapshot> updateProduct(InventoryEntry entry) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no está inicializado.');
+    }
+
+    final producto = entry.toProductoModel();
+    final camion = entry.toCamionModel();
+    final bodega = entry.toBodegaModel();
+
+    await isar.writeTxn(() async {
+      await isar.productoModels.put(producto);
+      final existingCamion = await isar.inventarioCamionModels
+          .filter().productoIdEqualTo(entry.id).findFirst();
+      if (existingCamion != null) {
+        if (entry.cantidadCamion > 0) {
+          await isar.inventarioCamionModels.put(camion);
+        } else {
+          await isar.inventarioCamionModels.delete(existingCamion.id);
+        }
+      } else if (entry.cantidadCamion > 0) {
+        await isar.inventarioCamionModels.put(camion);
+      }
+      final existingBodega = await isar.inventarioBodegaModels
+          .filter().productoIdEqualTo(entry.id).findFirst();
+      if (existingBodega != null) {
+        if (entry.cantidadBodega > 0) {
+          await isar.inventarioBodegaModels.put(bodega);
+        } else {
+          await isar.inventarioBodegaModels.delete(existingBodega.id);
+        }
+      } else if (entry.cantidadBodega > 0) {
+        await isar.inventarioBodegaModels.put(bodega);
+      }
+    });
+
+    SyncService.instance.enqueue('productos', SyncOperation.update, jsonEncode(producto.toJson()));
+    final savedCamion = await isar.inventarioCamionModels
+        .filter().productoIdEqualTo(entry.id).findFirst();
+    if (savedCamion != null) {
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(savedCamion.toJson()));
+    } else if (entry.cantidadCamion > 0) {
+      SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(camion.toJson()));
+    }
+    final savedBodega = await isar.inventarioBodegaModels
+        .filter().productoIdEqualTo(entry.id).findFirst();
+    if (savedBodega != null) {
+      SyncService.instance.enqueue('inventario_bodega', SyncOperation.update, jsonEncode(savedBodega.toJson()));
+    } else if (entry.cantidadBodega > 0) {
+      SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(bodega.toJson()));
+    }
+
+    return loadInventory();
+  }
+
+  @override
+  Future<InventorySnapshot> deleteProduct(int id) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no está inicializado.');
+    }
+
+    await isar.writeTxn(() async {
+      await isar.productoModels.delete(id);
+      final camion = await isar.inventarioCamionModels
+          .filter().productoIdEqualTo(id).findFirst();
+      if (camion != null) {
+        await isar.inventarioCamionModels.delete(camion.id);
+      }
+      final bodega = await isar.inventarioBodegaModels
+          .filter().productoIdEqualTo(id).findFirst();
+      if (bodega != null) {
+        await isar.inventarioBodegaModels.delete(bodega.id);
+      }
+    });
+
+    SyncService.instance.enqueue('productos', SyncOperation.delete, jsonEncode({'id': id}));
+    SyncService.instance.enqueue('inventario_camion', SyncOperation.delete, jsonEncode({'producto_id': id}));
+    SyncService.instance.enqueue('inventario_bodega', SyncOperation.delete, jsonEncode({'producto_id': id}));
+
+    return loadInventory();
   }
 
   @override
