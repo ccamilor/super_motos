@@ -147,7 +147,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.local_shipping_outlined, size: 20), text: 'Mi CamiÃ³n'),
+            Tab(icon: Icon(Icons.local_shipping_outlined, size: 20), text: 'Mi Camión'),
             Tab(icon: Icon(Icons.warehouse_outlined, size: 20), text: 'Bodega Central'),
             Tab(icon: Icon(Icons.analytics_outlined, size: 20), text: 'Inventario Total'),
           ],
@@ -216,7 +216,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
           price: _formatCOP(producto.precio),
-          badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
+          badge: producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
           alertText: bajoStock ? 'STOCK BAJO (Min: ${producto.stockMinimo})' : null,
           leftLabel: 'Canasta #${camion.numeroCanasta}',
@@ -251,9 +251,9 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
           title: producto.nombre,
           subtitle: producto.motosCompatibles,
           price: _formatCOP(producto.precio),
-          badge: producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
+          badge: producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
           badgeColor: producto.isOriginal ? colorScheme.primary : Colors.white54,
-          alertText: 'ALMACÃ‰N CENTRAL',
+          alertText: 'ALMACÉN CENTRAL',
           leftLabel: 'Sujeto a despacho',
           leftValue: '${bodega.cantidad} und',
           rightLabel: 'Stock',
@@ -326,7 +326,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          producto.isOriginal ? 'ORIGINAL' : 'GENÃ‰RICO',
+                          producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: producto.isOriginal ? colorScheme.primary : Colors.white54,
@@ -350,7 +350,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('En mi CamiÃ³n', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                              const Text('En mi Camión', style: TextStyle(color: Colors.white38, fontSize: 11)),
                               const SizedBox(height: 4),
                               Text('${camion.cantidad} und', style: TextStyle(fontWeight: FontWeight.bold, color: camion.cantidad < producto.stockMinimo ? colorScheme.error : Colors.white)),
                             ],
@@ -436,7 +436,7 @@ class _InventoryPageState extends State<InventoryPage> with SingleTickerProvider
               if (alertText != null)
                 Text(
                   alertText,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: alertText == 'ALMACÃ‰N CENTRAL' ? colorScheme.primary : colorScheme.error),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: alertText == 'ALMACÉN CENTRAL' ? colorScheme.primary : colorScheme.error),
                 ),
             ],
           ),

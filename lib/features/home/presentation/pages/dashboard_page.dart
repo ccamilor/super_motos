@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
+import 'package:super_motos/core/services/location_service.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
@@ -11,7 +12,13 @@ import 'package:super_motos/features/billing/data/repositories/facturas_reposito
     if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
 import 'package:super_motos/features/billing/presentation/pages/factura_form_page.dart';
 import 'package:super_motos/features/billing/presentation/pages/facturas_page.dart';
+import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
+import 'package:super_motos/features/customers/data/repositories/clientes_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/customers/data/repositories/clientes_repository_io.dart';
 import 'package:super_motos/features/customers/presentation/pages/clientes_page.dart';
+import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
+import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
 import 'package:super_motos/features/suppliers/presentation/pages/proveedores_page.dart';
@@ -25,9 +32,15 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
   final FacturasRepository _facturasRepo = createFacturasRepository();
+  final ClientesRepository _clientesRepo = createClientesRepository();
+  final InventoryRepository _inventoryRepo = createInventoryRepository();
   int _pendingCount = 0;
   int _lowStockCount = 0;
   double _ventaTotalDia = 0.0;
+  int _totalClientes = 0;
+  int _totalProductos = 0;
+  double? _latitud;
+  double? _longitud;
 
   @override
   void initState() {
@@ -36,6 +49,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     _updatePendingCount();
     _updateLowStockCount();
     _loadVentaTotal();
+    _loadTotalClientes();
+    _loadTotalProductos();
+    _loadLocation();
   }
 
   @override
@@ -50,6 +66,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       _updatePendingCount();
       _updateLowStockCount();
       _loadVentaTotal();
+      _loadTotalClientes();
+      _loadTotalProductos();
+      _loadLocation();
     }
   }
 
@@ -90,6 +109,38 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     }
   }
 
+  Future<void> _loadTotalClientes() async {
+    try {
+      final clientes = await _clientesRepo.loadAll();
+      if (mounted) setState(() => _totalClientes = clientes.length);
+    } catch (e) {
+      debugPrint('Error cargando total clientes: $e');
+    }
+  }
+
+  Future<void> _loadTotalProductos() async {
+    try {
+      final snapshot = await _inventoryRepo.loadInventory();
+      if (mounted) setState(() => _totalProductos = snapshot.productos.length);
+    } catch (e) {
+      debugPrint('Error cargando total productos: $e');
+    }
+  }
+
+  Future<void> _loadLocation() async {
+    try {
+      final pos = await LocationService.instance.getCurrentPosition();
+      if (mounted && pos != null) {
+        setState(() {
+          _latitud = pos.latitude;
+          _longitud = pos.longitude;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error cargando ubicación: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -126,7 +177,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               SyncIndicator(pendingCount: _pendingCount),
               const SizedBox(height: 16),
               Text(
-                'MÃ©tricas del DÃ­a',
+                'Métricas del Día',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -136,97 +187,38 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: 0.3),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.primary.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Venta Total',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              formatCOP(_ventaTotalDia),
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Venta Total',
+                      value: formatCOP(_ventaTotalDia),
+                      valueColor: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _pendingCount > 0
-                              ? colorScheme.secondary.withValues(alpha: 0.5)
-                              : colorScheme.primary.withValues(alpha: 0.3),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.secondary.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Pendientes de Sinc.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '$_pendingCount',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: _pendingCount > 0
-                                    ? colorScheme.secondary
-                                    : colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Total Clientes',
+                      value: '$_totalClientes',
+                      valueColor: colorScheme.primary,
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Total Productos',
+                      value: '$_totalProductos',
+                      valueColor: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildLocationCard(colorScheme),
                   ),
                 ],
               ),
@@ -414,6 +406,137 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard({
+    required ColorScheme colorScheme,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: valueColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard(ColorScheme colorScheme) {
+    final hasLocation = _latitud != null && _longitud != null;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasLocation
+              ? colorScheme.secondary.withValues(alpha: 0.5)
+              : colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.secondary.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 14,
+                  color: hasLocation ? colorScheme.secondary : Colors.white38,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Ubicación',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: hasLocation ? Colors.white70 : Colors.white38,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (hasLocation)
+              Text(
+                '${_latitud!.toStringAsFixed(3)}° N / ${_longitud!.toStringAsFixed(3)}° W',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.secondary,
+                ),
+              )
+            else ...[
+              Text(
+                'Sin datos',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white38,
+                ),
+              ),
+              const SizedBox(height: 4),
+              GestureDetector(
+                onTap: _loadLocation,
+                child: Text(
+                  'Obtener ubicación',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
