@@ -190,11 +190,14 @@ class _InventoryPageState extends State<InventoryPage>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.maybePop(context),
+        ),
         title: const Text(
           'Manejo de Inventario',
           style: TextStyle(fontWeight: FontWeight.w900),
@@ -206,23 +209,6 @@ class _InventoryPageState extends State<InventoryPage>
             tooltip: 'Cargar CSV',
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(
-              icon: Icon(Icons.local_shipping_outlined, size: 20),
-              text: 'Mi Camión',
-            ),
-            Tab(
-              icon: Icon(Icons.warehouse_outlined, size: 20),
-              text: 'Bodega Central',
-            ),
-            Tab(
-              icon: Icon(Icons.analytics_outlined, size: 20),
-              text: 'Inventario Total',
-            ),
-          ],
-        ),
       ),
       floatingActionButton: _tabController.index == 2
           ? FloatingActionButton.extended(
@@ -231,50 +217,84 @@ class _InventoryPageState extends State<InventoryPage>
               label: const Text('Nuevo Producto'),
             )
           : null,
-      body: SafeArea(
-        child: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(color: colorScheme.primary),
-              )
-            : Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) =>
-                          setState(() => _searchQuery = value),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar por repuesto o modelo de moto...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    automaticallyImplyLeading: false,
+                    pinned: false,
+                    floating: true,
+                    snap: true,
+                    toolbarHeight: 48,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.pin,
+                      background: Container(
+                        color: colorScheme.surface,
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                          decoration: InputDecoration(
+                            hintText: 'Buscar por repuesto o modelo de moto...',
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: colorScheme.primary,
+                            ),
+                            suffixIcon: _searchQuery.isEmpty
+                                ? null
+                                : IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 0,
+                            ),
+                            isDense: true,
+                          ),
                         ),
-                        suffixIcon: _searchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              ),
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildCamionTab(colorScheme),
-                        _buildBodegaTab(colorScheme),
-                        _buildTotalTab(colorScheme),
-                      ],
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabBarHeaderDelegate(
+                      TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(
+                            icon: Icon(Icons.local_shipping_outlined, size: 18),
+                            text: 'Mi Camión',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.warehouse_outlined, size: 18),
+                            text: 'Bodega Central',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.analytics_outlined, size: 18),
+                            text: 'Inventario Total',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildCamionTab(colorScheme),
+                  _buildBodegaTab(colorScheme),
+                  _buildTotalTab(colorScheme),
                 ],
               ),
-      ),
+            ),
     );
   }
 
@@ -282,15 +302,10 @@ class _InventoryPageState extends State<InventoryPage>
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final camion = _camion.firstWhere(
@@ -331,15 +346,10 @@ class _InventoryPageState extends State<InventoryPage>
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final bodega = _bodega.firstWhere(
@@ -374,15 +384,10 @@ class _InventoryPageState extends State<InventoryPage>
     final filtered = _filteredProductos;
     if (filtered.isEmpty) return _emptyState(colorScheme);
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final camion = _camion.firstWhere(
@@ -404,74 +409,144 @@ class _InventoryPageState extends State<InventoryPage>
             camion.cantidad < producto.stockMinimo && bodega.cantidad > 0;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: sugerir
                   ? colorScheme.secondary.withValues(alpha: 0.4)
                   : colorScheme.outlineVariant.withValues(alpha: 0.3),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: producto.isOriginal
-                          ? colorScheme.primary
-                          : Colors.white54,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (sugerir)
-                        Icon(
-                          Icons.upgrade_rounded,
-                          size: 14,
-                          color: colorScheme.secondary,
-                        ),
-                      InkWell(
-                        onTap: () => _openForm(
-                          entry: InventoryEntry(
-                            id: producto.id,
-                            nombre: producto.nombre,
-                            precio: producto.precio,
-                            isOriginal: producto.isOriginal,
-                            motosCompatibles: producto.motosCompatibles,
-                            stockMinimo: producto.stockMinimo,
-                            cantidadCamion: camion.cantidad,
-                            numeroCanasta: camion.numeroCanasta,
-                            cantidadBodega: bodega.cantidad,
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            color:
+                                (producto.isOriginal
+                                        ? colorScheme.primary
+                                        : Colors.white54)
+                                    .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            size: 16,
-                            color: colorScheme.primary,
+                          child: Text(
+                            producto.isOriginal ? 'ORIGINAL' : 'GENÉRICO',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: producto.isOriginal
+                                  ? colorScheme.primary
+                                  : Colors.white54,
+                            ),
                           ),
                         ),
+                        if (camion.cantidad < producto.stockMinimo) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            'STOCK BAJO',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      producto.nombre,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () async {
-                          final confirm = await _confirmDelete(
-                            InventoryEntry(
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      producto.motosCompatibles,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Text(
+                          '${camion.cantidad} und',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: camion.cantidad < producto.stockMinimo
+                                ? colorScheme.error
+                                : Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '/ ${bodega.cantidad} und',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 70,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _formatCOP(producto.precio),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '$stockTotal und',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: () => _openForm(
+                            entry: InventoryEntry(
                               id: producto.id,
                               nombre: producto.nombre,
                               precio: producto.precio,
@@ -482,113 +557,60 @@ class _InventoryPageState extends State<InventoryPage>
                               numeroCanasta: camion.numeroCanasta,
                               cantidadBodega: bodega.cantidad,
                             ),
-                          );
-                          if (confirm) {
-                            await _repository.deleteProduct(producto.id);
-                            _loadInventory();
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: colorScheme.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Icon(
-                            Icons.delete_outline,
-                            size: 16,
-                            color: colorScheme.error,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              size: 14,
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                producto.nombre,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                producto.motosCompatibles,
-                style: const TextStyle(color: Colors.white54),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _formatCOP(producto.precio),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'En mi Camión',
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${camion.cantidad} und',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: camion.cantidad < producto.stockMinimo
-                                ? colorScheme.error
-                                : Colors.white,
+                        const SizedBox(width: 4),
+                        InkWell(
+                          onTap: () async {
+                            final confirm = await _confirmDelete(
+                              InventoryEntry(
+                                id: producto.id,
+                                nombre: producto.nombre,
+                                precio: producto.precio,
+                                isOriginal: producto.isOriginal,
+                                motosCompatibles: producto.motosCompatibles,
+                                stockMinimo: producto.stockMinimo,
+                                cantidadCamion: camion.cantidad,
+                                numeroCanasta: camion.numeroCanasta,
+                                cantidadBodega: bodega.cantidad,
+                              ),
+                            );
+                            if (confirm) {
+                              await _repository.deleteProduct(producto.id);
+                              _loadInventory();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              Icons.delete_outline,
+                              size: 14,
+                              color: colorScheme.error,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Bodega Central',
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${bodega.cantidad} und',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'STOCK TOTAL DISPONIBLE',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white60,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '$stockTotal unidades',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -623,134 +645,152 @@ class _InventoryPageState extends State<InventoryPage>
     required ColorScheme colorScheme,
   }) {
     return Container(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-              if (alertText != null)
-                Flexible(
-                  child: Text(
-                    alertText,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: alertText == 'ALMACÉN CENTRAL'
-                          ? colorScheme.primary
-                          : colorScheme.error,
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: badgeColor,
+                        ),
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                  ),
+                    if (alertText != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        alertText,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: alertText == 'ALMACÉN CENTRAL'
+                              ? colorScheme.primary
+                              : colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
+                const SizedBox(height: 5),
+                Text(
                   title,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                price,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12, color: Colors.white54),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                const SizedBox(height: 5),
+                Text(
+                  leftLabel,
+                  style: const TextStyle(fontSize: 11, color: Colors.white38),
+                ),
+                Text(
+                  leftValue,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 11, color: Colors.white54),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Container(
+            width: 1,
+            height: 70,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
-          const Divider(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      leftLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white38,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      leftValue,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  price,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rightLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white38,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      rightValue,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: rightValueColor,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 5),
+                Text(
+                  rightLabel,
+                  style: const TextStyle(fontSize: 11, color: Colors.white38),
+                  textAlign: TextAlign.end,
                 ),
-              ),
-            ],
+                Text(
+                  rightValue,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: rightValueColor,
+                  ),
+                  textAlign: TextAlign.end,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _TabBarHeaderDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
 }

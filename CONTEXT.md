@@ -288,4 +288,49 @@ flutter test
 
 - `agent.md` — documentación canónica del proyecto (arquitectura, estado, decisiones)
 - `docs/historical.md` — registro histórico del desarrollo
+- `docs/testing_guide.md` — guía completa de pruebas para todos los módulos
 - `flutter-dart-tools` skill — reglas de comandos y workflow
+
+---
+
+## 15. InventoryPage UI (2026-06-11)
+
+### Estructura de scroll
+- `NestedScrollView` con `headerSliverBuilder`
+- `SliverAppBar(pinned: false, floating: true, snap: true)` → search colapza
+- `SliverPersistentHeader(pinned: true)` → TabBar FIJA arriba
+- `_TabBarHeaderDelegate` implementa el TabBar persistente
+
+### Navegación
+- Flecha de regreso: `Scaffold AppBar` con `leading: IconButton(arrow_back)` — FIJA
+- Search: `prefixIcon: Icon(Icons.search, colorScheme.primary)` — icono verde
+- `SliverAppBar`: `automaticallyImplyLeading: false` — sin icono automático
+- `FAB`: "Nuevo Producto" visible solo en tab Inventario Total
+
+### Layout de tarjetas (punto medio de legibilidad)
+- `ListView.separated` (no GridView) — altura fija ~76-80px
+- Cards horizontales: Row 2 columnas (badge+info | price+stats)
+- Padding: `EdgeInsets.all(12)`
+- Divisor vertical: 70px alto
+
+### Fonts (tamaño punto medio)
+| Elemento | Tamaño |
+|---|---|
+| Título | 15px bold |
+| Subtítulo | 12px |
+| Precio | 15px bold |
+| Valores numéricos | 14px bold |
+| Labels | 11px |
+| Badge/Alert | 10px |
+
+### Badge y alertas (Total tab)
+- "ORIGINAL" / "GENÉRICO" — texto completo
+- "STOCK BAJO" en rojo (`colorScheme.error`) — sin icono
+- Condición: `camion.cantidad < producto.stockMinimo`
+
+### Archivo modificado
+- `lib/features/inventory/presentation/pages/inventory_page.dart`
+
+### Commits de esta sesión
+- `fix(ui): reduce padding/spacing in cards, fix indentation, grid overflow issues`
+- `fix(scaffold): add FAB and fix icon conflicts in AppBar and SliverAppBar`

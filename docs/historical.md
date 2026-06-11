@@ -923,3 +923,62 @@ docs: update agent.md, CONTEXT.md, README.md, historical.md — Supabase fix + b
 - Chrome/web sigue sin soporte (IDs int64 de Isar no caben en JS)
 - `/rest/v1/` en la URL de Supabase rompe el login — siempre usar solo la base URL
 - Crear auth users por Dashboard es más confiable que por SQL directo
+
+---
+
+## Sesión 2026-06-11 — UI del InventoryPage
+
+### Problema original
+- Grid 2 columnas con aspectRatio 0.85 causaba overflow vertical
+- TabBar colapza incorrectamente con scroll (Bottom Overflowed by 26px)
+- Tarjetas muy grandes (~200px) o muy pequeñas (~76px)
+- Iconos duplicados en AppBar (flecha de regreso + search icon compitiendo)
+- FAB "Nuevo Producto" no visible
+- Badge truncado ("ORIG"/"GEN" en vez de "ORIGINAL"/"GENÉRICO")
+- "STOCK BAJO" con icono en vez de texto puro en rojo
+
+### Soluciones aplicadas
+
+#### Scroll y collapse
+- `NestedScrollView` + `SliverAppBar(pinned: false, floating: true, snap: true)` para search
+- `SliverPersistentHeader(pinned: true)` con `_TabBarHeaderDelegate` para TabBar FIJA
+- `SliverAppBar.automaticallyImplyLeading: false` elimina icono automático
+- `Scaffold AppBar` con `leading: IconButton(arrow_back)` explícito
+
+#### Tarjetas compactas (punto medio de legibilidad)
+- `ListView.separated` con cards Row 2 columnas
+- Padding 12, fonts: título 15px, subtitle 12px, price 15px, values 14px, labels 11px
+- Divisor vertical 70px alto
+- Altura aproximada: ~76-80px
+
+#### Navegación
+- Flecha de regreso en Scaffold AppBar (leading explícito)
+- Icono de búsqueda verde (`prefixIcon: colorScheme.primary`) en TextField
+- FAB visible solo en tab Inventario Total
+
+#### Total tab
+- "ORIGINAL" / "GENÉRICO" texto completo
+- "STOCK BAJO" en rojo (`colorScheme.error`) sin icono cuando stock bajo en camión
+
+### Archivos modificados
+- `lib/features/inventory/presentation/pages/inventory_page.dart`
+- `CONTEXT.md` — sección 15 actualizada
+- `docs/testing_guide.md` — NUEVO
+
+### Commits de esta sesión
+```
+fix(ui): grid 1 column + compact cards + NestedScrollView + SliverAppBar collapse
+fix(navigation): add back arrow to Scaffold AppBar + prefixIcon search green
+fix(ui): restore FAB Nuevo Producto visible only on Total tab
+fix(ui): badge full text ORIGINAL/GENERICO + STOCK BAJO red without icon
+docs: add inventory page UI section to CONTEXT.md
+docs: create testing_guide.md with full test cases
+```
+
+### Estado del proyecto post-sesión
+| Feature | Estado |
+|---|---|
+| InventoryPage UI | ✅ Scroll colapzable + TabBar fija + tarjetas compactas |
+| FAB Nuevo Producto | ✅ Visible solo en Inventario Total |
+| Navegación | ✅ Sin iconos duplicados |
+| Badge texto completo | ✅ ORIGINAL/GENÉRICO/STOCK BAJO |
