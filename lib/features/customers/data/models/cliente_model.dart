@@ -7,6 +7,8 @@ part 'cliente_model.g.dart';
 @collection
 class ClienteModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String nombre;
   late String identificadorFiscal;
   late String direccion;
@@ -19,7 +21,7 @@ class ClienteModel {
 
   Cliente toDomain() {
     return Cliente(
-      id: id,
+      codigo: codigo,
       nombre: nombre,
       identificadorFiscal: identificadorFiscal,
       direccion: direccion,
@@ -37,7 +39,7 @@ class ClienteModel {
 
   static ClienteModel fromDomain(Cliente domain) {
     return ClienteModel()
-      ..id = domain.id
+      ..codigo = domain.codigo
       ..nombre = domain.nombre
       ..identificadorFiscal = domain.identificadorFiscal
       ..direccion = domain.direccion
@@ -51,7 +53,7 @@ class ClienteModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'nombre': nombre,
       'identificador_fiscal': identificadorFiscal,
       'direccion': direccion,

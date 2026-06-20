@@ -69,7 +69,7 @@ class WebInventoryRepository implements InventoryRepository {
   }
 
   @override
-  Future<void> decrementCamionStock(int productoId, int cantidad) async {
+  Future<void> decrementCamionStock(String productoId, int cantidad) async {
     final idx = _camion.indexWhere((c) => c.productoId == productoId);
     if (idx == -1) {
       throw StateError('No hay registro de stock en el camion para producto $productoId');
@@ -82,14 +82,15 @@ class WebInventoryRepository implements InventoryRepository {
     }
     final updated = InventarioCamionModel()
       ..id = model.id
+      ..codigo = model.codigo
       ..productoId = model.productoId
-      ..numeroCanasta = model.numeroCanasta
+      ..canastaId = model.canastaId
       ..cantidad = model.cantidad - cantidad;
     _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
   }
 
   @override
-  Future<void> incrementCamionStock(int productoId, int cantidad) async {
+  Future<void> incrementCamionStock(String productoId, int cantidad) async {
     final idx = _camion.indexWhere((c) => c.productoId == productoId);
     if (idx == -1) {
       throw StateError('No hay registro de stock en el camion para producto $productoId');
@@ -97,20 +98,18 @@ class WebInventoryRepository implements InventoryRepository {
     final model = _camion[idx];
     final updated = InventarioCamionModel()
       ..id = model.id
+      ..codigo = model.codigo
       ..productoId = model.productoId
-      ..numeroCanasta = model.numeroCanasta
+      ..canastaId = model.canastaId
       ..cantidad = model.cantidad + cantidad;
     _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
   }
 
   @override
   Future<InventorySnapshot> createProduct(InventoryEntry entry) async {
-    final maxId = _productos.fold(0, (max, p) => p.id > max ? p.id : max);
-    final newId = maxId + 1;
-
-    final producto = entry.toProductoModel()..id = newId;
-    final camion = entry.toCamionModel()..productoId = newId;
-    final bodega = entry.toBodegaModel()..productoId = newId;
+    final producto = entry.toProductoModel();
+    final camion = entry.toCamionModel();
+    final bodega = entry.toBodegaModel();
 
     _productos = List<ProductoModel>.from(_productos)..add(producto);
     if (entry.cantidadCamion > 0) {
@@ -125,7 +124,7 @@ class WebInventoryRepository implements InventoryRepository {
 
   @override
   Future<InventorySnapshot> updateProduct(InventoryEntry entry) async {
-    final pIdx = _productos.indexWhere((p) => p.id == entry.id);
+    final pIdx = _productos.indexWhere((p) => p.codigo == entry.codigo);
     if (pIdx != -1) {
       final updated = _productos[pIdx]
         ..nombre = entry.nombre
@@ -136,20 +135,20 @@ class WebInventoryRepository implements InventoryRepository {
       _productos = List<ProductoModel>.from(_productos)..[pIdx] = updated;
     }
 
-    final cIdx = _camion.indexWhere((c) => c.productoId == entry.id);
+    final cIdx = _camion.indexWhere((c) => c.productoId == entry.codigo);
     if (cIdx != -1 && entry.cantidadCamion > 0) {
       final updated = _camion[cIdx]
         ..cantidad = entry.cantidadCamion
-        ..numeroCanasta = entry.numeroCanasta;
+        ..canastaId = entry.canastaId;
       _camion = List<InventarioCamionModel>.from(_camion)..[cIdx] = updated;
     } else if (cIdx != -1) {
       _camion = List<InventarioCamionModel>.from(_camion)..removeAt(cIdx);
     } else if (entry.cantidadCamion > 0) {
       _camion = List<InventarioCamionModel>.from(_camion)
-        ..add(entry.toCamionModel()..productoId = entry.id);
+        ..add(entry.toCamionModel());
     }
 
-    final bIdx = _bodega.indexWhere((b) => b.productoId == entry.id);
+    final bIdx = _bodega.indexWhere((b) => b.productoId == entry.codigo);
     if (bIdx != -1 && entry.cantidadBodega > 0) {
       final updated = _bodega[bIdx]
         ..cantidad = entry.cantidadBodega;
@@ -158,17 +157,17 @@ class WebInventoryRepository implements InventoryRepository {
       _bodega = List<InventarioBodegaModel>.from(_bodega)..removeAt(bIdx);
     } else if (entry.cantidadBodega > 0) {
       _bodega = List<InventarioBodegaModel>.from(_bodega)
-        ..add(entry.toBodegaModel()..productoId = entry.id);
+        ..add(entry.toBodegaModel());
     }
 
     return _snapshot();
   }
 
   @override
-  Future<InventorySnapshot> deleteProduct(int id) async {
-    _productos = List<ProductoModel>.from(_productos)..removeWhere((p) => p.id == id);
-    _camion = List<InventarioCamionModel>.from(_camion)..removeWhere((c) => c.productoId == id);
-    _bodega = List<InventarioBodegaModel>.from(_bodega)..removeWhere((b) => b.productoId == id);
+  Future<InventorySnapshot> deleteProduct(String codigo) async {
+    _productos = List<ProductoModel>.from(_productos)..removeWhere((p) => p.codigo == codigo);
+    _camion = List<InventarioCamionModel>.from(_camion)..removeWhere((c) => c.productoId == codigo);
+    _bodega = List<InventarioBodegaModel>.from(_bodega)..removeWhere((b) => b.productoId == codigo);
     return _snapshot();
   }
 }

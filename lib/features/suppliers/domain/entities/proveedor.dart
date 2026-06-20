@@ -1,5 +1,5 @@
 class Proveedor {
-  final int id;
+  final String codigo;
   final String nombre;
   final String nit;
   final String telefono;
@@ -7,7 +7,7 @@ class Proveedor {
   final bool isSynced;
 
   Proveedor({
-    required this.id,
+    required this.codigo,
     required this.nombre,
     required this.nit,
     required this.telefono,
@@ -16,7 +16,7 @@ class Proveedor {
   });
 
   Proveedor copyWith({
-    int? id,
+    String? codigo,
     String? nombre,
     String? nit,
     String? telefono,
@@ -24,7 +24,7 @@ class Proveedor {
     bool? isSynced,
   }) {
     return Proveedor(
-      id: id ?? this.id,
+      codigo: codigo ?? this.codigo,
       nombre: nombre ?? this.nombre,
       nit: nit ?? this.nit,
       telefono: telefono ?? this.telefono,

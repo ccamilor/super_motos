@@ -40,7 +40,7 @@ class _LineItem {
 
   DetalleFactura toDetalle() {
     return DetalleFactura(
-      productoId: producto.id,
+      productoId: producto.codigo,
       cantidad: cantidad,
       precioUnitario: precioUnitario,
       subtotal: subtotal,
@@ -55,7 +55,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
 
   List<Cliente> _clientes = [];
   List<ProductoModel> _productos = [];
-  Map<int, int> _stockCamionByProducto = {};
+  Map<String, int> _stockCamionByProducto = {};
 
   Cliente? _clienteSeleccionado;
   final List<_LineItem> _lineas = [];
@@ -135,7 +135,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     );
     if (picked == null) return;
 
-    final stock = _stockCamionByProducto[picked.id] ?? 0;
+    final stock = _stockCamionByProducto[picked.codigo] ?? 0;
     setState(() {
       _lineas.add(_LineItem(
         producto: picked,
@@ -178,7 +178,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     if (_lineas.isEmpty) return 'Agrega al menos un producto';
 
     for (final l in _lineas) {
-      final stock = _stockCamionByProducto[l.producto.id] ?? 0;
+      final stock = _stockCamionByProducto[l.producto.codigo] ?? 0;
       if (l.cantidad > stock) {
         return 'Stock insuficiente para ${l.producto.nombre} (disponible: $stock, requerido: ${l.cantidad})';
       }
@@ -203,8 +203,8 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     try {
       final position = await LocationService.instance.getCurrentPosition();
       final factura = Factura(
-        numeroFactura: 0,
-        clienteId: _clienteSeleccionado!.id,
+        codigo: 'FAC-${DateTime.now().millisecondsSinceEpoch}',
+        clienteId: _clienteSeleccionado!.codigo,
         vendedorId: kVendedorPorDefecto,
         fecha: DateTime.now(),
         total: _total,
@@ -218,9 +218,9 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
 
       for (final l in _lineas) {
         try {
-          await _inventoryRepo.decrementCamionStock(l.producto.id, l.cantidad);
-          _stockCamionByProducto[l.producto.id] =
-              (_stockCamionByProducto[l.producto.id] ?? 0) - l.cantidad;
+          await _inventoryRepo.decrementCamionStock(l.producto.codigo, l.cantidad);
+          _stockCamionByProducto[l.producto.codigo] =
+              (_stockCamionByProducto[l.producto.codigo] ?? 0) - l.cantidad;
         } catch (e) {
           stockWarnings.add('${l.producto.nombre}: ${e.toString().split('\n').first}');
         }
@@ -428,7 +428,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
   }
 
   Widget _buildLineaRow(int index, _LineItem linea, ColorScheme colorScheme) {
-    final stock = _stockCamionByProducto[linea.producto.id] ?? 0;
+    final stock = _stockCamionByProducto[linea.producto.codigo] ?? 0;
     final stockInsuficiente = linea.cantidad > stock;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -556,7 +556,7 @@ class _ProductPickerSheet extends StatefulWidget {
   });
 
   final List<ProductoModel> productos;
-  final Map<int, int> stockById;
+  final Map<String, int> stockById;
 
   @override
   State<_ProductPickerSheet> createState() => _ProductPickerSheetState();
@@ -632,7 +632,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final p = filtered[index];
-                          final stock = widget.stockById[p.id] ?? 0;
+                          final stock = widget.stockById[p.codigo] ?? 0;
                           return InkWell(
                             onTap: () => Navigator.of(context).pop(p),
                             borderRadius: BorderRadius.circular(8),

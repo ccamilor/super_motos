@@ -41,7 +41,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
   final TextEditingController _motivoTextoCtrl = TextEditingController();
 
   List<Factura> _facturas = [];
-  Map<int, ProductoModel> _productosById = {};
+  Map<String, ProductoModel> _productosById = {};
 
   Factura? _facturaSeleccionada;
   ProductoModel? _productoSeleccionado;
@@ -75,7 +75,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
       if (!mounted) return;
       setState(() {
         _facturas = facturas;
-        _productosById = {for (final p in productos) p.id: p};
+        _productosById = {for (final p in productos) p.codigo: p};
       });
     } catch (e) {
       debugPrint('Error al cargar datos: $e');
@@ -113,12 +113,12 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
       return;
     }
     final linea = _facturaSeleccionada!.detalles.firstWhere(
-      (d) => d.productoId == p.id,
-      orElse: () => const DetalleFactura(productoId: 0, cantidad: 0, precioUnitario: 0, subtotal: 0),
+      (d) => d.productoId == p.codigo,
+      orElse: () => const DetalleFactura(productoId: '', cantidad: 0, precioUnitario: 0, subtotal: 0),
     );
     setState(() {
       _productoSeleccionado = p;
-      _lineaOriginal = linea.productoId == 0 ? null : linea;
+      _lineaOriginal = linea.productoId.isEmpty ? null : linea;
       _isDirty = true;
     });
   }
@@ -206,11 +206,11 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
     try {
       final cantidad = int.parse(_cantidadCtrl.text.trim());
       final devolucion = Devolucion(
-        id: 0,
-        facturaId: _facturaSeleccionada!.numeroFactura.toString(),
-        productoId: _productoSeleccionado!.id.toString(),
+        codigo: 'DEV-${DateTime.now().millisecondsSinceEpoch}',
+        facturaId: _facturaSeleccionada!.codigo,
+        productoId: _productoSeleccionado!.codigo,
         cantidad: cantidad,
-        numeroCanastaDestino: _canastaCtrl.text.trim(),
+        canastaDestino: _canastaCtrl.text.trim(),
         fechaDevolucion: DateTime.now(),
         motivo: _motivoFinal(),
       );
@@ -218,7 +218,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
       await _devolucionesRepo.create(devolucion);
 
       try {
-        await _inventoryRepo.incrementCamionStock(_productoSeleccionado!.id, cantidad);
+        await _inventoryRepo.incrementCamionStock(_productoSeleccionado!.codigo, cantidad);
       } catch (e) {
         stockWarnings.add(e.toString().split('\n').first);
       }
@@ -316,7 +316,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
                               .map((f) => DropdownMenuItem<Factura>(
                                     value: f,
                                     child: Text(
-                                      'Factura #${f.numeroFactura}  -  ${_formatFecha(f.fecha)}',
+                                      'Factura ${f.codigo}  -  ${_formatFecha(f.fecha)}',
                                     ),
                                   ))
                               .toList(),
@@ -337,7 +337,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
                             items: _productosEnFactura(_facturaSeleccionada!)
                                 .map((p) {
                               final linea = _facturaSeleccionada!.detalles
-                                  .firstWhere((d) => d.productoId == p.id);
+                                  .firstWhere((d) => d.productoId == p.codigo);
                               return DropdownMenuItem<ProductoModel>(
                                 value: p,
                                 child: Text(

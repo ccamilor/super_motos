@@ -4,5 +4,5 @@ abstract class ClientesRepository {
   Future<List<Cliente>> loadAll();
   Future<Cliente> create(Cliente cliente);
   Future<Cliente> update(Cliente cliente);
-  Future<void> delete(int id);
+  Future<void> delete(String codigo);
 }

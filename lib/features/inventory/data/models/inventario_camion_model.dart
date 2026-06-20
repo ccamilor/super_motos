@@ -6,15 +6,17 @@ part 'inventario_camion_model.g.dart';
 @collection
 class InventarioCamionModel {
   Id id = Isar.autoIncrement;
-  late int productoId;
-  late int numeroCanasta;
+  @Index(unique: true)
+  String codigo = '';
+  late String productoId;
+  late String canastaId;
   late int cantidad;
   bool isSynced = false;
 
   InventarioCamion toDomain() {
     return InventarioCamion(
       productoId: productoId,
-      numeroCanasta: numeroCanasta,
+      canastaId: canastaId,
       cantidad: cantidad,
       isSynced: isSynced,
     );
@@ -23,16 +25,16 @@ class InventarioCamionModel {
   static InventarioCamionModel fromDomain(InventarioCamion domain) {
     return InventarioCamionModel()
       ..productoId = domain.productoId
-      ..numeroCanasta = domain.numeroCanasta
+      ..canastaId = domain.canastaId
       ..cantidad = domain.cantidad
       ..isSynced = domain.isSynced;
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'producto_id': productoId,
-      'numero_canasta': numeroCanasta,
+      'canasta_id': canastaId,
       'cantidad': cantidad,
       'is_synced': isSynced,
       'updated_at': DateTime.now().toIso8601String(),

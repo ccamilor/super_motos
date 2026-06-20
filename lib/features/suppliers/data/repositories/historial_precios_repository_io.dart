@@ -18,12 +18,12 @@ class IsarHistorialPreciosRepository implements HistorialPreciosRepository {
   }
 
   @override
-  Future<List<HistorialPrecio>> loadByProveedorId(int proveedorId) async {
+  Future<List<HistorialPrecio>> loadByProveedorId(String proveedorId) async {
     final isar = _isar;
     if (isar == null) return [];
     final models = await isar.historialPreciosModels
         .filter()
-        .proveedorIdEqualTo(proveedorId.toString())
+        .proveedorIdEqualTo(proveedorId)
         .sortByFechaRegistroDesc()
         .findAll();
     return models.map((m) => m.toDomain()).toList();
@@ -33,35 +33,36 @@ class IsarHistorialPreciosRepository implements HistorialPreciosRepository {
   Future<HistorialPrecio> create(HistorialPrecio historial) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
-    final model = HistorialPreciosModel.fromDomain(historial)
-      ..id = Isar.autoIncrement;
+    final model = HistorialPreciosModel.fromDomain(historial);
     await isar.writeTxn(() async {
       await isar.historialPreciosModels.put(model);
     });
-    final saved = await isar.historialPreciosModels.get(model.id);
+    final saved = await isar.historialPreciosModels.filter().codigoEqualTo(historial.codigo).findFirst();
     SyncService.instance.enqueue('historial_precios', SyncOperation.insert, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
 
   @override
-  Future<void> delete(int id) async {
+  Future<void> delete(String codigo) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
-    final model = await isar.historialPreciosModels.get(id);
-    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+    final model = await isar.historialPreciosModels.filter().codigoEqualTo(codigo).findFirst();
+    final json = model != null ? jsonEncode(model.toJson()) : '{"codigo":"$codigo"}';
     await isar.writeTxn(() async {
-      await isar.historialPreciosModels.delete(id);
+      if (model != null) {
+        await isar.historialPreciosModels.delete(model.id);
+      }
     });
     SyncService.instance.enqueue('historial_precios', SyncOperation.delete, json);
   }
 
   @override
-  Future<void> deleteByProveedorId(int proveedorId) async {
+  Future<void> deleteByProveedorId(String proveedorId) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
     final models = await isar.historialPreciosModels
         .filter()
-        .proveedorIdEqualTo(proveedorId.toString())
+        .proveedorIdEqualTo(proveedorId)
         .findAll();
     for (final model in models) {
       SyncService.instance.enqueue('historial_precios', SyncOperation.delete, jsonEncode(model.toJson()));
@@ -69,7 +70,7 @@ class IsarHistorialPreciosRepository implements HistorialPreciosRepository {
     await isar.writeTxn(() async {
       await isar.historialPreciosModels
           .filter()
-          .proveedorIdEqualTo(proveedorId.toString())
+          .proveedorIdEqualTo(proveedorId)
           .deleteAll();
     });
   }

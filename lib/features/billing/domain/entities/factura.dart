@@ -1,7 +1,7 @@
 import 'package:super_motos/core/enums/tipo_pago.dart';
 
 class DetalleFactura {
-  final int productoId;
+  final String productoId;
   final int cantidad;
   final double precioUnitario;
   final double subtotal;
@@ -14,7 +14,7 @@ class DetalleFactura {
   });
 
   DetalleFactura copyWith({
-    int? productoId,
+    String? productoId,
     int? cantidad,
     double? precioUnitario,
     double? subtotal,
@@ -29,9 +29,9 @@ class DetalleFactura {
 }
 
 class Factura {
-  final int numeroFactura;
-  final int clienteId;
-  final int vendedorId;
+  final String codigo;
+  final String clienteId;
+  final String vendedorId;
   final DateTime fecha;
   final double total;
   final TipoPago tipoPago;
@@ -41,7 +41,7 @@ class Factura {
   final bool isSynced;
 
   const Factura({
-    required this.numeroFactura,
+    required this.codigo,
     required this.clienteId,
     required this.vendedorId,
     required this.fecha,
@@ -54,9 +54,9 @@ class Factura {
   });
 
   Factura copyWith({
-    int? numeroFactura,
-    int? clienteId,
-    int? vendedorId,
+    String? codigo,
+    String? clienteId,
+    String? vendedorId,
     DateTime? fecha,
     double? total,
     TipoPago? tipoPago,
@@ -66,7 +66,7 @@ class Factura {
     bool? isSynced,
   }) {
     return Factura(
-      numeroFactura: numeroFactura ?? this.numeroFactura,
+      codigo: codigo ?? this.codigo,
       clienteId: clienteId ?? this.clienteId,
       vendedorId: vendedorId ?? this.vendedorId,
       fecha: fecha ?? this.fecha,

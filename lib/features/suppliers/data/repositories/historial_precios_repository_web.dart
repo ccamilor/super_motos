@@ -8,7 +8,6 @@ const String _historialStorageKey = 'super_motos_historial_precios_data';
 
 class WebHistorialPreciosRepository implements HistorialPreciosRepository {
   static List<HistorialPrecio> _historial = [];
-  static int _nextId = 0;
 
   @override
   Future<List<HistorialPrecio>> loadAll() async {
@@ -16,19 +15,16 @@ class WebHistorialPreciosRepository implements HistorialPreciosRepository {
       final savedData = getWebStorage().getItem(_historialStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _historial = _decode(savedData);
-        if (_historial.isNotEmpty) {
-          _nextId = _historial.map((h) => h.id).reduce((a, b) => a > b ? a : b) + 1;
-        }
       }
     }
     return List.from(_historial);
   }
 
   @override
-  Future<List<HistorialPrecio>> loadByProveedorId(int proveedorId) async {
+  Future<List<HistorialPrecio>> loadByProveedorId(String proveedorId) async {
     await loadAll();
     return _historial
-        .where((h) => h.proveedorId == proveedorId.toString())
+        .where((h) => h.proveedorId == proveedorId)
         .toList()
       ..sort((a, b) => b.fechaRegistro.compareTo(a.fechaRegistro));
   }
@@ -36,24 +32,23 @@ class WebHistorialPreciosRepository implements HistorialPreciosRepository {
   @override
   Future<HistorialPrecio> create(HistorialPrecio historial) async {
     await loadAll();
-    final created = historial.copyWith(id: _nextId++);
-    _historial = [..._historial, created];
+    _historial = [..._historial, historial];
     _persist();
-    return created;
+    return historial;
   }
 
   @override
-  Future<void> delete(int id) async {
+  Future<void> delete(String codigo) async {
     await loadAll();
-    _historial = _historial.where((h) => h.id != id).toList();
+    _historial = _historial.where((h) => h.codigo != codigo).toList();
     _persist();
   }
 
   @override
-  Future<void> deleteByProveedorId(int proveedorId) async {
+  Future<void> deleteByProveedorId(String proveedorId) async {
     await loadAll();
     _historial = _historial
-        .where((h) => h.proveedorId != proveedorId.toString())
+        .where((h) => h.proveedorId != proveedorId)
         .toList();
     _persist();
   }
@@ -73,7 +68,7 @@ class WebHistorialPreciosRepository implements HistorialPreciosRepository {
 
   Map<String, dynamic> _toMap(HistorialPrecio h) {
     return {
-      'id': h.id,
+      'codigo': h.codigo,
       'productoId': h.productoId,
       'proveedorId': h.proveedorId,
       'precioCompra': h.precioCompra,
@@ -83,7 +78,7 @@ class WebHistorialPreciosRepository implements HistorialPreciosRepository {
 
   HistorialPrecio _fromMap(Map<String, dynamic> m) {
     return HistorialPrecio(
-      id: m['id'] as int,
+      codigo: m['codigo'] as String,
       productoId: m['productoId'] as String,
       proveedorId: m['proveedorId'] as String,
       precioCompra: (m['precioCompra'] as num).toDouble(),

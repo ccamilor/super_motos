@@ -32,7 +32,7 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
   final InventoryRepository _inventoryRepo = createInventoryRepository();
 
   Cliente? _cliente;
-  Map<int, ProductoModel> _productosById = {};
+  Map<String, ProductoModel> _productosById = {};
   bool _isDeleting = false;
   bool _isLoading = true;
 
@@ -49,9 +49,9 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
       if (!mounted) return;
       setState(() {
         _cliente = clientes.firstWhere(
-          (c) => c.id == widget.factura.clienteId,
+          (c) => c.codigo == widget.factura.clienteId,
           orElse: () => Cliente(
-            id: widget.factura.clienteId,
+            codigo: widget.factura.clienteId,
             nombre: 'Cliente #${widget.factura.clienteId}',
             identificadorFiscal: '-',
             direccion: '-',
@@ -60,7 +60,7 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
             estadoCuenta: EstadoCuenta.activo,
           ),
         );
-        _productosById = {for (final p in productos) p.id: p};
+        _productosById = {for (final p in productos) p.codigo: p};
       });
     } catch (e) {
       debugPrint('Error al cargar detalle: $e');
@@ -76,7 +76,7 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar factura', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Estas seguro de eliminar la factura #${widget.factura.numeroFactura}? El stock NO se repondra automaticamente.'),
+        content: Text('Estas seguro de eliminar la factura ${widget.factura.codigo}? El stock NO se repondra automaticamente.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -95,7 +95,7 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
 
     setState(() => _isDeleting = true);
     try {
-      await _facturasRepo.delete(widget.factura.numeroFactura);
+      await _facturasRepo.delete(widget.factura.codigo);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -145,7 +145,7 @@ class _FacturaDetailPageState extends State<FacturaDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Factura #${f.numeroFactura}', style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('Factura ${f.codigo}', style: const TextStyle(fontWeight: FontWeight.w900)),
         actions: [
           if (_isLoading)
             const Padding(

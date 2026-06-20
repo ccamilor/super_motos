@@ -7,13 +7,15 @@ part 'usuario_model.g.dart';
 @collection
 class UsuarioModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String nombre;
   late String email;
   late String rol;
 
   Usuario toDomain() {
     return Usuario(
-      id: id,
+      codigo: codigo,
       nombre: nombre,
       email: email,
       rol: RolUsuario.values.firstWhere(
@@ -25,7 +27,7 @@ class UsuarioModel {
 
   static UsuarioModel fromDomain(Usuario domain) {
     return UsuarioModel()
-      ..id = domain.id
+      ..codigo = domain.codigo
       ..nombre = domain.nombre
       ..email = domain.email
       ..rol = domain.rol.name;

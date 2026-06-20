@@ -4,9 +4,9 @@ import 'package:super_motos/features/inventory/domain/entities/inventory_entry.d
 abstract class InventoryRepository {
   Future<InventorySnapshot> loadInventory();
   Future<InventorySnapshot> importCsv(String csvContent);
-  Future<void> decrementCamionStock(int productoId, int cantidad);
-  Future<void> incrementCamionStock(int productoId, int cantidad);
+  Future<void> decrementCamionStock(String productoId, int cantidad);
+  Future<void> incrementCamionStock(String productoId, int cantidad);
   Future<InventorySnapshot> createProduct(InventoryEntry entry);
   Future<InventorySnapshot> updateProduct(InventoryEntry entry);
-  Future<InventorySnapshot> deleteProduct(int id);
+  Future<InventorySnapshot> deleteProduct(String codigo);
 }

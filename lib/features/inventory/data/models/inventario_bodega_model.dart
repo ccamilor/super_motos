@@ -6,7 +6,9 @@ part 'inventario_bodega_model.g.dart';
 @collection
 class InventarioBodegaModel {
   Id id = Isar.autoIncrement;
-  late int productoId;
+  @Index(unique: true)
+  String codigo = '';
+  late String productoId;
   late int cantidad;
   bool isSynced = false;
 
@@ -27,7 +29,7 @@ class InventarioBodegaModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'producto_id': productoId,
       'cantidad': cantidad,
       'is_synced': isSynced,

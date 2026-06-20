@@ -11,7 +11,6 @@ const String _clientesStorageKey = 'super_motos_clientes_data';
 
 class WebClientesRepository implements ClientesRepository {
   static List<Cliente> _clientes = [];
-  static int _nextId = 0;
 
   @override
   Future<List<Cliente>> loadAll() async {
@@ -19,13 +18,9 @@ class WebClientesRepository implements ClientesRepository {
       final savedData = getWebStorage().getItem(_clientesStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _clientes = _decode(savedData);
-        if (_clientes.isNotEmpty) {
-          _nextId = _clientes.map((c) => c.id).reduce((a, b) => a > b ? a : b) + 1;
-        }
       }
       if (_clientes.isEmpty) {
         _clientes = List<Cliente>.from(ClientesSeedData.demoClientes);
-        _nextId = _clientes.length + 1;
         getWebStorage().setItem(_clientesStorageKey, _encode(_clientes));
       }
     }
@@ -37,34 +32,23 @@ class WebClientesRepository implements ClientesRepository {
 
   @override
   Future<Cliente> create(Cliente cliente) async {
-    final created = Cliente(
-      id: _nextId++,
-      nombre: cliente.nombre,
-      identificadorFiscal: cliente.identificadorFiscal,
-      direccion: cliente.direccion,
-      latitud: cliente.latitud,
-      longitud: cliente.longitud,
-      limiteCredito: cliente.limiteCredito,
-      saldoPendiente: cliente.saldoPendiente,
-      estadoCuenta: cliente.estadoCuenta,
-    );
-    _clientes = [..._clientes, created];
+    _clientes = [..._clientes, cliente];
     _persist();
-    return created;
+    return cliente;
   }
 
   @override
   Future<Cliente> update(Cliente cliente) async {
     _clientes = _clientes
-        .map((c) => c.id == cliente.id ? cliente : c)
+        .map((c) => c.codigo == cliente.codigo ? cliente : c)
         .toList();
     _persist();
     return cliente;
   }
 
   @override
-  Future<void> delete(int id) async {
-    _clientes = _clientes.where((c) => c.id != id).toList();
+  Future<void> delete(String codigo) async {
+    _clientes = _clientes.where((c) => c.codigo != codigo).toList();
     _persist();
   }
 
@@ -83,7 +67,7 @@ class WebClientesRepository implements ClientesRepository {
 
   Map<String, dynamic> _clienteToMap(Cliente c) {
     return {
-      'id': c.id,
+      'codigo': c.codigo,
       'nombre': c.nombre,
       'identificadorFiscal': c.identificadorFiscal,
       'direccion': c.direccion,
@@ -97,7 +81,7 @@ class WebClientesRepository implements ClientesRepository {
 
   Cliente _clienteFromMap(Map<String, dynamic> m) {
     return Cliente(
-      id: m['id'] as int,
+      codigo: m['codigo'] as String,
       nombre: m['nombre'] as String,
       identificadorFiscal: m['identificadorFiscal'] as String,
       direccion: m['direccion'] as String,

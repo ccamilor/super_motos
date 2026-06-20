@@ -1,13 +1,13 @@
 import 'package:super_motos/core/enums/rol_usuario.dart';
 
 class Usuario {
-  final int id;
+  final String codigo;
   final String nombre;
   final String email;
   final RolUsuario rol;
 
   Usuario({
-    required this.id,
+    required this.codigo,
     required this.nombre,
     required this.email,
     required this.rol,

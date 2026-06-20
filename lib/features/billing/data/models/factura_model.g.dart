@@ -20,56 +20,75 @@ const FacturaModelSchema = CollectionSchema(
     r'clienteId': PropertySchema(
       id: 0,
       name: r'clienteId',
-      type: IsarType.long,
+      type: IsarType.string,
+    ),
+    r'codigo': PropertySchema(
+      id: 1,
+      name: r'codigo',
+      type: IsarType.string,
     ),
     r'detalles': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'detalles',
       type: IsarType.objectList,
       target: r'DetalleFacturaModel',
     ),
     r'fecha': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'fecha',
       type: IsarType.dateTime,
     ),
     r'isSynced': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'latitudVenta': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'latitudVenta',
       type: IsarType.double,
     ),
     r'longitudVenta': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'longitudVenta',
       type: IsarType.double,
     ),
     r'tipoPago': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'tipoPago',
       type: IsarType.string,
     ),
     r'total': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'total',
       type: IsarType.double,
     ),
     r'vendedorId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'vendedorId',
-      type: IsarType.long,
+      type: IsarType.string,
     )
   },
   estimateSize: _facturaModelEstimateSize,
   serialize: _facturaModelSerialize,
   deserialize: _facturaModelDeserialize,
   deserializeProp: _facturaModelDeserializeProp,
-  idName: r'numeroFactura',
-  indexes: {},
+  idName: r'id',
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {r'DetalleFacturaModel': DetalleFacturaModelSchema},
   getId: _facturaModelGetId,
@@ -84,6 +103,8 @@ int _facturaModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.clienteId.length * 3;
+  bytesCount += 3 + object.codigo.length * 3;
   {
     final list = object.detalles;
     if (list != null) {
@@ -99,6 +120,7 @@ int _facturaModelEstimateSize(
     }
   }
   bytesCount += 3 + object.tipoPago.length * 3;
+  bytesCount += 3 + object.vendedorId.length * 3;
   return bytesCount;
 }
 
@@ -108,20 +130,21 @@ void _facturaModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.clienteId);
+  writer.writeString(offsets[0], object.clienteId);
+  writer.writeString(offsets[1], object.codigo);
   writer.writeObjectList<DetalleFacturaModel>(
-    offsets[1],
+    offsets[2],
     allOffsets,
     DetalleFacturaModelSchema.serialize,
     object.detalles,
   );
-  writer.writeDateTime(offsets[2], object.fecha);
-  writer.writeBool(offsets[3], object.isSynced);
-  writer.writeDouble(offsets[4], object.latitudVenta);
-  writer.writeDouble(offsets[5], object.longitudVenta);
-  writer.writeString(offsets[6], object.tipoPago);
-  writer.writeDouble(offsets[7], object.total);
-  writer.writeLong(offsets[8], object.vendedorId);
+  writer.writeDateTime(offsets[3], object.fecha);
+  writer.writeBool(offsets[4], object.isSynced);
+  writer.writeDouble(offsets[5], object.latitudVenta);
+  writer.writeDouble(offsets[6], object.longitudVenta);
+  writer.writeString(offsets[7], object.tipoPago);
+  writer.writeDouble(offsets[8], object.total);
+  writer.writeString(offsets[9], object.vendedorId);
 }
 
 FacturaModel _facturaModelDeserialize(
@@ -131,21 +154,22 @@ FacturaModel _facturaModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = FacturaModel();
-  object.clienteId = reader.readLong(offsets[0]);
+  object.clienteId = reader.readString(offsets[0]);
+  object.codigo = reader.readString(offsets[1]);
   object.detalles = reader.readObjectList<DetalleFacturaModel>(
-    offsets[1],
+    offsets[2],
     DetalleFacturaModelSchema.deserialize,
     allOffsets,
     DetalleFacturaModel(),
   );
-  object.fecha = reader.readDateTime(offsets[2]);
-  object.isSynced = reader.readBool(offsets[3]);
-  object.latitudVenta = reader.readDoubleOrNull(offsets[4]);
-  object.longitudVenta = reader.readDoubleOrNull(offsets[5]);
-  object.numeroFactura = id;
-  object.tipoPago = reader.readString(offsets[6]);
-  object.total = reader.readDouble(offsets[7]);
-  object.vendedorId = reader.readLong(offsets[8]);
+  object.fecha = reader.readDateTime(offsets[3]);
+  object.id = id;
+  object.isSynced = reader.readBool(offsets[4]);
+  object.latitudVenta = reader.readDoubleOrNull(offsets[5]);
+  object.longitudVenta = reader.readDoubleOrNull(offsets[6]);
+  object.tipoPago = reader.readString(offsets[7]);
+  object.total = reader.readDouble(offsets[8]);
+  object.vendedorId = reader.readString(offsets[9]);
   return object;
 }
 
@@ -157,35 +181,37 @@ P _facturaModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
       return (reader.readObjectList<DetalleFacturaModel>(
         offset,
         DetalleFacturaModelSchema.deserialize,
         allOffsets,
         DetalleFacturaModel(),
       )) as P;
-    case 2:
-      return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
 Id _facturaModelGetId(FacturaModel object) {
-  return object.numeroFactura;
+  return object.id;
 }
 
 List<IsarLinkBase<dynamic>> _facturaModelGetLinks(FacturaModel object) {
@@ -194,12 +220,67 @@ List<IsarLinkBase<dynamic>> _facturaModelGetLinks(FacturaModel object) {
 
 void _facturaModelAttach(
     IsarCollection<dynamic> col, Id id, FacturaModel object) {
-  object.numeroFactura = id;
+  object.id = id;
+}
+
+extension FacturaModelByIndex on IsarCollection<FacturaModel> {
+  Future<FacturaModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  FacturaModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<FacturaModel?>> getAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<FacturaModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(FacturaModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(FacturaModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<FacturaModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<FacturaModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension FacturaModelQueryWhereSort
     on QueryBuilder<FacturaModel, FacturaModel, QWhere> {
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhere> anyNumeroFactura() {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
@@ -208,73 +289,115 @@ extension FacturaModelQueryWhereSort
 
 extension FacturaModelQueryWhere
     on QueryBuilder<FacturaModel, FacturaModel, QWhereClause> {
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause>
-      numeroFacturaEqualTo(Id numeroFactura) {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(
-        lower: numeroFactura,
-        upper: numeroFactura,
+        lower: id,
+        upper: id,
       ));
     });
   }
 
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause>
-      numeroFacturaNotEqualTo(Id numeroFactura) {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> idNotEqualTo(
+      Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(
-              IdWhereClause.lessThan(upper: numeroFactura, includeUpper: false),
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
             )
             .addWhereClause(
-              IdWhereClause.greaterThan(
-                  lower: numeroFactura, includeLower: false),
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
             );
       } else {
         return query
             .addWhereClause(
-              IdWhereClause.greaterThan(
-                  lower: numeroFactura, includeLower: false),
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
             )
             .addWhereClause(
-              IdWhereClause.lessThan(upper: numeroFactura, includeUpper: false),
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
             );
       }
     });
   }
 
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause>
-      numeroFacturaGreaterThan(Id numeroFactura, {bool include = false}) {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> idGreaterThan(
+      Id id,
+      {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IdWhereClause.greaterThan(lower: numeroFactura, includeLower: include),
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
       );
     });
   }
 
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause>
-      numeroFacturaLessThan(Id numeroFactura, {bool include = false}) {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> idLessThan(Id id,
+      {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IdWhereClause.lessThan(upper: numeroFactura, includeUpper: include),
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
       );
     });
   }
 
-  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause>
-      numeroFacturaBetween(
-    Id lowerNumeroFactura,
-    Id upperNumeroFactura, {
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(
-        lower: lowerNumeroFactura,
+        lower: lowerId,
         includeLower: includeLower,
-        upper: upperNumeroFactura,
+        upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> codigoEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterWhereClause> codigoNotEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -282,49 +405,58 @@ extension FacturaModelQueryWhere
 extension FacturaModelQueryFilter
     on QueryBuilder<FacturaModel, FacturaModel, QFilterCondition> {
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      clienteIdEqualTo(int value) {
+      clienteIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'clienteId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       clienteIdGreaterThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'clienteId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       clienteIdLessThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'clienteId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       clienteIdBetween(
-    int lower,
-    int upper, {
+    String lower,
+    String upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -333,6 +465,212 @@ extension FacturaModelQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'clienteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'clienteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'clienteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'clienteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'clienteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      clienteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'clienteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> codigoMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
       ));
     });
   }
@@ -490,6 +828,59 @@ extension FacturaModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'fecha',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> idEqualTo(
+      Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -672,62 +1063,6 @@ extension FacturaModelQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      numeroFacturaEqualTo(Id value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'numeroFactura',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      numeroFacturaGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'numeroFactura',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      numeroFacturaLessThan(
-    Id value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'numeroFactura',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      numeroFacturaBetween(
-    Id lower,
-    Id upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'numeroFactura',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
       ));
     });
   }
@@ -932,49 +1267,58 @@ extension FacturaModelQueryFilter
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
-      vendedorIdEqualTo(int value) {
+      vendedorIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'vendedorId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       vendedorIdGreaterThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'vendedorId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       vendedorIdLessThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'vendedorId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
       vendedorIdBetween(
-    int lower,
-    int upper, {
+    String lower,
+    String upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -983,6 +1327,77 @@ extension FacturaModelQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'vendedorId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'vendedorId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'vendedorId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'vendedorId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'vendedorId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterFilterCondition>
+      vendedorIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'vendedorId',
+        value: '',
       ));
     });
   }
@@ -1012,6 +1427,18 @@ extension FacturaModelQuerySortBy
   QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByClienteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'clienteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
     });
   }
 
@@ -1117,6 +1544,18 @@ extension FacturaModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByFecha() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fecha', Sort.asc);
@@ -1126,6 +1565,18 @@ extension FacturaModelQuerySortThenBy
   QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByFechaDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fecha', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
     });
   }
 
@@ -1164,19 +1615,6 @@ extension FacturaModelQuerySortThenBy
       thenByLongitudVentaDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'longitudVenta', Sort.desc);
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy> thenByNumeroFactura() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroFactura', Sort.asc);
-    });
-  }
-
-  QueryBuilder<FacturaModel, FacturaModel, QAfterSortBy>
-      thenByNumeroFacturaDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroFactura', Sort.desc);
     });
   }
 
@@ -1220,9 +1658,17 @@ extension FacturaModelQuerySortThenBy
 
 extension FacturaModelQueryWhereDistinct
     on QueryBuilder<FacturaModel, FacturaModel, QDistinct> {
-  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByClienteId() {
+  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByClienteId(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'clienteId');
+      return query.addDistinctBy(r'clienteId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByCodigo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
     });
   }
 
@@ -1264,24 +1710,31 @@ extension FacturaModelQueryWhereDistinct
     });
   }
 
-  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByVendedorId() {
+  QueryBuilder<FacturaModel, FacturaModel, QDistinct> distinctByVendedorId(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'vendedorId');
+      return query.addDistinctBy(r'vendedorId', caseSensitive: caseSensitive);
     });
   }
 }
 
 extension FacturaModelQueryProperty
     on QueryBuilder<FacturaModel, FacturaModel, QQueryProperty> {
-  QueryBuilder<FacturaModel, int, QQueryOperations> numeroFacturaProperty() {
+  QueryBuilder<FacturaModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'numeroFactura');
+      return query.addPropertyName(r'id');
     });
   }
 
-  QueryBuilder<FacturaModel, int, QQueryOperations> clienteIdProperty() {
+  QueryBuilder<FacturaModel, String, QQueryOperations> clienteIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'clienteId');
+    });
+  }
+
+  QueryBuilder<FacturaModel, String, QQueryOperations> codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 
@@ -1329,7 +1782,7 @@ extension FacturaModelQueryProperty
     });
   }
 
-  QueryBuilder<FacturaModel, int, QQueryOperations> vendedorIdProperty() {
+  QueryBuilder<FacturaModel, String, QQueryOperations> vendedorIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vendedorId');
     });
@@ -1360,7 +1813,7 @@ const DetalleFacturaModelSchema = Schema(
     r'productoId': PropertySchema(
       id: 2,
       name: r'productoId',
-      type: IsarType.long,
+      type: IsarType.string,
     ),
     r'subtotal': PropertySchema(
       id: 3,
@@ -1380,6 +1833,12 @@ int _detalleFacturaModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.productoId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -1391,7 +1850,7 @@ void _detalleFacturaModelSerialize(
 ) {
   writer.writeLong(offsets[0], object.cantidad);
   writer.writeDouble(offsets[1], object.precioUnitario);
-  writer.writeLong(offsets[2], object.productoId);
+  writer.writeString(offsets[2], object.productoId);
   writer.writeDouble(offsets[3], object.subtotal);
 }
 
@@ -1404,7 +1863,7 @@ DetalleFacturaModel _detalleFacturaModelDeserialize(
   final object = DetalleFacturaModel();
   object.cantidad = reader.readLongOrNull(offsets[0]);
   object.precioUnitario = reader.readDoubleOrNull(offsets[1]);
-  object.productoId = reader.readLongOrNull(offsets[2]);
+  object.productoId = reader.readStringOrNull(offsets[2]);
   object.subtotal = reader.readDoubleOrNull(offsets[3]);
   return object;
 }
@@ -1421,7 +1880,7 @@ P _detalleFacturaModelDeserializeProp<P>(
     case 1:
       return (reader.readDoubleOrNull(offset)) as P;
     case 2:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readDoubleOrNull(offset)) as P;
     default:
@@ -1608,49 +2067,58 @@ extension DetalleFacturaModelQueryFilter on QueryBuilder<DetalleFacturaModel,
   }
 
   QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
-      productoIdEqualTo(int? value) {
+      productoIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
       productoIdGreaterThan(
-    int? value, {
+    String? value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
       productoIdLessThan(
-    int? value, {
+    String? value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
       productoIdBetween(
-    int? lower,
-    int? upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -1659,6 +2127,77 @@ extension DetalleFacturaModelQueryFilter on QueryBuilder<DetalleFacturaModel,
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'productoId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'productoId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DetalleFacturaModel, DetalleFacturaModel, QAfterFilterCondition>
+      productoIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'productoId',
+        value: '',
       ));
     });
   }

@@ -35,7 +35,7 @@ void main() {
 
   test('create + loadAll: persists a provider and returns it', () async {
     final proveedor = Proveedor(
-      id: 0,
+      codigo: 'PROV-001',
       nombre: 'Distribuidora Pegasus',
       nit: '800333444',
       telefono: '3009876543',
@@ -44,7 +44,7 @@ void main() {
 
     final created = await repository.create(proveedor);
 
-    expect(created.id, isNot(0));
+    expect(created.codigo, equals('PROV-001'));
     expect(created.nombre, equals('Distribuidora Pegasus'));
     expect(created.nit, equals('800333444'));
 
@@ -55,7 +55,7 @@ void main() {
 
   test('update: modifies a provider and changes are visible after reload', () async {
     final created = await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-002',
       nombre: 'Repuestos Moto JC',
       nit: '900111222',
       telefono: '3001234567',
@@ -63,7 +63,7 @@ void main() {
     ));
 
     final updated = await repository.update(Proveedor(
-      id: created.id,
+      codigo: created.codigo,
       nombre: 'Repuestos Moto JC Actualizado',
       nit: '900111222',
       telefono: '3009998888',
@@ -80,14 +80,14 @@ void main() {
 
   test('delete: removes a provider from storage', () async {
     final p1 = await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-003',
       nombre: 'Proveedor A',
       nit: '111222',
       telefono: '3001111111',
       direccion: 'Dir A',
     ));
     final p2 = await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-004',
       nombre: 'Proveedor B',
       nit: '333444',
       telefono: '3002222222',
@@ -97,31 +97,31 @@ void main() {
     var all = await repository.loadAll();
     expect(all, hasLength(2));
 
-    await repository.delete(p1.id);
+    await repository.delete(p1.codigo);
 
     all = await repository.loadAll();
     expect(all, hasLength(1));
-    expect(all.first.id, equals(p2.id));
+    expect(all.first.codigo, equals(p2.codigo));
     expect(all.first.nombre, equals('Proveedor B'));
   });
 
   test('loadAll: returns providers sorted alphabetically by nombre', () async {
     await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-005',
       nombre: 'Zorro Repuestos',
       nit: '999888',
       telefono: '3003333333',
       direccion: 'Dir Z',
     ));
     await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-006',
       nombre: 'Alpha Importaciones',
       nit: '111000',
       telefono: '3004444444',
       direccion: 'Dir A',
     ));
     await repository.create(Proveedor(
-      id: 0,
+      codigo: 'PROV-007',
       nombre: 'Moto Distribuidora',
       nit: '555666',
       telefono: '3005555555',

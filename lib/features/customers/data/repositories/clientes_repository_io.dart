@@ -33,11 +33,11 @@ class IsarClientesRepository implements ClientesRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = ClienteModel.fromDomain(cliente)..id = Isar.autoIncrement;
+    final model = ClienteModel.fromDomain(cliente);
     await isar.writeTxn(() async {
       await isar.clienteModels.put(model);
     });
-    final saved = await isar.clienteModels.get(model.id);
+    final saved = await isar.clienteModels.filter().codigoEqualTo(cliente.codigo).findFirst();
     SyncService.instance.enqueue('clientes', SyncOperation.insert, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
@@ -49,7 +49,11 @@ class IsarClientesRepository implements ClientesRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
+    final existing = await isar.clienteModels.filter().codigoEqualTo(cliente.codigo).findFirst();
     final model = ClienteModel.fromDomain(cliente);
+    if (existing != null) {
+      model.id = existing.id;
+    }
     await isar.writeTxn(() async {
       await isar.clienteModels.put(model);
     });
@@ -58,17 +62,19 @@ class IsarClientesRepository implements ClientesRepository {
   }
 
   @override
-  Future<void> delete(int id) async {
+  Future<void> delete(String codigo) async {
     final isar = _isar;
     if (isar == null) {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = await isar.clienteModels.get(id);
-    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+    final model = await isar.clienteModels.filter().codigoEqualTo(codigo).findFirst();
+    final json = model != null ? jsonEncode(model.toJson()) : '{"codigo":"$codigo"}';
 
     await isar.writeTxn(() async {
-      await isar.clienteModels.delete(id);
+      if (model != null) {
+        await isar.clienteModels.delete(model.id);
+      }
     });
     SyncService.instance.enqueue('clientes', SyncOperation.delete, json);
   }
@@ -76,10 +82,8 @@ class IsarClientesRepository implements ClientesRepository {
   Future<void> _seedDemoData(Isar isar) async {
     await isar.writeTxn(() async {
       for (final cliente in ClientesSeedData.demoClientes) {
-        final model = ClienteModel.fromDomain(cliente)
-          ..id = Isar.autoIncrement;
-        final assignedId = await isar.clienteModels.put(model);
-        model.id = assignedId;
+        final model = ClienteModel.fromDomain(cliente);
+        await isar.clienteModels.put(model);
       }
     });
   }

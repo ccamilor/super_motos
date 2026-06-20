@@ -72,7 +72,7 @@ lib/
 abstract class XRepository {
   Future<List<X>> loadAll();
   Future<X> create(X entity);
-  Future<void> delete(int id);
+  Future<void> delete(String codigo);
 }
 
 // Implementaciones
@@ -95,6 +95,7 @@ createXRepository() // factory selecciona según plataforma
 9. DevolucionModel
 
 **Todos tienen `isSynced = false` por defecto y `updatedAt` en `toJson()` para conflict detection.**
+**Todos tienen `Id id` (PK interno Isar) + `@Index(unique: true) String codigo` como business key.**
 
 ---
 
@@ -153,7 +154,8 @@ enum RolUsuario { admin, vendedor }
 - URL y anon key hardcoded en `lib/core/services/supabase_service.dart`
 - Script SQL completo en `database/schema.sql` — ejecutar en SQL Editor de Supabase
 - Tablas en Supabase: clientes, facturas, detalles_factura, devoluciones, proveedores, historial_precios, productos, inventario_camion, inventario_bodega
-- Conflict resolution: `onConflict: 'id'` (o `numero_factura` para facturas)
+- Todas las tablas usan `TEXT` primary keys (campo `id` en Supabase = `codigo` del modelo)
+- Conflict resolution: `onConflict: 'codigo'` (o `numero_factura` para facturas)
 
 ### Usuarios de login
 | Nombre | Email | Password | Rol |
@@ -334,3 +336,42 @@ flutter test
 ### Commits de esta sesión
 - `fix(ui): reduce padding/spacing in cards, fix indentation, grid overflow issues`
 - `fix(scaffold): add FAB and fix icon conflicts in AppBar and SliverAppBar`
+
+---
+
+## 16. Migración a String ID (2026-06-19)
+
+### Cambio principal
+Todos los identificadores de dominio migraron de `int id` a `String codigo` (alfanumérico libre).
+
+### Modelos Isar
+- `Id id` — auto-increment, PK interno de Isar (no expuesto al dominio)
+- `@Index(unique: true) String codigo` — business key visible en todo el dominio
+
+### Entidades de dominio
+- Todas usan `String codigo` como identificador principal
+- `delete(String codigo)` en todos los repositorios (antes `delete(int id)`)
+
+### Supabase
+- Todas las tablas usan `TEXT` primary keys
+- El campo `id` en Supabase contiene el valor de `codigo` del modelo
+- Conflict resolution: `onConflict: 'codigo'`
+
+### CSV
+- Primera columna: `codigo` (String) — antes `id` (int)
+- Columna canasta: `canasta_id` (String) — antes `numero_canasta` (int)
+
+### Seed data — prefijos por entidad
+| Prefijo | Entidad | Ejemplo |
+|---|---|---|
+| `PROD-` | Producto | `PROD-001` |
+| `CLI-` | Cliente | `CLI-001` |
+| `FAC-` | Factura | `FAC-001` |
+| `DEV-` | Devolución | `DEV-001` |
+| `PROV-` | Proveedor | `PROV-001` |
+| `HP-` | HistorialPrecio | `HP-001` |
+| `USR-` | Usuario | `USR-001` |
+
+### Canastas
+- Alfanuméricas: `A-1`, `B-2`, `C-3`, etc.
+- Antes eran numéricas: `1`, `2`, `3`, etc.

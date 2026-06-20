@@ -10,7 +10,6 @@ const String _devolucionesStorageKey = 'super_motos_devoluciones_data';
 
 class WebDevolucionesRepository implements DevolucionesRepository {
   static List<Devolucion> _devoluciones = [];
-  static int _nextId = 0;
 
   @override
   Future<List<Devolucion>> loadAll() async {
@@ -18,13 +17,9 @@ class WebDevolucionesRepository implements DevolucionesRepository {
       final savedData = getWebStorage().getItem(_devolucionesStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _devoluciones = _decode(savedData);
-        if (_devoluciones.isNotEmpty) {
-          _nextId = _devoluciones.map((d) => d.id).reduce((a, b) => a > b ? a : b) + 1;
-        }
       }
       if (_devoluciones.isEmpty) {
         _devoluciones = List<Devolucion>.from(DevolucionesSeedData.demoDevoluciones);
-        _nextId = _devoluciones.length + 1;
         getWebStorage().setItem(_devolucionesStorageKey, _encode(_devoluciones));
       }
     }
@@ -36,33 +31,23 @@ class WebDevolucionesRepository implements DevolucionesRepository {
 
   @override
   Future<Devolucion> create(Devolucion devolucion) async {
-    final created = Devolucion(
-      id: _nextId++,
-      facturaId: devolucion.facturaId,
-      productoId: devolucion.productoId,
-      cantidad: devolucion.cantidad,
-      numeroCanastaDestino: devolucion.numeroCanastaDestino,
-      fechaDevolucion: devolucion.fechaDevolucion,
-      motivo: devolucion.motivo,
-      isSynced: devolucion.isSynced,
-    );
-    _devoluciones = [..._devoluciones, created];
+    _devoluciones = [..._devoluciones, devolucion];
     _persist();
-    return created;
+    return devolucion;
   }
 
   @override
-  Future<Devolucion?> getById(int id) async {
+  Future<Devolucion?> getByCodigo(String codigo) async {
     try {
-      return _devoluciones.firstWhere((d) => d.id == id);
+      return _devoluciones.firstWhere((d) => d.codigo == codigo);
     } catch (_) {
       return null;
     }
   }
 
   @override
-  Future<void> delete(int id) async {
-    _devoluciones = _devoluciones.where((d) => d.id != id).toList();
+  Future<void> delete(String codigo) async {
+    _devoluciones = _devoluciones.where((d) => d.codigo != codigo).toList();
     _persist();
   }
 
@@ -81,11 +66,11 @@ class WebDevolucionesRepository implements DevolucionesRepository {
 
   Map<String, dynamic> _devolucionToMap(Devolucion d) {
     return {
-      'id': d.id,
+      'codigo': d.codigo,
       'facturaId': d.facturaId,
       'productoId': d.productoId,
       'cantidad': d.cantidad,
-      'numeroCanastaDestino': d.numeroCanastaDestino,
+      'canastaDestino': d.canastaDestino,
       'fechaDevolucion': d.fechaDevolucion.toIso8601String(),
       'motivo': d.motivo,
       'isSynced': d.isSynced,
@@ -94,11 +79,11 @@ class WebDevolucionesRepository implements DevolucionesRepository {
 
   Devolucion _devolucionFromMap(Map<String, dynamic> m) {
     return Devolucion(
-      id: m['id'] as int,
+      codigo: m['codigo'] as String,
       facturaId: m['facturaId'] as String,
       productoId: m['productoId'] as String,
       cantidad: m['cantidad'] as int,
-      numeroCanastaDestino: m['numeroCanastaDestino'] as String,
+      canastaDestino: m['canastaDestino'] as String,
       fechaDevolucion: DateTime.parse(m['fechaDevolucion'] as String),
       motivo: m['motivo'] as String,
       isSynced: m['isSynced'] as bool? ?? false,

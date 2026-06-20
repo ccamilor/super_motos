@@ -36,17 +36,15 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
   Future<void> _loadData() async {
     try {
       final productos = (await _inventoryRepo.loadInventory()).productos;
-      final pid = int.tryParse(widget.devolucion.productoId);
+      final pid = widget.devolucion.productoId;
       if (!mounted) return;
       setState(() {
-        _producto = pid == null
-            ? null
-            : productos.firstWhere(
-                (p) => p.id == pid,
+        _producto = productos.firstWhere(
+          (p) => p.codigo == pid,
                 orElse: () => productos.isNotEmpty
                     ? productos.first
                     : ProductoModel()
-                      ..nombre = 'Producto #${widget.devolucion.productoId}'
+                      ..nombre = 'Producto ${widget.devolucion.productoId}'
                       ..precio = 0
                       ..isOriginal = false
                       ..motosCompatibles = ''
@@ -68,7 +66,7 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar devolucion', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(
-          'Estas seguro de eliminar la devolucion #${widget.devolucion.id}? El stock NO se descontara automaticamente.',
+          'Estas seguro de eliminar la devolucion ${widget.devolucion.codigo}? El stock NO se descontara automaticamente.',
         ),
         actions: [
           TextButton(
@@ -88,7 +86,7 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
 
     setState(() => _isDeleting = true);
     try {
-      await _devolucionesRepo.delete(widget.devolucion.id);
+      await _devolucionesRepo.delete(widget.devolucion.codigo);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -116,7 +114,7 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Devolucion #${d.id}', style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('Devolucion ${d.codigo}', style: const TextStyle(fontWeight: FontWeight.w900)),
         actions: [
           if (_isLoading)
             const Padding(
@@ -150,7 +148,7 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
                     const SizedBox(height: 8),
                     _buildInfoRow('Cantidad devuelta', '+${d.cantidad}', colorScheme, valueColor: colorScheme.primary),
                     const SizedBox(height: 8),
-                    _buildInfoRow('Canasta destino', d.numeroCanastaDestino, colorScheme),
+                    _buildInfoRow('Canasta destino', d.canastaDestino, colorScheme),
                     const SizedBox(height: 8),
                     _buildInfoRow('Motivo', d.motivo, colorScheme, multiline: true),
                     const SizedBox(height: 24),
@@ -175,7 +173,7 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
         children: [
           const Text('Devolucion', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
           const SizedBox(height: 4),
-          Text('#${d.id}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text('#${d.codigo}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

@@ -15,6 +15,7 @@ void main() {
   late Directory tempDir;
   late IsarFacturasRepository facturasRepo;
   late IsarInventoryRepository inventoryRepo;
+  int _facturaCounter = 0;
 
   setUpAll(() async {
     await Isar.initializeIsarCore(download: true);
@@ -35,6 +36,7 @@ void main() {
 
     facturasRepo = IsarFacturasRepository();
     inventoryRepo = IsarInventoryRepository();
+    _facturaCounter = 0;
   });
 
   tearDown(() async {
@@ -44,16 +46,17 @@ void main() {
     }
   });
 
-  Factura buildFactura({DateTime? fecha, TipoPago tipoPago = TipoPago.contado}) {
+  Factura buildFactura({DateTime? fecha, TipoPago tipoPago = TipoPago.contado, String? codigo}) {
+    _facturaCounter++;
     return Factura(
-      numeroFactura: 0,
-      clienteId: 1,
-      vendedorId: 1,
+      codigo: codigo ?? 'FAC-TEST-${_facturaCounter.toString().padLeft(3, '0')}',
+      clienteId: 'CLI-001',
+      vendedorId: 'USR-001',
       fecha: fecha ?? DateTime.now(),
       total: 50000,
       tipoPago: tipoPago,
       detalles: const [
-        DetalleFactura(productoId: 1, cantidad: 2, precioUnitario: 25000, subtotal: 50000),
+        DetalleFactura(productoId: 'PROD-001', cantidad: 2, precioUnitario: 25000, subtotal: 50000),
       ],
     );
   }
@@ -68,27 +71,27 @@ void main() {
 
     final all = await facturasRepo.loadAll();
     expect(all, hasLength(2));
-    expect(all.first.numeroFactura, equals(reciente.numeroFactura));
-    expect(all.last.numeroFactura, equals(antigua.numeroFactura));
+    expect(all.first.codigo, equals(reciente.codigo));
+    expect(all.last.codigo, equals(antigua.codigo));
     expect(all.first.tipoPago, equals(TipoPago.contado));
   });
 
-  test('getById: returns the factura with its detalles', () async {
+  test('getByCodigo: returns the factura with its detalles', () async {
     final creada = await facturasRepo.create(buildFactura());
 
-    final fetched = await facturasRepo.getById(creada.numeroFactura);
+    final fetched = await facturasRepo.getByCodigo(creada.codigo);
 
     expect(fetched, isNotNull);
-    expect(fetched!.numeroFactura, equals(creada.numeroFactura));
-    expect(fetched.clienteId, equals(1));
+    expect(fetched!.codigo, equals(creada.codigo));
+    expect(fetched.clienteId, equals('CLI-001'));
     expect(fetched.detalles, hasLength(1));
-    expect(fetched.detalles.first.productoId, equals(1));
+    expect(fetched.detalles.first.productoId, equals('PROD-001'));
     expect(fetched.detalles.first.cantidad, equals(2));
     expect(fetched.detalles.first.subtotal, equals(50000));
   });
 
-  test('getById: returns null for unknown id', () async {
-    final result = await facturasRepo.getById(99999);
+  test('getByCodigo: returns null for unknown codigo', () async {
+    final result = await facturasRepo.getByCodigo('FAC-99999');
     expect(result, isNull);
   });
 
@@ -99,27 +102,28 @@ void main() {
     var all = await facturasRepo.loadAll();
     expect(all, hasLength(2));
 
-    await facturasRepo.delete(f1.numeroFactura);
+    await facturasRepo.delete(f1.codigo);
 
     all = await facturasRepo.loadAll();
     expect(all, hasLength(1));
-    expect(all.first.numeroFactura, equals(f2.numeroFactura));
+    expect(all.first.codigo, equals(f2.codigo));
   });
 
   test('decrementCamionStock: subtracts the cantidad from the camion stock', () async {
     final camion = InventarioCamionModel()
-      ..productoId = 42
+      ..codigo = 'CAMION-TEST-001'
+      ..productoId = 'PROD-042'
       ..cantidad = 10
-      ..numeroCanasta = 1;
+      ..canastaId = '1';
     await isar.writeTxn(() async {
       await isar.inventarioCamionModels.put(camion);
     });
 
-    await inventoryRepo.decrementCamionStock(42, 3);
+    await inventoryRepo.decrementCamionStock('PROD-042', 3);
 
     final actualizado = await isar.inventarioCamionModels
         .filter()
-        .productoIdEqualTo(42)
+        .productoIdEqualTo('PROD-042')
         .findFirst();
     expect(actualizado, isNotNull);
     expect(actualizado!.cantidad, equals(7));
@@ -127,28 +131,29 @@ void main() {
 
   test('decrementCamionStock: throws StateError when stock is insufficient', () async {
     final camion = InventarioCamionModel()
-      ..productoId = 50
+      ..codigo = 'CAMION-TEST-002'
+      ..productoId = 'PROD-050'
       ..cantidad = 2
-      ..numeroCanasta = 1;
+      ..canastaId = '1';
     await isar.writeTxn(() async {
       await isar.inventarioCamionModels.put(camion);
     });
 
     expect(
-      () => inventoryRepo.decrementCamionStock(50, 5),
+      () => inventoryRepo.decrementCamionStock('PROD-050', 5),
       throwsA(isA<StateError>()),
     );
 
     final sinCambios = await isar.inventarioCamionModels
         .filter()
-        .productoIdEqualTo(50)
+        .productoIdEqualTo('PROD-050')
         .findFirst();
     expect(sinCambios!.cantidad, equals(2));
   });
 
   test('decrementCamionStock: throws StateError when no stock record exists', () async {
     expect(
-      () => inventoryRepo.decrementCamionStock(9999, 1),
+      () => inventoryRepo.decrementCamionStock('PROD-9999', 1),
       throwsA(isA<StateError>()),
     );
   });

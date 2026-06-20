@@ -6,21 +6,23 @@ part 'devolucion_model.g.dart';
 @collection
 class DevolucionModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String facturaId;
   late String productoId;
   late int cantidad;
-  late String numeroCanastaDestino;
+  late String canastaDestino;
   late DateTime fechaDevolucion;
   late String motivo;
   bool isSynced = false;
 
   Devolucion toDomain() {
     return Devolucion(
-      id: id,
+      codigo: codigo,
       facturaId: facturaId,
       productoId: productoId,
       cantidad: cantidad,
-      numeroCanastaDestino: numeroCanastaDestino,
+      canastaDestino: canastaDestino,
       fechaDevolucion: fechaDevolucion,
       motivo: motivo,
       isSynced: isSynced,
@@ -29,11 +31,11 @@ class DevolucionModel {
 
   static DevolucionModel fromDomain(Devolucion domain) {
     return DevolucionModel()
-      ..id = domain.id
+      ..codigo = domain.codigo
       ..facturaId = domain.facturaId
       ..productoId = domain.productoId
       ..cantidad = domain.cantidad
-      ..numeroCanastaDestino = domain.numeroCanastaDestino
+      ..canastaDestino = domain.canastaDestino
       ..fechaDevolucion = domain.fechaDevolucion
       ..motivo = domain.motivo
       ..isSynced = domain.isSynced;
@@ -41,11 +43,11 @@ class DevolucionModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'factura_id': facturaId,
       'producto_id': productoId,
       'cantidad': cantidad,
-      'numero_canasta_destino': numeroCanastaDestino,
+      'canasta_destino': canastaDestino,
       'fecha_devolucion': fechaDevolucion.toIso8601String(),
       'motivo': motivo,
       'is_synced': isSynced,

@@ -41,7 +41,7 @@ class _ProductoFormPageState extends State<ProductoFormPage> {
     _motosCtrl = TextEditingController(text: e?.motosCompatibles ?? '');
     _stockMinCtrl = TextEditingController(text: e?.stockMinimo.toString() ?? '0');
     _camionCantCtrl = TextEditingController(text: e?.cantidadCamion.toString() ?? '0');
-    _canastaCtrl = TextEditingController(text: e?.numeroCanasta.toString() ?? '0');
+    _canastaCtrl = TextEditingController(text: e?.canastaId ?? '');
     _bodegaCantCtrl = TextEditingController(text: e?.cantidadBodega.toString() ?? '0');
     _isOriginal = e?.isOriginal ?? true;
     _agregarCamion = (e?.cantidadCamion ?? 0) > 0;
@@ -69,14 +69,14 @@ class _ProductoFormPageState extends State<ProductoFormPage> {
     setState(() => _isSaving = true);
 
     final entry = InventoryEntry(
-      id: widget.entry?.id ?? 0,
+      codigo: widget.entry?.codigo ?? '',
       nombre: _nombreCtrl.text.trim(),
       precio: double.tryParse(_precioCtrl.text) ?? 0,
       isOriginal: _isOriginal,
       motosCompatibles: _motosCtrl.text.trim(),
       stockMinimo: int.tryParse(_stockMinCtrl.text) ?? 0,
       cantidadCamion: _agregarCamion ? int.tryParse(_camionCantCtrl.text) ?? 0 : 0,
-      numeroCanasta: _canastaVisible ? int.tryParse(_canastaCtrl.text) ?? 0 : 0,
+      canastaId: _canastaVisible ? _canastaCtrl.text.trim() : '',
       cantidadBodega: _agregarBodega ? int.tryParse(_bodegaCantCtrl.text) ?? 0 : 0,
     );
 
@@ -195,10 +195,9 @@ class _ProductoFormPageState extends State<ProductoFormPage> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _canastaCtrl,
-                  keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Número de canasta',
-                    hintText: 'Ej: 2',
+                    labelText: 'Canasta ID',
+                    hintText: 'Ej: A-2',
                   ),
                 ),
               ],

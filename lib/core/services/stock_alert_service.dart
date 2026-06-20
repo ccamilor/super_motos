@@ -43,7 +43,7 @@ class StockAlertService {
   }
 
   Future<void> checkAndNotify({
-    required int productoId,
+    required String productoId,
     required String productoNombre,
     required int nuevaCantidad,
     required int stockMinimo,
@@ -51,7 +51,7 @@ class StockAlertService {
     if (nuevaCantidad < stockMinimo) {
       await _incrementLowStockCount();
       await _showNotification(
-        id: productoId,
+        id: productoId.hashCode,
         title: 'Stock Bajo',
         body: '$productoNombre — quedan $nuevaCantidad und. Min: $stockMinimo',
       );

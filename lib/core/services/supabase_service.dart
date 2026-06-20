@@ -66,7 +66,7 @@ class SupabaseService {
   Usuario _getUsuarioFromUser(User user) {
     final rolStr = user.userMetadata?['rol'] as String? ?? 'vendedor';
     return Usuario(
-      id: int.tryParse(user.id.substring(0, 8), radix: 16) ?? 0,
+      codigo: user.id,
       nombre: user.userMetadata?['nombre'] as String? ?? user.email ?? 'Usuario',
       email: user.email ?? '',
       rol: rolStr == 'admin' ? RolUsuario.admin : RolUsuario.vendedor,

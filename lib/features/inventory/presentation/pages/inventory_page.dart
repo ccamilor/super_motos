@@ -309,11 +309,11 @@ class _InventoryPageState extends State<InventoryPage>
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final camion = _camion.firstWhere(
-          (item) => item.productoId == producto.id,
+          (item) => item.productoId == producto.codigo,
           orElse: () => InventarioCamionModel()
-            ..productoId = producto.id
+            ..productoId = producto.codigo
             ..cantidad = 0
-            ..numeroCanasta = 0,
+            ..canastaId = '0',
         );
         final bajoStock = camion.cantidad < producto.stockMinimo;
 
@@ -328,7 +328,7 @@ class _InventoryPageState extends State<InventoryPage>
           alertText: bajoStock
               ? 'STOCK BAJO (Min: ${producto.stockMinimo})'
               : null,
-          leftLabel: 'Canasta #${camion.numeroCanasta}',
+          leftLabel: 'Canasta ${camion.canastaId}',
           leftValue: '${camion.cantidad} und',
           rightLabel: 'Disponible',
           rightValue: '${camion.cantidad} und',
@@ -353,9 +353,9 @@ class _InventoryPageState extends State<InventoryPage>
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final bodega = _bodega.firstWhere(
-          (item) => item.productoId == producto.id,
+          (item) => item.productoId == producto.codigo,
           orElse: () => InventarioBodegaModel()
-            ..productoId = producto.id
+            ..productoId = producto.codigo
             ..cantidad = 0,
         );
 
@@ -391,16 +391,16 @@ class _InventoryPageState extends State<InventoryPage>
       itemBuilder: (context, index) {
         final producto = filtered[index];
         final camion = _camion.firstWhere(
-          (item) => item.productoId == producto.id,
+          (item) => item.productoId == producto.codigo,
           orElse: () => InventarioCamionModel()
-            ..productoId = producto.id
+            ..productoId = producto.codigo
             ..cantidad = 0
-            ..numeroCanasta = 0,
+            ..canastaId = '0',
         );
         final bodega = _bodega.firstWhere(
-          (item) => item.productoId == producto.id,
+          (item) => item.productoId == producto.codigo,
           orElse: () => InventarioBodegaModel()
-            ..productoId = producto.id
+            ..productoId = producto.codigo
             ..cantidad = 0,
         );
 
@@ -547,14 +547,14 @@ class _InventoryPageState extends State<InventoryPage>
                         InkWell(
                           onTap: () => _openForm(
                             entry: InventoryEntry(
-                              id: producto.id,
+                              codigo: producto.codigo,
                               nombre: producto.nombre,
                               precio: producto.precio,
                               isOriginal: producto.isOriginal,
                               motosCompatibles: producto.motosCompatibles,
                               stockMinimo: producto.stockMinimo,
                               cantidadCamion: camion.cantidad,
-                              numeroCanasta: camion.numeroCanasta,
+                              canastaId: camion.canastaId,
                               cantidadBodega: bodega.cantidad,
                             ),
                           ),
@@ -577,19 +577,19 @@ class _InventoryPageState extends State<InventoryPage>
                           onTap: () async {
                             final confirm = await _confirmDelete(
                               InventoryEntry(
-                                id: producto.id,
+                                codigo: producto.codigo,
                                 nombre: producto.nombre,
                                 precio: producto.precio,
                                 isOriginal: producto.isOriginal,
                                 motosCompatibles: producto.motosCompatibles,
                                 stockMinimo: producto.stockMinimo,
                                 cantidadCamion: camion.cantidad,
-                                numeroCanasta: camion.numeroCanasta,
+                                canastaId: camion.canastaId,
                                 cantidadBodega: bodega.cantidad,
                               ),
                             );
                             if (confirm) {
-                              await _repository.deleteProduct(producto.id);
+                              await _repository.deleteProduct(producto.codigo);
                               _loadInventory();
                             }
                           },

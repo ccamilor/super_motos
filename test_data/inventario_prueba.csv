@@ -1,4 +1,4 @@
-id,nombre,precio,is_original,motos_compatibles,stock_minimo,cantidad_camion,numero_canasta,cantidad_bodega
+codigo,nombre,precio,is_original,motos_compatibles,stock_minimo,cantidad_camion,canasta_id,cantidad_bodega
 101,Cadena Reforzada 428H-130L,35000,true,Yamaha YBR125 - Honda CB125F - Suzuki GN125,3,12,1,50
 102,Pastillas Freno Delantero Semi-Metalicas,18500,false,Pulsar NS200 - KTM Duke 200 - Dominar 250,8,25,2,120
 103,Kit Empaques Motor Completo,92000,true,Yamaha FZ25 - Honda CB190R - Suzuki Gixxer 250,2,5,3,15

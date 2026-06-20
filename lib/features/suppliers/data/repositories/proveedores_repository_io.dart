@@ -26,11 +26,11 @@ class IsarProveedoresRepository implements ProveedoresRepository {
   Future<Proveedor> create(Proveedor proveedor) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
-    final model = ProveedorModel.fromDomain(proveedor)..id = Isar.autoIncrement;
+    final model = ProveedorModel.fromDomain(proveedor);
     await isar.writeTxn(() async {
       await isar.proveedorModels.put(model);
     });
-    final saved = await isar.proveedorModels.get(model.id);
+    final saved = await isar.proveedorModels.filter().codigoEqualTo(proveedor.codigo).findFirst();
     SyncService.instance.enqueue('proveedores', SyncOperation.insert, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
@@ -39,7 +39,11 @@ class IsarProveedoresRepository implements ProveedoresRepository {
   Future<Proveedor> update(Proveedor proveedor) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
+    final existing = await isar.proveedorModels.filter().codigoEqualTo(proveedor.codigo).findFirst();
     final model = ProveedorModel.fromDomain(proveedor);
+    if (existing != null) {
+      model.id = existing.id;
+    }
     await isar.writeTxn(() async {
       await isar.proveedorModels.put(model);
     });
@@ -48,13 +52,15 @@ class IsarProveedoresRepository implements ProveedoresRepository {
   }
 
   @override
-  Future<void> delete(int id) async {
+  Future<void> delete(String codigo) async {
     final isar = _isar;
     if (isar == null) throw StateError('Isar no esta inicializado.');
-    final model = await isar.proveedorModels.get(id);
-    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+    final model = await isar.proveedorModels.filter().codigoEqualTo(codigo).findFirst();
+    final json = model != null ? jsonEncode(model.toJson()) : '{"codigo":"$codigo"}';
     await isar.writeTxn(() async {
-      await isar.proveedorModels.delete(id);
+      if (model != null) {
+        await isar.proveedorModels.delete(model.id);
+      }
     });
     SyncService.instance.enqueue('proveedores', SyncOperation.delete, json);
   }
@@ -62,10 +68,8 @@ class IsarProveedoresRepository implements ProveedoresRepository {
   Future<void> _seedDemoData(Isar isar) async {
     await isar.writeTxn(() async {
       for (final proveedor in ProveedoresSeedData.demoProveedores) {
-        final model = ProveedorModel.fromDomain(proveedor)
-          ..id = Isar.autoIncrement;
-        final assignedId = await isar.proveedorModels.put(model);
-        model.id = assignedId;
+        final model = ProveedorModel.fromDomain(proveedor);
+        await isar.proveedorModels.put(model);
       }
     });
   }

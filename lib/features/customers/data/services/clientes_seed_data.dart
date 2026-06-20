@@ -4,7 +4,7 @@ import 'package:super_motos/features/customers/domain/entities/cliente.dart';
 class ClientesSeedData {
   static const List<Cliente> demoClientes = [
     Cliente(
-      id: 1,
+      codigo: 'CLI-001',
       nombre: 'Tienda Don Repuesto',
       identificadorFiscal: '900123456',
       direccion: 'Cra 15 #45-30, Bogota',
@@ -13,7 +13,7 @@ class ClientesSeedData {
       estadoCuenta: EstadoCuenta.activo,
     ),
     Cliente(
-      id: 2,
+      codigo: 'CLI-002',
       nombre: 'Moto Servicio El Veloz',
       identificadorFiscal: '800987654',
       direccion: 'Calle 7 #22-10, Medellin',
@@ -22,7 +22,7 @@ class ClientesSeedData {
       estadoCuenta: EstadoCuenta.sinCredito,
     ),
     Cliente(
-      id: 3,
+      codigo: 'CLI-003',
       nombre: 'Repuestos La Esquina',
       identificadorFiscal: '700555333',
       direccion: 'Av 30 #50-15, Cali',

@@ -17,18 +17,23 @@ const UsuarioModelSchema = CollectionSchema(
   name: r'UsuarioModel',
   id: 2482984709579779713,
   properties: {
-    r'email': PropertySchema(
+    r'codigo': PropertySchema(
       id: 0,
+      name: r'codigo',
+      type: IsarType.string,
+    ),
+    r'email': PropertySchema(
+      id: 1,
       name: r'email',
       type: IsarType.string,
     ),
     r'nombre': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'rol': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'rol',
       type: IsarType.string,
     )
@@ -38,7 +43,21 @@ const UsuarioModelSchema = CollectionSchema(
   deserialize: _usuarioModelDeserialize,
   deserializeProp: _usuarioModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _usuarioModelGetId,
@@ -53,6 +72,7 @@ int _usuarioModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.codigo.length * 3;
   bytesCount += 3 + object.email.length * 3;
   bytesCount += 3 + object.nombre.length * 3;
   bytesCount += 3 + object.rol.length * 3;
@@ -65,9 +85,10 @@ void _usuarioModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.email);
-  writer.writeString(offsets[1], object.nombre);
-  writer.writeString(offsets[2], object.rol);
+  writer.writeString(offsets[0], object.codigo);
+  writer.writeString(offsets[1], object.email);
+  writer.writeString(offsets[2], object.nombre);
+  writer.writeString(offsets[3], object.rol);
 }
 
 UsuarioModel _usuarioModelDeserialize(
@@ -77,10 +98,11 @@ UsuarioModel _usuarioModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = UsuarioModel();
-  object.email = reader.readString(offsets[0]);
+  object.codigo = reader.readString(offsets[0]);
+  object.email = reader.readString(offsets[1]);
   object.id = id;
-  object.nombre = reader.readString(offsets[1]);
-  object.rol = reader.readString(offsets[2]);
+  object.nombre = reader.readString(offsets[2]);
+  object.rol = reader.readString(offsets[3]);
   return object;
 }
 
@@ -96,6 +118,8 @@ P _usuarioModelDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -113,6 +137,61 @@ List<IsarLinkBase<dynamic>> _usuarioModelGetLinks(UsuarioModel object) {
 void _usuarioModelAttach(
     IsarCollection<dynamic> col, Id id, UsuarioModel object) {
   object.id = id;
+}
+
+extension UsuarioModelByIndex on IsarCollection<UsuarioModel> {
+  Future<UsuarioModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  UsuarioModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<UsuarioModel?>> getAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<UsuarioModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(UsuarioModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(UsuarioModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<UsuarioModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<UsuarioModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension UsuarioModelQueryWhereSort
@@ -192,10 +271,190 @@ extension UsuarioModelQueryWhere
       ));
     });
   }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterWhereClause> codigoEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterWhereClause> codigoNotEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension UsuarioModelQueryFilter
     on QueryBuilder<UsuarioModel, UsuarioModel, QFilterCondition> {
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition> codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition> codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition> codigoMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition>
+      codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<UsuarioModel, UsuarioModel, QAfterFilterCondition> emailEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -659,6 +918,18 @@ extension UsuarioModelQueryLinks
 
 extension UsuarioModelQuerySortBy
     on QueryBuilder<UsuarioModel, UsuarioModel, QSortBy> {
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> sortByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
@@ -698,6 +969,18 @@ extension UsuarioModelQuerySortBy
 
 extension UsuarioModelQuerySortThenBy
     on QueryBuilder<UsuarioModel, UsuarioModel, QSortThenBy> {
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<UsuarioModel, UsuarioModel, QAfterSortBy> thenByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
@@ -749,6 +1032,13 @@ extension UsuarioModelQuerySortThenBy
 
 extension UsuarioModelQueryWhereDistinct
     on QueryBuilder<UsuarioModel, UsuarioModel, QDistinct> {
+  QueryBuilder<UsuarioModel, UsuarioModel, QDistinct> distinctByCodigo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<UsuarioModel, UsuarioModel, QDistinct> distinctByEmail(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -776,6 +1066,12 @@ extension UsuarioModelQueryProperty
   QueryBuilder<UsuarioModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<UsuarioModel, String, QQueryOperations> codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 

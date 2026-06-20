@@ -51,7 +51,7 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
       setState(() {
         _devoluciones = devoluciones;
         _productosByStringId = {
-          for (final p in productos) p.id.toString(): p,
+          for (final p in productos) p.codigo: p,
         };
       });
     } catch (e) {
@@ -89,7 +89,7 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
     return _devoluciones.where((d) {
       return d.facturaId.toLowerCase().contains(q) ||
           d.motivo.toLowerCase().contains(q) ||
-          d.numeroCanastaDestino.toLowerCase().contains(q);
+          d.canastaDestino.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -204,7 +204,7 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
                 Row(
                   children: [
                     Text(
-                      'Devolucion #${devolucion.id}',
+                      'Devolucion ${devolucion.codigo}',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),
@@ -260,7 +260,7 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
                     Icon(Icons.inbox_outlined, size: 14, color: colorScheme.primary),
                     const SizedBox(width: 4),
                     Text(
-                      'Canasta ${devolucion.numeroCanastaDestino}',
+                      'Canasta ${devolucion.canastaDestino}',
                       style: TextStyle(color: colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 12),

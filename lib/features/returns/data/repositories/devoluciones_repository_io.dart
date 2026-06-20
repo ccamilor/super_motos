@@ -33,38 +33,40 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = DevolucionModel.fromDomain(devolucion)..id = Isar.autoIncrement;
+    final model = DevolucionModel.fromDomain(devolucion);
     await isar.writeTxn(() async {
       await isar.devolucionModels.put(model);
     });
-    final saved = await isar.devolucionModels.get(model.id);
+    final saved = await isar.devolucionModels.filter().codigoEqualTo(devolucion.codigo).findFirst();
     SyncService.instance.enqueue('devoluciones', SyncOperation.insert, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
 
   @override
-  Future<Devolucion?> getById(int id) async {
+  Future<Devolucion?> getByCodigo(String codigo) async {
     final isar = _isar;
     if (isar == null) {
       return null;
     }
 
-    final model = await isar.devolucionModels.get(id);
+    final model = await isar.devolucionModels.filter().codigoEqualTo(codigo).findFirst();
     return model?.toDomain();
   }
 
   @override
-  Future<void> delete(int id) async {
+  Future<void> delete(String codigo) async {
     final isar = _isar;
     if (isar == null) {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = await isar.devolucionModels.get(id);
-    final json = model != null ? jsonEncode(model.toJson()) : '{"id":"$id"}';
+    final model = await isar.devolucionModels.filter().codigoEqualTo(codigo).findFirst();
+    final json = model != null ? jsonEncode(model.toJson()) : '{"codigo":"$codigo"}';
 
     await isar.writeTxn(() async {
-      await isar.devolucionModels.delete(id);
+      if (model != null) {
+        await isar.devolucionModels.delete(model.id);
+      }
     });
     SyncService.instance.enqueue('devoluciones', SyncOperation.delete, json);
   }
@@ -72,9 +74,8 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
   Future<void> _seedDemoData(Isar isar) async {
     await isar.writeTxn(() async {
       for (final devolucion in DevolucionesSeedData.demoDevoluciones) {
-        final model = DevolucionModel.fromDomain(devolucion)..id = Isar.autoIncrement;
-        final assignedId = await isar.devolucionModels.put(model);
-        model.id = assignedId;
+        final model = DevolucionModel.fromDomain(devolucion);
+        await isar.devolucionModels.put(model);
       }
     });
   }

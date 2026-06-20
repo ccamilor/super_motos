@@ -17,48 +17,53 @@ const ClienteModelSchema = CollectionSchema(
   name: r'ClienteModel',
   id: -8935630899739365906,
   properties: {
-    r'direccion': PropertySchema(
+    r'codigo': PropertySchema(
       id: 0,
+      name: r'codigo',
+      type: IsarType.string,
+    ),
+    r'direccion': PropertySchema(
+      id: 1,
       name: r'direccion',
       type: IsarType.string,
     ),
     r'estadoCuenta': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'estadoCuenta',
       type: IsarType.string,
     ),
     r'identificadorFiscal': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'identificadorFiscal',
       type: IsarType.string,
     ),
     r'isSynced': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'latitud': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'latitud',
       type: IsarType.double,
     ),
     r'limiteCredito': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'limiteCredito',
       type: IsarType.double,
     ),
     r'longitud': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'longitud',
       type: IsarType.double,
     ),
     r'nombre': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'saldoPendiente': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'saldoPendiente',
       type: IsarType.double,
     )
@@ -68,7 +73,21 @@ const ClienteModelSchema = CollectionSchema(
   deserialize: _clienteModelDeserialize,
   deserializeProp: _clienteModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _clienteModelGetId,
@@ -83,6 +102,7 @@ int _clienteModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.codigo.length * 3;
   bytesCount += 3 + object.direccion.length * 3;
   bytesCount += 3 + object.estadoCuenta.length * 3;
   bytesCount += 3 + object.identificadorFiscal.length * 3;
@@ -96,15 +116,16 @@ void _clienteModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.direccion);
-  writer.writeString(offsets[1], object.estadoCuenta);
-  writer.writeString(offsets[2], object.identificadorFiscal);
-  writer.writeBool(offsets[3], object.isSynced);
-  writer.writeDouble(offsets[4], object.latitud);
-  writer.writeDouble(offsets[5], object.limiteCredito);
-  writer.writeDouble(offsets[6], object.longitud);
-  writer.writeString(offsets[7], object.nombre);
-  writer.writeDouble(offsets[8], object.saldoPendiente);
+  writer.writeString(offsets[0], object.codigo);
+  writer.writeString(offsets[1], object.direccion);
+  writer.writeString(offsets[2], object.estadoCuenta);
+  writer.writeString(offsets[3], object.identificadorFiscal);
+  writer.writeBool(offsets[4], object.isSynced);
+  writer.writeDouble(offsets[5], object.latitud);
+  writer.writeDouble(offsets[6], object.limiteCredito);
+  writer.writeDouble(offsets[7], object.longitud);
+  writer.writeString(offsets[8], object.nombre);
+  writer.writeDouble(offsets[9], object.saldoPendiente);
 }
 
 ClienteModel _clienteModelDeserialize(
@@ -114,16 +135,17 @@ ClienteModel _clienteModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ClienteModel();
-  object.direccion = reader.readString(offsets[0]);
-  object.estadoCuenta = reader.readString(offsets[1]);
+  object.codigo = reader.readString(offsets[0]);
+  object.direccion = reader.readString(offsets[1]);
+  object.estadoCuenta = reader.readString(offsets[2]);
   object.id = id;
-  object.identificadorFiscal = reader.readString(offsets[2]);
-  object.isSynced = reader.readBool(offsets[3]);
-  object.latitud = reader.readDoubleOrNull(offsets[4]);
-  object.limiteCredito = reader.readDouble(offsets[5]);
-  object.longitud = reader.readDoubleOrNull(offsets[6]);
-  object.nombre = reader.readString(offsets[7]);
-  object.saldoPendiente = reader.readDouble(offsets[8]);
+  object.identificadorFiscal = reader.readString(offsets[3]);
+  object.isSynced = reader.readBool(offsets[4]);
+  object.latitud = reader.readDoubleOrNull(offsets[5]);
+  object.limiteCredito = reader.readDouble(offsets[6]);
+  object.longitud = reader.readDoubleOrNull(offsets[7]);
+  object.nombre = reader.readString(offsets[8]);
+  object.saldoPendiente = reader.readDouble(offsets[9]);
   return object;
 }
 
@@ -141,16 +163,18 @@ P _clienteModelDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
-    case 4:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 5:
-      return (reader.readDouble(offset)) as P;
-    case 6:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readBool(offset)) as P;
+    case 5:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 6:
+      return (reader.readDouble(offset)) as P;
+    case 7:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -168,6 +192,61 @@ List<IsarLinkBase<dynamic>> _clienteModelGetLinks(ClienteModel object) {
 void _clienteModelAttach(
     IsarCollection<dynamic> col, Id id, ClienteModel object) {
   object.id = id;
+}
+
+extension ClienteModelByIndex on IsarCollection<ClienteModel> {
+  Future<ClienteModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  ClienteModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<ClienteModel?>> getAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<ClienteModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(ClienteModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(ClienteModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<ClienteModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<ClienteModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension ClienteModelQueryWhereSort
@@ -247,10 +326,190 @@ extension ClienteModelQueryWhere
       ));
     });
   }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterWhereClause> codigoEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterWhereClause> codigoNotEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension ClienteModelQueryFilter
     on QueryBuilder<ClienteModel, ClienteModel, QFilterCondition> {
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition> codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition> codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition> codigoMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
+      codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QAfterFilterCondition>
       direccionEqualTo(
     String value, {
@@ -1166,6 +1425,18 @@ extension ClienteModelQueryLinks
 
 extension ClienteModelQuerySortBy
     on QueryBuilder<ClienteModel, ClienteModel, QSortBy> {
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> sortByDireccion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'direccion', Sort.asc);
@@ -1283,6 +1554,18 @@ extension ClienteModelQuerySortBy
 
 extension ClienteModelQuerySortThenBy
     on QueryBuilder<ClienteModel, ClienteModel, QSortThenBy> {
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QAfterSortBy> thenByDireccion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'direccion', Sort.asc);
@@ -1412,6 +1695,13 @@ extension ClienteModelQuerySortThenBy
 
 extension ClienteModelQueryWhereDistinct
     on QueryBuilder<ClienteModel, ClienteModel, QDistinct> {
+  QueryBuilder<ClienteModel, ClienteModel, QDistinct> distinctByCodigo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ClienteModel, ClienteModel, QDistinct> distinctByDireccion(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1479,6 +1769,12 @@ extension ClienteModelQueryProperty
   QueryBuilder<ClienteModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ClienteModel, String, QQueryOperations> codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 

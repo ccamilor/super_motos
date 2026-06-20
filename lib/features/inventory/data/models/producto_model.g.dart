@@ -17,38 +17,43 @@ const ProductoModelSchema = CollectionSchema(
   name: r'ProductoModel',
   id: -8283790178398363742,
   properties: {
-    r'imagenUrl': PropertySchema(
+    r'codigo': PropertySchema(
       id: 0,
+      name: r'codigo',
+      type: IsarType.string,
+    ),
+    r'imagenUrl': PropertySchema(
+      id: 1,
       name: r'imagenUrl',
       type: IsarType.string,
     ),
     r'isOriginal': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'isOriginal',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'motosCompatibles': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'motosCompatibles',
       type: IsarType.string,
     ),
     r'nombre': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'precio': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'precio',
       type: IsarType.double,
     ),
     r'stockMinimo': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'stockMinimo',
       type: IsarType.long,
     )
@@ -58,7 +63,21 @@ const ProductoModelSchema = CollectionSchema(
   deserialize: _productoModelDeserialize,
   deserializeProp: _productoModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _productoModelGetId,
@@ -73,6 +92,7 @@ int _productoModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.codigo.length * 3;
   {
     final value = object.imagenUrl;
     if (value != null) {
@@ -90,13 +110,14 @@ void _productoModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.imagenUrl);
-  writer.writeBool(offsets[1], object.isOriginal);
-  writer.writeBool(offsets[2], object.isSynced);
-  writer.writeString(offsets[3], object.motosCompatibles);
-  writer.writeString(offsets[4], object.nombre);
-  writer.writeDouble(offsets[5], object.precio);
-  writer.writeLong(offsets[6], object.stockMinimo);
+  writer.writeString(offsets[0], object.codigo);
+  writer.writeString(offsets[1], object.imagenUrl);
+  writer.writeBool(offsets[2], object.isOriginal);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeString(offsets[4], object.motosCompatibles);
+  writer.writeString(offsets[5], object.nombre);
+  writer.writeDouble(offsets[6], object.precio);
+  writer.writeLong(offsets[7], object.stockMinimo);
 }
 
 ProductoModel _productoModelDeserialize(
@@ -106,14 +127,15 @@ ProductoModel _productoModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ProductoModel();
+  object.codigo = reader.readString(offsets[0]);
   object.id = id;
-  object.imagenUrl = reader.readStringOrNull(offsets[0]);
-  object.isOriginal = reader.readBool(offsets[1]);
-  object.isSynced = reader.readBool(offsets[2]);
-  object.motosCompatibles = reader.readString(offsets[3]);
-  object.nombre = reader.readString(offsets[4]);
-  object.precio = reader.readDouble(offsets[5]);
-  object.stockMinimo = reader.readLong(offsets[6]);
+  object.imagenUrl = reader.readStringOrNull(offsets[1]);
+  object.isOriginal = reader.readBool(offsets[2]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.motosCompatibles = reader.readString(offsets[4]);
+  object.nombre = reader.readString(offsets[5]);
+  object.precio = reader.readDouble(offsets[6]);
+  object.stockMinimo = reader.readLong(offsets[7]);
   return object;
 }
 
@@ -125,18 +147,20 @@ P _productoModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readDouble(offset)) as P;
+    case 7:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -154,6 +178,61 @@ List<IsarLinkBase<dynamic>> _productoModelGetLinks(ProductoModel object) {
 void _productoModelAttach(
     IsarCollection<dynamic> col, Id id, ProductoModel object) {
   object.id = id;
+}
+
+extension ProductoModelByIndex on IsarCollection<ProductoModel> {
+  Future<ProductoModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  ProductoModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<ProductoModel?>> getAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<ProductoModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(ProductoModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(ProductoModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<ProductoModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<ProductoModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension ProductoModelQueryWhereSort
@@ -235,10 +314,191 @@ extension ProductoModelQueryWhere
       ));
     });
   }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterWhereClause> codigoEqualTo(
+      String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterWhereClause>
+      codigoNotEqualTo(String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension ProductoModelQueryFilter
     on QueryBuilder<ProductoModel, ProductoModel, QFilterCondition> {
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition>
+      codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -870,6 +1130,18 @@ extension ProductoModelQueryLinks
 
 extension ProductoModelQuerySortBy
     on QueryBuilder<ProductoModel, ProductoModel, QSortBy> {
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> sortByImagenUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'imagenUrl', Sort.asc);
@@ -963,6 +1235,18 @@ extension ProductoModelQuerySortBy
 
 extension ProductoModelQuerySortThenBy
     on QueryBuilder<ProductoModel, ProductoModel, QSortThenBy> {
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1068,6 +1352,13 @@ extension ProductoModelQuerySortThenBy
 
 extension ProductoModelQueryWhereDistinct
     on QueryBuilder<ProductoModel, ProductoModel, QDistinct> {
+  QueryBuilder<ProductoModel, ProductoModel, QDistinct> distinctByCodigo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ProductoModel, ProductoModel, QDistinct> distinctByImagenUrl(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1121,6 +1412,12 @@ extension ProductoModelQueryProperty
   QueryBuilder<ProductoModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ProductoModel, String, QQueryOperations> codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 

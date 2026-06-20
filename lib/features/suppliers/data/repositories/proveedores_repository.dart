@@ -4,5 +4,5 @@ abstract class ProveedoresRepository {
   Future<List<Proveedor>> loadAll();
   Future<Proveedor> create(Proveedor proveedor);
   Future<Proveedor> update(Proveedor proveedor);
-  Future<void> delete(int id);
+  Future<void> delete(String codigo);
 }

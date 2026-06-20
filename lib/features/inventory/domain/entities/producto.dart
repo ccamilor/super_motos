@@ -1,5 +1,5 @@
 class Producto {
-  final int id;
+  final String codigo;
   final String nombre;
   final double precio;
   final String? imagenUrl;
@@ -9,7 +9,7 @@ class Producto {
   final bool isSynced;
 
   Producto({
-    required this.id,
+    required this.codigo,
     required this.nombre,
     required this.precio,
     this.imagenUrl,

@@ -85,10 +85,10 @@ class _ClientesPageState extends State<ClientesPage> {
     if (confirmar != true) return;
 
     try {
-      await _repository.delete(cliente.id);
+      await _repository.delete(cliente.codigo);
       if (!mounted) return;
       setState(() {
-        _clientes = _clientes.where((c) => c.id != cliente.id).toList();
+        _clientes = _clientes.where((c) => c.codigo != cliente.codigo).toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

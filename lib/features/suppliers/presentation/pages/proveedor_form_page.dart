@@ -33,7 +33,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
   late final TextEditingController _telefonoCtrl;
   late final TextEditingController _direccionCtrl;
 
-  Map<int, ProductoModel> _productosById = {};
+  Map<String, ProductoModel> _productosById = {};
   List<_PrecioEntry> _precioEntries = [];
 
   bool _isLoading = false;
@@ -68,15 +68,15 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
     try {
       final productos = (await _inventoryRepo.loadInventory()).productos;
       if (!mounted) return;
-      _productosById = {for (final p in productos) p.id: p};
+      _productosById = {for (final p in productos) p.codigo: p};
 
       if (_isEdit) {
-        final historial = await _historialRepo.loadByProveedorId(widget.proveedor!.id);
+        final historial = await _historialRepo.loadByProveedorId(widget.proveedor!.codigo);
         if (!mounted) return;
         _precioEntries = historial
             .where((h) => h.productoId.isNotEmpty)
             .map((h) => _PrecioEntry(
-                  productoId: int.tryParse(h.productoId) ?? 0,
+                  productoId: h.productoId,
                   precio: h.precioCompra,
                   fecha: h.fechaRegistro,
                 ))
@@ -120,7 +120,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
     setState(() => _isSaving = true);
     try {
       final nuevo = Proveedor(
-        id: widget.proveedor?.id ?? 0,
+        codigo: widget.proveedor?.codigo ?? '',
         nombre: _nombreCtrl.text.trim(),
         nit: _nitCtrl.text.trim(),
         telefono: _telefonoCtrl.text.trim(),
@@ -132,11 +132,11 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
           : await _proveedoresRepo.create(nuevo);
 
       for (final entry in _precioEntries) {
-        if (entry.productoId == 0) continue;
+        if (entry.productoId.isEmpty) continue;
         await _historialRepo.create(HistorialPrecio(
-          id: 0,
-          productoId: entry.productoId.toString(),
-          proveedorId: saved.id.toString(),
+          codigo: '',
+          productoId: entry.productoId,
+          proveedorId: saved.codigo,
           precioCompra: entry.precio,
           fechaRegistro: entry.fecha,
         ));
@@ -250,7 +250,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<int>(
+                      child: DropdownButtonFormField<String>(
                         initialValue: _productosById.containsKey(entry.productoId)
                             ? entry.productoId
                             : (_productosById.keys.isNotEmpty
@@ -262,8 +262,8 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                         items: _productosById.values.map((p) {
-                          return DropdownMenuItem<int>(
-                            value: p.id,
+                          return DropdownMenuItem<String>(
+                            value: p.codigo,
                             child: Text(p.nombre, overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
@@ -459,7 +459,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
 }
 
 class _PrecioEntry {
-  final int productoId;
+  final String productoId;
   final double precio;
   final DateTime fecha;
 
@@ -469,7 +469,7 @@ class _PrecioEntry {
     required this.fecha,
   });
 
-  _PrecioEntry copyWith({int? productoId, double? precio, DateTime? fecha}) {
+  _PrecioEntry copyWith({String? productoId, double? precio, DateTime? fecha}) {
     return _PrecioEntry(
       productoId: productoId ?? this.productoId,
       precio: precio ?? this.precio,

@@ -9,7 +9,6 @@ const String _proveedoresStorageKey = 'super_motos_proveedores_data';
 
 class WebProveedoresRepository implements ProveedoresRepository {
   static List<Proveedor> _proveedores = [];
-  static int _nextId = 0;
 
   @override
   Future<List<Proveedor>> loadAll() async {
@@ -17,13 +16,9 @@ class WebProveedoresRepository implements ProveedoresRepository {
       final savedData = getWebStorage().getItem(_proveedoresStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _proveedores = _decode(savedData);
-        if (_proveedores.isNotEmpty) {
-          _nextId = _proveedores.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        }
       }
       if (_proveedores.isEmpty) {
         _proveedores = List<Proveedor>.from(ProveedoresSeedData.demoProveedores);
-        _nextId = _proveedores.length + 1;
         getWebStorage().setItem(_proveedoresStorageKey, _encode(_proveedores));
       }
     }
@@ -34,24 +29,23 @@ class WebProveedoresRepository implements ProveedoresRepository {
 
   @override
   Future<Proveedor> create(Proveedor proveedor) async {
-    final created = proveedor.copyWith(id: _nextId++);
-    _proveedores = [..._proveedores, created];
+    _proveedores = [..._proveedores, proveedor];
     _persist();
-    return created;
+    return proveedor;
   }
 
   @override
   Future<Proveedor> update(Proveedor proveedor) async {
     _proveedores = _proveedores
-        .map((p) => p.id == proveedor.id ? proveedor : p)
+        .map((p) => p.codigo == proveedor.codigo ? proveedor : p)
         .toList();
     _persist();
     return proveedor;
   }
 
   @override
-  Future<void> delete(int id) async {
-    _proveedores = _proveedores.where((p) => p.id != id).toList();
+  Future<void> delete(String codigo) async {
+    _proveedores = _proveedores.where((p) => p.codigo != codigo).toList();
     _persist();
   }
 
@@ -70,7 +64,7 @@ class WebProveedoresRepository implements ProveedoresRepository {
 
   Map<String, dynamic> _toMap(Proveedor p) {
     return {
-      'id': p.id,
+      'codigo': p.codigo,
       'nombre': p.nombre,
       'nit': p.nit,
       'telefono': p.telefono,
@@ -80,7 +74,7 @@ class WebProveedoresRepository implements ProveedoresRepository {
 
   Proveedor _fromMap(Map<String, dynamic> m) {
     return Proveedor(
-      id: m['id'] as int,
+      codigo: m['codigo'] as String,
       nombre: m['nombre'] as String,
       nit: m['nit'] as String,
       telefono: m['telefono'] as String,

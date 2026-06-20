@@ -1,5 +1,5 @@
 class InventarioBodega {
-  final int productoId;
+  final String productoId;
   final int cantidad;
   final bool isSynced;
 

@@ -35,7 +35,7 @@ void main() {
 
   test('create + loadAll: persists a new client and returns it', () async {
     final cliente = Cliente(
-      id: 0,
+      codigo: 'CLI-001',
       nombre: 'Taller El Rayo',
       identificadorFiscal: '123456789',
       direccion: 'Cra 50 #10-20, Bogota',
@@ -46,7 +46,7 @@ void main() {
 
     final created = await repository.create(cliente);
 
-    expect(created.id, isNot(0));
+    expect(created.codigo, equals('CLI-001'));
     expect(created.nombre, equals('Taller El Rayo'));
     expect(created.estadoCuenta, equals(EstadoCuenta.activo));
 
@@ -58,7 +58,7 @@ void main() {
 
   test('update: modifies a client and changes are visible after reload', () async {
     final created = await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-002',
       nombre: 'Cliente Original',
       identificadorFiscal: '111222333',
       direccion: 'Calle 1',
@@ -68,7 +68,7 @@ void main() {
     ));
 
     final updated = await repository.update(Cliente(
-      id: created.id,
+      codigo: created.codigo,
       nombre: 'Cliente Renombrado',
       identificadorFiscal: '111222333',
       direccion: 'Calle 2',
@@ -89,7 +89,7 @@ void main() {
 
   test('delete: removes a client from storage', () async {
     final c1 = await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-003',
       nombre: 'Cliente A',
       identificadorFiscal: '111',
       direccion: 'Dir A',
@@ -98,7 +98,7 @@ void main() {
       estadoCuenta: EstadoCuenta.activo,
     ));
     final c2 = await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-004',
       nombre: 'Cliente B',
       identificadorFiscal: '222',
       direccion: 'Dir B',
@@ -110,17 +110,17 @@ void main() {
     var all = await repository.loadAll();
     expect(all, hasLength(2));
 
-    await repository.delete(c1.id);
+    await repository.delete(c1.codigo);
 
     all = await repository.loadAll();
     expect(all, hasLength(1));
-    expect(all.first.id, equals(c2.id));
+    expect(all.first.codigo, equals(c2.codigo));
     expect(all.first.nombre, equals('Cliente B'));
   });
 
   test('loadAll: returns clients sorted alphabetically by nombre', () async {
     await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-005',
       nombre: 'Zorro Repuestos',
       identificadorFiscal: '999',
       direccion: 'Dir',
@@ -129,7 +129,7 @@ void main() {
       estadoCuenta: EstadoCuenta.activo,
     ));
     await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-006',
       nombre: 'Alpha Motos',
       identificadorFiscal: '111',
       direccion: 'Dir',
@@ -138,7 +138,7 @@ void main() {
       estadoCuenta: EstadoCuenta.activo,
     ));
     await repository.create(Cliente(
-      id: 0,
+      codigo: 'CLI-007',
       nombre: 'Moto Service',
       identificadorFiscal: '555',
       direccion: 'Dir',

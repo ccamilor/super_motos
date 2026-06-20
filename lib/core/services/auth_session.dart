@@ -20,13 +20,13 @@ class AuthSession {
 
   static final List<Usuario> _hardcodedUsers = [
     Usuario(
-      id: 1,
+      codigo: 'USR-001',
       nombre: 'Mayra',
       email: 'mayra@supermotos.com',
       rol: RolUsuario.admin,
     ),
     Usuario(
-      id: 2,
+      codigo: 'USR-002',
       nombre: 'Mateo',
       email: 'mateo@supermotos.com',
       rol: RolUsuario.vendedor,

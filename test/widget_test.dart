@@ -8,7 +8,7 @@ import 'package:super_motos/main.dart';
 void main() {
   testWidgets('MyApp renders the dashboard shell after login', (WidgetTester tester) async {
     AuthSession.instance.setUsuario(Usuario(
-      id: 1,
+      codigo: 'USR-001',
       nombre: 'Test Admin',
       email: 'admin@test.com',
       rol: RolUsuario.admin,

@@ -10,12 +10,10 @@ void main() {
   late Directory tempDir;
 
   setUpAll(() async {
-    // Descarga e inicializa el binario Isar Core requerido para pruebas unitarias en host local
     await Isar.initializeIsarCore(download: true);
   });
 
   setUp(() async {
-    // Crea un directorio temporal único para aislar los archivos de base de datos de cada prueba
     tempDir = await Directory.systemTemp.createTemp('super_motos_test');
 
     isar = await Isar.open(
@@ -29,7 +27,6 @@ void main() {
   });
 
   tearDown(() async {
-    // Limpieza de recursos y eliminación de base de datos de prueba
     await isar.close();
     if (await tempDir.exists()) {
       await tempDir.delete(recursive: true);
@@ -37,9 +34,8 @@ void main() {
   });
 
   test('Debe persistir y consultar el inventario de bodega y camion filtrando por canasta', () async {
-    // 2. Simular la creación de un producto
-    // Nombre: "Cadena Honda Eco Deluxe", Precio: 45000
     final producto = ProductoModel()
+      ..codigo = 'PROD-TEST-001'
       ..nombre = 'Cadena Honda Eco Deluxe'
       ..precio = 45000.0
       ..imagenUrl = 'https://supabase.example.com/stock/ch-100.png'
@@ -51,16 +47,15 @@ void main() {
       await isar.productoModels.put(producto);
     });
 
-    // 3. Simular la asignación de stock:
-    // - 50 unidades a Bodega Central
-    // - 15 unidades al Camión asignadas a la "Canasta-A3" (mapeada al entero 3)
     final inventarioBodega = InventarioBodegaModel()
-      ..productoId = producto.id
+      ..codigo = '${producto.codigo}_BODEGA'
+      ..productoId = producto.codigo
       ..cantidad = 50;
 
     final inventarioCamion = InventarioCamionModel()
-      ..productoId = producto.id
-      ..numeroCanasta = 3 // Mapeado de "Canasta-A3" a entero
+      ..codigo = '${producto.codigo}_CAMION'
+      ..productoId = producto.codigo
+      ..canastaId = '3'
       ..cantidad = 15;
 
     await isar.writeTxn(() async {
@@ -68,26 +63,23 @@ void main() {
       await isar.inventarioCamionModels.put(inventarioCamion);
     });
 
-    // 4. Verificar que los datos se guarden correctamente y filtrar por número de canasta
     final bodegaSaved = await isar.inventarioBodegaModels
         .filter()
-        .productoIdEqualTo(producto.id)
+        .productoIdEqualTo(producto.codigo)
         .findFirst();
 
     final camionSaved = await isar.inventarioCamionModels
         .filter()
-        .numeroCanastaEqualTo(3)
+        .canastaIdEqualTo('3')
         .findFirst();
 
-    // Verificaciones de Bodega
     expect(bodegaSaved, isNotNull);
     expect(bodegaSaved!.cantidad, equals(50));
-    expect(bodegaSaved.productoId, equals(producto.id));
+    expect(bodegaSaved.productoId, equals(producto.codigo));
 
-    // Verificaciones de Camión (filtrado por Canasta)
     expect(camionSaved, isNotNull);
-    expect(camionSaved!.productoId, equals(producto.id));
+    expect(camionSaved!.productoId, equals(producto.codigo));
     expect(camionSaved.cantidad, equals(15));
-    expect(camionSaved.numeroCanasta, equals(3));
+    expect(camionSaved.canastaId, equals('3'));
   });
 }

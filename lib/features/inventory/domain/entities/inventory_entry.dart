@@ -3,30 +3,32 @@ import 'package:super_motos/features/inventory/data/models/inventario_camion_mod
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 
 class InventoryEntry {
-  final int id;
+  final String codigo;
   final String nombre;
   final double precio;
   final bool isOriginal;
   final String motosCompatibles;
   final int stockMinimo;
   final int cantidadCamion;
-  final int numeroCanasta;
+  final String canastaId;
   final int cantidadBodega;
 
   const InventoryEntry({
-    required this.id,
+    required this.codigo,
     required this.nombre,
     required this.precio,
     required this.isOriginal,
     required this.motosCompatibles,
     required this.stockMinimo,
     required this.cantidadCamion,
-    required this.numeroCanasta,
+    required this.canastaId,
     required this.cantidadBodega,
   });
 
-  factory InventoryEntry.fromCsvRow(List<dynamic> row, {required int fallbackId}) {
-    final idVal = int.tryParse(row[0].toString().trim()) ?? fallbackId;
+  factory InventoryEntry.fromCsvRow(List<dynamic> row, {required String fallbackCodigo}) {
+    final codigoVal = row[0].toString().trim().isNotEmpty
+        ? row[0].toString().trim()
+        : fallbackCodigo;
     final nombreVal = row[1].toString().trim();
     final precioVal = double.tryParse(row[2].toString().trim()) ?? 0.0;
     final isOriginalVal = row[3].toString().trim().toLowerCase() == 'true' ||
@@ -34,18 +36,20 @@ class InventoryEntry {
     final motosCompatiblesVal = row[4].toString().trim();
     final stockMinimoVal = int.tryParse(row[5].toString().trim()) ?? 0;
     final cantidadCamionVal = int.tryParse(row[6].toString().trim()) ?? 0;
-    final numeroCanastaVal = int.tryParse(row[7].toString().trim()) ?? 0;
+    final canastaIdVal = row[7].toString().trim().isNotEmpty
+        ? row[7].toString().trim()
+        : '0';
     final cantidadBodegaVal = int.tryParse(row[8].toString().trim()) ?? 0;
 
     return InventoryEntry(
-      id: idVal,
+      codigo: codigoVal,
       nombre: nombreVal,
       precio: precioVal,
       isOriginal: isOriginalVal,
       motosCompatibles: motosCompatiblesVal,
       stockMinimo: stockMinimoVal,
       cantidadCamion: cantidadCamionVal,
-      numeroCanasta: numeroCanastaVal,
+      canastaId: canastaIdVal,
       cantidadBodega: cantidadBodegaVal,
     );
   }
@@ -54,12 +58,12 @@ class InventoryEntry {
     if (row.isEmpty) return false;
     final firstCell = row[0].toString().trim().toLowerCase();
     final secondCell = row.length > 1 ? row[1].toString().trim().toLowerCase() : '';
-    return firstCell == 'id' || secondCell == 'nombre';
+    return firstCell == 'id' || firstCell == 'codigo' || secondCell == 'nombre';
   }
 
   ProductoModel toProductoModel() {
     return ProductoModel()
-      ..id = id
+      ..codigo = codigo
       ..nombre = nombre
       ..precio = precio
       ..isOriginal = isOriginal
@@ -69,14 +73,16 @@ class InventoryEntry {
 
   InventarioCamionModel toCamionModel() {
     return InventarioCamionModel()
-      ..productoId = id
+      ..codigo = '${codigo}_CAMION'
+      ..productoId = codigo
       ..cantidad = cantidadCamion
-      ..numeroCanasta = numeroCanasta;
+      ..canastaId = canastaId;
   }
 
   InventarioBodegaModel toBodegaModel() {
     return InventarioBodegaModel()
-      ..productoId = id
+      ..codigo = '${codigo}_BODEGA'
+      ..productoId = codigo
       ..cantidad = cantidadBodega;
   }
 }

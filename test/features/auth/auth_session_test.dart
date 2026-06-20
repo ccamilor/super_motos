@@ -11,7 +11,7 @@ void main() {
 
   test('setUsuario assigns the active user', () {
     final usuario = Usuario(
-      id: 1,
+      codigo: 'USR-001',
       nombre: 'Test User',
       email: 'test@test.com',
       rol: RolUsuario.admin,
@@ -26,7 +26,7 @@ void main() {
 
   test('clear() resets to null', () {
     final usuario = Usuario(
-      id: 1,
+      codigo: 'USR-001',
       nombre: 'Test User',
       email: 'test@test.com',
       rol: RolUsuario.vendedor,
@@ -51,7 +51,7 @@ void main() {
   test('hardcodedUsers are unmodifiable', () {
     final users = AuthSession.instance.hardcodedUsers;
     expect(() => users.add(Usuario(
-      id: 3,
+      codigo: 'USR-003',
       nombre: 'Extra',
       email: 'extra@test.com',
       rol: RolUsuario.vendedor,

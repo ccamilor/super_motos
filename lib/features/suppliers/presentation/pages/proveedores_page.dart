@@ -82,10 +82,10 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
     if (confirmar != true) return;
 
     try {
-      await _repository.delete(proveedor.id);
+      await _repository.delete(proveedor.codigo);
       if (!mounted) return;
       setState(() {
-        _proveedores = _proveedores.where((p) => p.id != proveedor.id).toList();
+        _proveedores = _proveedores.where((p) => p.codigo != proveedor.codigo).toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

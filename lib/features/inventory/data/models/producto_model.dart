@@ -6,6 +6,8 @@ part 'producto_model.g.dart';
 @collection
 class ProductoModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String nombre;
   late double precio;
   String? imagenUrl;
@@ -16,7 +18,7 @@ class ProductoModel {
 
   Producto toDomain() {
     return Producto(
-      id: id,
+      codigo: codigo,
       nombre: nombre,
       precio: precio,
       imagenUrl: imagenUrl,
@@ -29,9 +31,7 @@ class ProductoModel {
 
   static ProductoModel fromDomain(Producto domain) {
     return ProductoModel()
-      ..id = (domain.id > 9007199254740991)
-          ? Isar.autoIncrement
-          : domain.id
+      ..codigo = domain.codigo
       ..nombre = domain.nombre
       ..precio = domain.precio
       ..imagenUrl = domain.imagenUrl
@@ -43,7 +43,7 @@ class ProductoModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'nombre': nombre,
       'precio': precio,
       'imagen_url': imagenUrl,

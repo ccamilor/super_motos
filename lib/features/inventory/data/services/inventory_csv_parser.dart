@@ -16,7 +16,7 @@ class InventoryCsvParser {
     for (int i = startIndex; i < fields.length; i++) {
       final row = fields[i];
       if (row.length < 9) continue;
-      rows.add(InventoryEntry.fromCsvRow(row, fallbackId: i));
+      rows.add(InventoryEntry.fromCsvRow(row, fallbackCodigo: 'AUTO-${i.toString().padLeft(3, '0')}'));
     }
 
     return rows;

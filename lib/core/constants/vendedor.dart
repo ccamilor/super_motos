@@ -1,1 +1,1 @@
-const int kVendedorPorDefecto = 1;
+const String kVendedorPorDefecto = 'USR-001';

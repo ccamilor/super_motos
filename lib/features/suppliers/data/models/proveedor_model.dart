@@ -6,6 +6,8 @@ part 'proveedor_model.g.dart';
 @collection
 class ProveedorModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String nombre;
   late String nit;
   late String telefono;
@@ -14,7 +16,7 @@ class ProveedorModel {
 
   Proveedor toDomain() {
     return Proveedor(
-      id: id,
+      codigo: codigo,
       nombre: nombre,
       nit: nit,
       telefono: telefono,
@@ -25,7 +27,7 @@ class ProveedorModel {
 
   static ProveedorModel fromDomain(Proveedor domain) {
     return ProveedorModel()
-      ..id = domain.id
+      ..codigo = domain.codigo
       ..nombre = domain.nombre
       ..nit = domain.nit
       ..telefono = domain.telefono
@@ -35,7 +37,7 @@ class ProveedorModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'nombre': nombre,
       'nit': nit,
       'telefono': telefono,

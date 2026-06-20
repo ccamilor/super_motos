@@ -28,7 +28,7 @@ class _FacturasPageState extends State<FacturasPage> {
   final TextEditingController _searchController = TextEditingController();
 
   List<Factura> _facturas = [];
-  Map<int, Cliente> _clientesById = {};
+  Map<String, Cliente> _clientesById = {};
   String _searchQuery = '';
   bool _isLoading = false;
 
@@ -52,7 +52,7 @@ class _FacturasPageState extends State<FacturasPage> {
       if (!mounted) return;
       setState(() {
         _facturas = facturas;
-        _clientesById = {for (final c in clientes) c.id: c};
+        _clientesById = {for (final c in clientes) c.codigo: c};
       });
     } catch (e) {
       debugPrint('Error al cargar facturas: $e');
@@ -89,7 +89,7 @@ class _FacturasPageState extends State<FacturasPage> {
     if (_searchQuery.isEmpty) return _facturas;
     final q = _searchQuery.toLowerCase();
     return _facturas.where((f) {
-      final matchNumero = f.numeroFactura.toString().contains(q);
+      final matchNumero = f.codigo.contains(q);
       final cliente = _clientesById[f.clienteId];
       final matchCliente = cliente != null && cliente.nombre.toLowerCase().contains(q);
       return matchNumero || matchCliente;
@@ -230,7 +230,7 @@ class _FacturasPageState extends State<FacturasPage> {
                 Row(
                   children: [
                     Text(
-                      'Factura #${factura.numeroFactura}',
+                      'Factura ${factura.codigo}',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),

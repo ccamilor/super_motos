@@ -1,7 +1,7 @@
 import 'package:super_motos/core/enums/estado_cuenta.dart';
 
 class Cliente {
-  final int id;
+  final String codigo;
   final String nombre;
   final String identificadorFiscal;
   final String direccion;
@@ -13,7 +13,7 @@ class Cliente {
   final bool isSynced;
 
   const Cliente({
-    required this.id,
+    required this.codigo,
     required this.nombre,
     required this.identificadorFiscal,
     required this.direccion,
@@ -26,7 +26,7 @@ class Cliente {
   });
 
   Cliente copyWith({
-    int? id,
+    String? codigo,
     String? nombre,
     String? identificadorFiscal,
     String? direccion,
@@ -38,7 +38,7 @@ class Cliente {
     bool? isSynced,
   }) {
     return Cliente(
-      id: id ?? this.id,
+      codigo: codigo ?? this.codigo,
       nombre: nombre ?? this.nombre,
       identificadorFiscal: identificadorFiscal ?? this.identificadorFiscal,
       direccion: direccion ?? this.direccion,

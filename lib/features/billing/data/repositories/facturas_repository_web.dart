@@ -11,7 +11,6 @@ const String _facturasStorageKey = 'super_motos_facturas_data';
 
 class WebFacturasRepository implements FacturasRepository {
   static List<Factura> _facturas = [];
-  static int _nextId = 0;
 
   @override
   Future<List<Factura>> loadAll() async {
@@ -19,13 +18,9 @@ class WebFacturasRepository implements FacturasRepository {
       final savedData = getWebStorage().getItem(_facturasStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _facturas = _decode(savedData);
-        if (_facturas.isNotEmpty) {
-          _nextId = _facturas.map((f) => f.numeroFactura).reduce((a, b) => a > b ? a : b) + 1;
-        }
       }
       if (_facturas.isEmpty) {
         _facturas = List<Factura>.from(FacturasSeedData.demoFacturas);
-        _nextId = _facturas.length + 1;
         getWebStorage().setItem(_facturasStorageKey, _encode(_facturas));
       }
     }
@@ -37,35 +32,23 @@ class WebFacturasRepository implements FacturasRepository {
 
   @override
   Future<Factura> create(Factura factura) async {
-    final created = Factura(
-      numeroFactura: _nextId++,
-      clienteId: factura.clienteId,
-      vendedorId: factura.vendedorId,
-      fecha: factura.fecha,
-      total: factura.total,
-      tipoPago: factura.tipoPago,
-      latitudVenta: factura.latitudVenta,
-      longitudVenta: factura.longitudVenta,
-      detalles: factura.detalles,
-      isSynced: factura.isSynced,
-    );
-    _facturas = [..._facturas, created];
+    _facturas = [..._facturas, factura];
     _persist();
-    return created;
+    return factura;
   }
 
   @override
-  Future<Factura?> getById(int numeroFactura) async {
+  Future<Factura?> getByCodigo(String codigo) async {
     try {
-      return _facturas.firstWhere((f) => f.numeroFactura == numeroFactura);
+      return _facturas.firstWhere((f) => f.codigo == codigo);
     } catch (_) {
       return null;
     }
   }
 
   @override
-  Future<void> delete(int numeroFactura) async {
-    _facturas = _facturas.where((f) => f.numeroFactura != numeroFactura).toList();
+  Future<void> delete(String codigo) async {
+    _facturas = _facturas.where((f) => f.codigo != codigo).toList();
     _persist();
   }
 
@@ -84,7 +67,7 @@ class WebFacturasRepository implements FacturasRepository {
 
   Map<String, dynamic> _facturaToMap(Factura f) {
     return {
-      'numeroFactura': f.numeroFactura,
+      'codigo': f.codigo,
       'clienteId': f.clienteId,
       'vendedorId': f.vendedorId,
       'fecha': f.fecha.toIso8601String(),
@@ -108,9 +91,9 @@ class WebFacturasRepository implements FacturasRepository {
 
   Factura _facturaFromMap(Map<String, dynamic> m) {
     return Factura(
-      numeroFactura: m['numeroFactura'] as int,
-      clienteId: m['clienteId'] as int,
-      vendedorId: m['vendedorId'] as int,
+      codigo: m['codigo'] as String,
+      clienteId: m['clienteId'] as String,
+      vendedorId: m['vendedorId'] as String,
       fecha: DateTime.parse(m['fecha'] as String),
       total: (m['total'] as num).toDouble(),
       tipoPago: TipoPago.values.firstWhere(
@@ -128,7 +111,7 @@ class WebFacturasRepository implements FacturasRepository {
 
   DetalleFactura _detalleFromMap(Map<String, dynamic> m) {
     return DetalleFactura(
-      productoId: m['productoId'] as int,
+      productoId: m['productoId'] as String,
       cantidad: m['cantidad'] as int,
       precioUnitario: (m['precioUnitario'] as num).toDouble(),
       subtotal: (m['subtotal'] as num).toDouble(),

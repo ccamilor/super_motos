@@ -33,38 +33,40 @@ class IsarFacturasRepository implements FacturasRepository {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = FacturaModel.fromDomain(factura)..numeroFactura = Isar.autoIncrement;
+    final model = FacturaModel.fromDomain(factura);
     await isar.writeTxn(() async {
       await isar.facturaModels.put(model);
     });
-    final saved = await isar.facturaModels.get(model.numeroFactura);
+    final saved = await isar.facturaModels.filter().codigoEqualTo(factura.codigo).findFirst();
     SyncService.instance.enqueue('facturas', SyncOperation.insert, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
 
   @override
-  Future<Factura?> getById(int numeroFactura) async {
+  Future<Factura?> getByCodigo(String codigo) async {
     final isar = _isar;
     if (isar == null) {
       return null;
     }
 
-    final model = await isar.facturaModels.get(numeroFactura);
+    final model = await isar.facturaModels.filter().codigoEqualTo(codigo).findFirst();
     return model?.toDomain();
   }
 
   @override
-  Future<void> delete(int numeroFactura) async {
+  Future<void> delete(String codigo) async {
     final isar = _isar;
     if (isar == null) {
       throw StateError('Isar no esta inicializado.');
     }
 
-    final model = await isar.facturaModels.get(numeroFactura);
-    final json = model != null ? jsonEncode(model.toJson()) : '{"numero_factura":"$numeroFactura"}';
+    final model = await isar.facturaModels.filter().codigoEqualTo(codigo).findFirst();
+    final json = model != null ? jsonEncode(model.toJson()) : '{"codigo":"$codigo"}';
 
     await isar.writeTxn(() async {
-      await isar.facturaModels.delete(numeroFactura);
+      if (model != null) {
+        await isar.facturaModels.delete(model.id);
+      }
     });
     SyncService.instance.enqueue('facturas', SyncOperation.delete, json);
   }
@@ -72,10 +74,8 @@ class IsarFacturasRepository implements FacturasRepository {
   Future<void> _seedDemoData(Isar isar) async {
     await isar.writeTxn(() async {
       for (final factura in FacturasSeedData.demoFacturas) {
-        final model = FacturaModel.fromDomain(factura)
-          ..numeroFactura = Isar.autoIncrement;
-        final assignedId = await isar.facturaModels.put(model);
-        model.numeroFactura = assignedId;
+        final model = FacturaModel.fromDomain(factura);
+        await isar.facturaModels.put(model);
       }
     });
   }

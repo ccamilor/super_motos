@@ -18,28 +18,33 @@ const HistorialPreciosModelSchema = CollectionSchema(
   name: r'HistorialPreciosModel',
   id: 2245722991053323034,
   properties: {
-    r'fechaRegistro': PropertySchema(
+    r'codigo': PropertySchema(
       id: 0,
+      name: r'codigo',
+      type: IsarType.string,
+    ),
+    r'fechaRegistro': PropertySchema(
+      id: 1,
       name: r'fechaRegistro',
       type: IsarType.dateTime,
     ),
     r'isSynced': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'precioCompra': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'precioCompra',
       type: IsarType.double,
     ),
     r'productoId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'productoId',
       type: IsarType.string,
     ),
     r'proveedorId': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'proveedorId',
       type: IsarType.string,
     )
@@ -49,7 +54,21 @@ const HistorialPreciosModelSchema = CollectionSchema(
   deserialize: _historialPreciosModelDeserialize,
   deserializeProp: _historialPreciosModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _historialPreciosModelGetId,
@@ -64,6 +83,7 @@ int _historialPreciosModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.codigo.length * 3;
   bytesCount += 3 + object.productoId.length * 3;
   bytesCount += 3 + object.proveedorId.length * 3;
   return bytesCount;
@@ -75,11 +95,12 @@ void _historialPreciosModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.fechaRegistro);
-  writer.writeBool(offsets[1], object.isSynced);
-  writer.writeDouble(offsets[2], object.precioCompra);
-  writer.writeString(offsets[3], object.productoId);
-  writer.writeString(offsets[4], object.proveedorId);
+  writer.writeString(offsets[0], object.codigo);
+  writer.writeDateTime(offsets[1], object.fechaRegistro);
+  writer.writeBool(offsets[2], object.isSynced);
+  writer.writeDouble(offsets[3], object.precioCompra);
+  writer.writeString(offsets[4], object.productoId);
+  writer.writeString(offsets[5], object.proveedorId);
 }
 
 HistorialPreciosModel _historialPreciosModelDeserialize(
@@ -89,12 +110,13 @@ HistorialPreciosModel _historialPreciosModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = HistorialPreciosModel();
-  object.fechaRegistro = reader.readDateTime(offsets[0]);
+  object.codigo = reader.readString(offsets[0]);
+  object.fechaRegistro = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[1]);
-  object.precioCompra = reader.readDouble(offsets[2]);
-  object.productoId = reader.readString(offsets[3]);
-  object.proveedorId = reader.readString(offsets[4]);
+  object.isSynced = reader.readBool(offsets[2]);
+  object.precioCompra = reader.readDouble(offsets[3]);
+  object.productoId = reader.readString(offsets[4]);
+  object.proveedorId = reader.readString(offsets[5]);
   return object;
 }
 
@@ -106,14 +128,16 @@ P _historialPreciosModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
-    case 1:
-      return (reader.readBool(offset)) as P;
-    case 2:
-      return (reader.readDouble(offset)) as P;
-    case 3:
       return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readBool(offset)) as P;
+    case 3:
+      return (reader.readDouble(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -132,6 +156,63 @@ List<IsarLinkBase<dynamic>> _historialPreciosModelGetLinks(
 void _historialPreciosModelAttach(
     IsarCollection<dynamic> col, Id id, HistorialPreciosModel object) {
   object.id = id;
+}
+
+extension HistorialPreciosModelByIndex
+    on IsarCollection<HistorialPreciosModel> {
+  Future<HistorialPreciosModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  HistorialPreciosModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<HistorialPreciosModel?>> getAllByCodigo(
+      List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<HistorialPreciosModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(HistorialPreciosModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(HistorialPreciosModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<HistorialPreciosModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<HistorialPreciosModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension HistorialPreciosModelQueryWhereSort
@@ -213,10 +294,193 @@ extension HistorialPreciosModelQueryWhere on QueryBuilder<HistorialPreciosModel,
       ));
     });
   }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterWhereClause>
+      codigoEqualTo(String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterWhereClause>
+      codigoNotEqualTo(String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension HistorialPreciosModelQueryFilter on QueryBuilder<
     HistorialPreciosModel, HistorialPreciosModel, QFilterCondition> {
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+          QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+          QAfterFilterCondition>
+      codigoMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
+      QAfterFilterCondition> codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel,
       QAfterFilterCondition> fechaRegistroEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -691,6 +955,20 @@ extension HistorialPreciosModelQueryLinks on QueryBuilder<HistorialPreciosModel,
 extension HistorialPreciosModelQuerySortBy
     on QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QSortBy> {
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
       sortByFechaRegistro() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaRegistro', Sort.asc);
@@ -763,6 +1041,20 @@ extension HistorialPreciosModelQuerySortBy
 
 extension HistorialPreciosModelQuerySortThenBy
     on QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QSortThenBy> {
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
+      thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QAfterSortBy>
       thenByFechaRegistro() {
     return QueryBuilder.apply(this, (query) {
@@ -851,6 +1143,13 @@ extension HistorialPreciosModelQuerySortThenBy
 extension HistorialPreciosModelQueryWhereDistinct
     on QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QDistinct> {
   QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QDistinct>
+      distinctByCodigo({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, HistorialPreciosModel, QDistinct>
       distinctByFechaRegistro() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fechaRegistro');
@@ -891,6 +1190,13 @@ extension HistorialPreciosModelQueryProperty on QueryBuilder<
   QueryBuilder<HistorialPreciosModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<HistorialPreciosModel, String, QQueryOperations>
+      codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 

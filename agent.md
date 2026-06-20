@@ -117,7 +117,7 @@ super_motos/
 
 | Pestaña | Contenido | Alerta visual |
 |---|---|---|
-| Mi Camión | Producto + cantidad + número de canasta + `SyncStatusBadge` (compact) | `STOCK BAJO` si `cantidad < stockMinimo` |
+| Mi Camión | Producto + cantidad + canasta_id + `SyncStatusBadge` (compact) | `STOCK BAJO` si `cantidad < stockMinimo` |
 | Bodega Central | Producto + stock bodega + `SyncStatusBadge` (compact) | Indicador "ALMACÉN CENTRAL" |
 | Inventario Total | Camión + Bodega consolidados + `SyncStatusBadge` en badge ORIGINAL/GENÉRICO | `REABASTECIMIENTO SUGERIDO` si camión bajo y bodega con stock |
 
@@ -162,7 +162,7 @@ Factory con import condicional: `createClientesRepository()`.
 ### 5.5 `billing` — módulo completo
 
 **Pantallas:**
-- `FacturasPage`: historial con búsqueda (por `numeroFactura` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago + `SyncStatusBadge` (compact) y total COP. FAB "+ Nueva Venta".
+- `FacturasPage`: historial con búsqueda (por `codigo` o `cliente.nombre`), card por factura con fecha, cliente, badge de tipoPago + `SyncStatusBadge` (compact) y total COP. FAB "+ Nueva Venta".
 - `FacturaFormPage`: 3 secciones (Cliente, Productos, Pago). Cliente via `DropdownButtonFormField`. Productos via modal con lista buscable. Pago via `DropdownButtonFormField<TipoPago>`. Footer sticky con total. **Descuenta stock del camión al guardar**. Al guardar obtiene geolocalización via `LocationService.instance.getCurrentPosition()` y la asigna a `latitudVenta`/`longitudVenta` (nul si falla/deniega).
 - `FacturaDetailPage`: header con cliente + tipoPago + total; lista de líneas; footer con fecha/vendedor + `SyncStatusBadge` + icono ubicación + coordenadas cuando estan disponibles. Botón eliminar (sin restaurar stock).
 
@@ -182,9 +182,9 @@ FacturasRepository (contrato abstracto)
 ### 5.6 `returns` — módulo completo
 
 **Pantallas:**
-- `DevolucionesPage`: historial con búsqueda (por `facturaId`, `motivo` o `numeroCanastaDestino`), card por devolución con factura, producto, motivo, fecha, canasta destino + `SyncStatusBadge` (compact) y badge "+N" de cantidad. FAB "+ Nueva Devolucion".
+- `DevolucionesPage`: historial con búsqueda (por `facturaId`, `motivo` o `canastaDestino`), card por devolución con factura, producto, motivo, fecha, canasta destino + `SyncStatusBadge` (compact) y badge "+N" de cantidad. FAB "+ Nueva Devolucion".
 - `DevolucionFormPage`: secciones progresivas (Factura → Producto → Detalle → Motivo). Producto se filtra automáticamente por la factura seleccionada, mostrando "(facturado: N)" en cada opción. Cantidad se valida contra el máximo facturado. Motivo es DropdownButton con 4 opciones comunes + "Otro" que revela TextField multiline. Footer muestra preview "+N al stock del camion". **Repone stock del camión al guardar**.
-- `DevolucionDetailPage`: header con id + "STOCK REPUESTO +N"; rows de detalles (factura, producto, cantidad, canasta, motivo); footer con fecha + `SyncStatusBadge` (no highlight). Botón eliminar (sin descontar stock).
+- `DevolucionDetailPage`: header con codigo + "STOCK REPUESTO +N"; rows de detalles (factura, producto, cantidad, canasta, motivo); footer con fecha + `SyncStatusBadge` (no highlight). Botón eliminar (sin descontar stock).
 
 **Capa de datos:** mismo patrón.
 ```text
@@ -195,7 +195,7 @@ DevolucionesRepository (contrato abstracto)
 
 **Cross-module:** al guardar una devolución se invoca `InventoryRepository.incrementCamionStock(productoId, cantidad)`. Inverso del decrement de facturación.
 
-**Tipo de IDs:** `facturaId` y `productoId` son `String` (no se regeneró el `.g.dart` existente). Se serializa con `.toString()` al guardar y `int.tryParse` al leer.
+**Tipo de IDs:** Todos los identificadores de dominio son `String codigo` (business key). `facturaId` y `productoId` son `String` que referencian el `codigo` de la entidad correspondiente.
 
 **Tests:** `test/features/returns/devoluciones_test.dart` — 6 tests cubriendo CRUD + incrementCamionStock.
 
@@ -247,11 +247,13 @@ Registadas en `lib/core/database/isar_service.dart`:
 
 Todos los modelos con `isSynced` incluyen `updatedAt` en `toJson()` para conflict detection.
 
+Todos los modelos tienen `Id id` (auto-increment, PK interno de Isar) + `@Index(unique: true) String codigo` como business key de dominio.
+
 ### 6.2 Entidades de dominio
 
 - `InventoryEntry` (DTO común): una fila del inventario, sin acoplar a Isar.
 - `InventorySnapshot`: transporta las 3 listas (`productos`, `camion`, `bodega`) entre capas.
-- Entidades paralelas a modelos: `Producto`, `InventarioCamion`, `InventarioBodega`, `Cliente`, `Factura`, `Usuario`, `Proveedor`, `Devolucion`.
+- Entidades paralelas a modelos: `Producto`, `InventarioCamion`, `InventarioBodega`, `Cliente`, `Factura`, `Usuario`, `Proveedor`, `Devolucion`. Todas usan `String codigo` como identificador en lugar de `int id`.
 
 **Regla:** la UI no toca modelos Isar directamente; consume el repositorio, que devuelve `InventorySnapshot`.
 
@@ -277,9 +279,9 @@ Todos los modelos con `isSynced` incluyen `updatedAt` en `toJson()` para conflic
        └── setState + SnackBar "EXITO"
 ```
 
-**Detección de encabezado:** `InventoryEntry.isHeaderRow()` chequea si la primera celda es `id` o la segunda es `nombre`; en tal caso, la salta.
+**Detección de encabezado:** `InventoryEntry.isHeaderRow()` chequea si la primera celda es `codigo` o la segunda es `nombre`; en tal caso, la salta.
 
-**Mapeo de fila CSV → modelos:** `InventoryEntry.fromCsvRow()` produce la entidad; `.toProductoModel()`, `.toCamionModel()`, `.toBodegaModel()` la proyectan a Isar.
+**Mapeo de fila CSV → modelos:** `InventoryEntry.fromCsvRow()` produce la entidad; la primera columna es `codigo` (String), `canasta_id` (String) reemplaza el antiguo `numero_canasta` numérico. `.toProductoModel()`, `.toCamionModel()`, `.toBodegaModel()` la proyectan a Isar.
 
 ---
 
@@ -302,6 +304,7 @@ Todos los modelos con `isSynced` incluyen `updatedAt` en `toJson()` para conflic
 
 - **No añadir comentarios** al código (regla explícita del proyecto).
 - **Nombres:** `snake_case` para archivos, `PascalCase` para clases, `lowerCamelCase` para variables.
+- **IDs:** Todos los identificadores de dominio son `String codigo` (alfanumérico libre, ej. `PROD-001`, `CLI-001`, `FAC-001`). Isar mantiene `Id id` como PK interno exclusivamente.
 - **Formato COP** (función `_formatCOP`):
   - Entrada `35000.0` → Salida `$ 35.000 COP`
   - Entrada `185000.0` → Salida `$ 185.000 COP`
@@ -389,6 +392,14 @@ flutter clean && flutter pub get
 - ✅ Sincronización bidireccional (UI badges en todas las pantallas)
 - ✅ Notificaciones de stock bajo en tiempo real (`StockAlertService`, tarjeta amber en dashboard)
 - ✅ Geoposicionamiento en factura (`LocationService`, captura coords al guardar, muestra en detalle)
+
+**Fase 5 — Migración a String ID** ✅ (completada)
+- Todos los modelos Isar: `Id id` (PK interno) + `@Index(unique: true) String codigo` (business key)
+- Todas las entidades de dominio: `String codigo` reemplaza `int id`
+- Supabase: tablas con `TEXT` primary keys
+- CSV: primera columna `codigo` (String), `canasta_id` (String) reemplaza `numero_canasta`
+- Seed data con prefijos: `PROD-`, `CLI-`, `FAC-`, `DEV-`, `PROV-`, `HP-`, `USR-`
+- Canastas alfanuméricas: `A-1`, `B-2`, etc.
 
 ---
 

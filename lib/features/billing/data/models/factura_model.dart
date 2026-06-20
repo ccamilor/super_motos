@@ -6,7 +6,7 @@ part 'factura_model.g.dart';
 
 @embedded
 class DetalleFacturaModel {
-  int? productoId;
+  String? productoId;
   int? cantidad;
   double? precioUnitario;
   double? subtotal;
@@ -15,7 +15,7 @@ class DetalleFacturaModel {
 
   DetalleFactura toDomain() {
     return DetalleFactura(
-      productoId: productoId ?? 0,
+      productoId: productoId ?? '',
       cantidad: cantidad ?? 0,
       precioUnitario: precioUnitario ?? 0.0,
       subtotal: subtotal ?? 0.0,
@@ -33,9 +33,11 @@ class DetalleFacturaModel {
 
 @collection
 class FacturaModel {
-  Id numeroFactura = Isar.autoIncrement;
-  late int clienteId;
-  late int vendedorId;
+  Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
+  late String clienteId;
+  late String vendedorId;
   late DateTime fecha;
   late double total;
   late String tipoPago;
@@ -46,7 +48,7 @@ class FacturaModel {
 
   Factura toDomain() {
     return Factura(
-      numeroFactura: numeroFactura,
+      codigo: codigo,
       clienteId: clienteId,
       vendedorId: vendedorId,
       fecha: fecha,
@@ -64,7 +66,7 @@ class FacturaModel {
 
   static FacturaModel fromDomain(Factura domain) {
     return FacturaModel()
-      ..numeroFactura = domain.numeroFactura
+      ..codigo = domain.codigo
       ..clienteId = domain.clienteId
       ..vendedorId = domain.vendedorId
       ..fecha = domain.fecha
@@ -78,7 +80,7 @@ class FacturaModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'numero_factura': numeroFactura,
+      'codigo': codigo,
       'cliente_id': clienteId,
       'vendedor_id': vendedorId,
       'fecha': fecha.toIso8601String(),

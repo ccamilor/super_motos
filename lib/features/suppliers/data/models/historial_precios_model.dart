@@ -6,6 +6,8 @@ part 'historial_precios_model.g.dart';
 @collection
 class HistorialPreciosModel {
   Id id = Isar.autoIncrement;
+  @Index(unique: true)
+  String codigo = '';
   late String productoId;
   late String proveedorId;
   late double precioCompra;
@@ -14,7 +16,7 @@ class HistorialPreciosModel {
 
   HistorialPrecio toDomain() {
     return HistorialPrecio(
-      id: id,
+      codigo: codigo,
       productoId: productoId,
       proveedorId: proveedorId,
       precioCompra: precioCompra,
@@ -25,7 +27,7 @@ class HistorialPreciosModel {
 
   static HistorialPreciosModel fromDomain(HistorialPrecio domain) {
     return HistorialPreciosModel()
-      ..id = domain.id
+      ..codigo = domain.codigo
       ..productoId = domain.productoId
       ..proveedorId = domain.proveedorId
       ..precioCompra = domain.precioCompra
@@ -35,7 +37,7 @@ class HistorialPreciosModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'codigo': codigo,
       'producto_id': productoId,
       'proveedor_id': proveedorId,
       'precio_compra': precioCompra,

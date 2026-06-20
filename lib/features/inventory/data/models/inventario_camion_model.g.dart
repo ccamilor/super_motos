@@ -18,25 +18,30 @@ const InventarioCamionModelSchema = CollectionSchema(
   name: r'InventarioCamionModel',
   id: 2163308590764571913,
   properties: {
-    r'cantidad': PropertySchema(
+    r'canastaId': PropertySchema(
       id: 0,
+      name: r'canastaId',
+      type: IsarType.string,
+    ),
+    r'cantidad': PropertySchema(
+      id: 1,
       name: r'cantidad',
       type: IsarType.long,
     ),
+    r'codigo': PropertySchema(
+      id: 2,
+      name: r'codigo',
+      type: IsarType.string,
+    ),
     r'isSynced': PropertySchema(
-      id: 1,
+      id: 3,
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'numeroCanasta': PropertySchema(
-      id: 2,
-      name: r'numeroCanasta',
-      type: IsarType.long,
-    ),
     r'productoId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'productoId',
-      type: IsarType.long,
+      type: IsarType.string,
     )
   },
   estimateSize: _inventarioCamionModelEstimateSize,
@@ -44,7 +49,21 @@ const InventarioCamionModelSchema = CollectionSchema(
   deserialize: _inventarioCamionModelDeserialize,
   deserializeProp: _inventarioCamionModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'codigo': IndexSchema(
+      id: 2475659939796141935,
+      name: r'codigo',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'codigo',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _inventarioCamionModelGetId,
@@ -59,6 +78,9 @@ int _inventarioCamionModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.canastaId.length * 3;
+  bytesCount += 3 + object.codigo.length * 3;
+  bytesCount += 3 + object.productoId.length * 3;
   return bytesCount;
 }
 
@@ -68,10 +90,11 @@ void _inventarioCamionModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.cantidad);
-  writer.writeBool(offsets[1], object.isSynced);
-  writer.writeLong(offsets[2], object.numeroCanasta);
-  writer.writeLong(offsets[3], object.productoId);
+  writer.writeString(offsets[0], object.canastaId);
+  writer.writeLong(offsets[1], object.cantidad);
+  writer.writeString(offsets[2], object.codigo);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeString(offsets[4], object.productoId);
 }
 
 InventarioCamionModel _inventarioCamionModelDeserialize(
@@ -81,11 +104,12 @@ InventarioCamionModel _inventarioCamionModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = InventarioCamionModel();
-  object.cantidad = reader.readLong(offsets[0]);
+  object.canastaId = reader.readString(offsets[0]);
+  object.cantidad = reader.readLong(offsets[1]);
+  object.codigo = reader.readString(offsets[2]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[1]);
-  object.numeroCanasta = reader.readLong(offsets[2]);
-  object.productoId = reader.readLong(offsets[3]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.productoId = reader.readString(offsets[4]);
   return object;
 }
 
@@ -97,13 +121,15 @@ P _inventarioCamionModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -121,6 +147,63 @@ List<IsarLinkBase<dynamic>> _inventarioCamionModelGetLinks(
 void _inventarioCamionModelAttach(
     IsarCollection<dynamic> col, Id id, InventarioCamionModel object) {
   object.id = id;
+}
+
+extension InventarioCamionModelByIndex
+    on IsarCollection<InventarioCamionModel> {
+  Future<InventarioCamionModel?> getByCodigo(String codigo) {
+    return getByIndex(r'codigo', [codigo]);
+  }
+
+  InventarioCamionModel? getByCodigoSync(String codigo) {
+    return getByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<bool> deleteByCodigo(String codigo) {
+    return deleteByIndex(r'codigo', [codigo]);
+  }
+
+  bool deleteByCodigoSync(String codigo) {
+    return deleteByIndexSync(r'codigo', [codigo]);
+  }
+
+  Future<List<InventarioCamionModel?>> getAllByCodigo(
+      List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndex(r'codigo', values);
+  }
+
+  List<InventarioCamionModel?> getAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'codigo', values);
+  }
+
+  Future<int> deleteAllByCodigo(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'codigo', values);
+  }
+
+  int deleteAllByCodigoSync(List<String> codigoValues) {
+    final values = codigoValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'codigo', values);
+  }
+
+  Future<Id> putByCodigo(InventarioCamionModel object) {
+    return putByIndex(r'codigo', object);
+  }
+
+  Id putByCodigoSync(InventarioCamionModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'codigo', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByCodigo(List<InventarioCamionModel> objects) {
+    return putAllByIndex(r'codigo', objects);
+  }
+
+  List<Id> putAllByCodigoSync(List<InventarioCamionModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'codigo', objects, saveLinks: saveLinks);
+  }
 }
 
 extension InventarioCamionModelQueryWhereSort
@@ -202,10 +285,193 @@ extension InventarioCamionModelQueryWhere on QueryBuilder<InventarioCamionModel,
       ));
     });
   }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterWhereClause>
+      codigoEqualTo(String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'codigo',
+        value: [codigo],
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterWhereClause>
+      codigoNotEqualTo(String codigo) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [codigo],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'codigo',
+              lower: [],
+              upper: [codigo],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension InventarioCamionModelQueryFilter on QueryBuilder<
     InventarioCamionModel, InventarioCamionModel, QFilterCondition> {
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'canastaId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      canastaIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'canastaId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      canastaIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'canastaId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'canastaId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> canastaIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'canastaId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
       QAfterFilterCondition> cantidadEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
@@ -258,6 +524,144 @@ extension InventarioCamionModelQueryFilter on QueryBuilder<
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'codigo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      codigoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'codigo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      codigoMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'codigo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'codigo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> codigoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'codigo',
+        value: '',
       ));
     });
   }
@@ -329,105 +733,58 @@ extension InventarioCamionModelQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
-      QAfterFilterCondition> numeroCanastaEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'numeroCanasta',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
-      QAfterFilterCondition> numeroCanastaGreaterThan(
-    int value, {
-    bool include = false,
+      QAfterFilterCondition> productoIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
   }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'numeroCanasta',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
-      QAfterFilterCondition> numeroCanastaLessThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'numeroCanasta',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
-      QAfterFilterCondition> numeroCanastaBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'numeroCanasta',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
-      QAfterFilterCondition> productoIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
       QAfterFilterCondition> productoIdGreaterThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
       QAfterFilterCondition> productoIdLessThan(
-    int value, {
+    String value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'productoId',
         value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel,
       QAfterFilterCondition> productoIdBetween(
-    int lower,
-    int upper, {
+    String lower,
+    String upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -436,6 +793,79 @@ extension InventarioCamionModelQueryFilter on QueryBuilder<
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> productoIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> productoIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      productoIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'productoId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+          QAfterFilterCondition>
+      productoIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'productoId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> productoIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'productoId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel,
+      QAfterFilterCondition> productoIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'productoId',
+        value: '',
       ));
     });
   }
@@ -449,6 +879,20 @@ extension InventarioCamionModelQueryLinks on QueryBuilder<InventarioCamionModel,
 
 extension InventarioCamionModelQuerySortBy
     on QueryBuilder<InventarioCamionModel, InventarioCamionModel, QSortBy> {
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByCanastaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'canastaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByCanastaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'canastaId', Sort.desc);
+    });
+  }
+
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       sortByCantidad() {
     return QueryBuilder.apply(this, (query) {
@@ -464,6 +908,20 @@ extension InventarioCamionModelQuerySortBy
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      sortByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -474,20 +932,6 @@ extension InventarioCamionModelQuerySortBy
       sortByIsSyncedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.desc);
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
-      sortByNumeroCanasta() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroCanasta', Sort.asc);
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
-      sortByNumeroCanastaDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroCanasta', Sort.desc);
     });
   }
 
@@ -509,6 +953,20 @@ extension InventarioCamionModelQuerySortBy
 extension InventarioCamionModelQuerySortThenBy
     on QueryBuilder<InventarioCamionModel, InventarioCamionModel, QSortThenBy> {
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByCanastaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'canastaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByCanastaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'canastaId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       thenByCantidad() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cantidad', Sort.asc);
@@ -519,6 +977,20 @@ extension InventarioCamionModelQuerySortThenBy
       thenByCantidadDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cantidad', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByCodigo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
+      thenByCodigoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'codigo', Sort.desc);
     });
   }
 
@@ -551,20 +1023,6 @@ extension InventarioCamionModelQuerySortThenBy
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
-      thenByNumeroCanasta() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroCanasta', Sort.asc);
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
-      thenByNumeroCanastaDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'numeroCanasta', Sort.desc);
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QAfterSortBy>
       thenByProductoId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'productoId', Sort.asc);
@@ -582,9 +1040,23 @@ extension InventarioCamionModelQuerySortThenBy
 extension InventarioCamionModelQueryWhereDistinct
     on QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct> {
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
+      distinctByCanastaId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'canastaId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
       distinctByCantidad() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'cantidad');
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
+      distinctByCodigo({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'codigo', caseSensitive: caseSensitive);
     });
   }
 
@@ -596,16 +1068,9 @@ extension InventarioCamionModelQueryWhereDistinct
   }
 
   QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
-      distinctByNumeroCanasta() {
+      distinctByProductoId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'numeroCanasta');
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, InventarioCamionModel, QDistinct>
-      distinctByProductoId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'productoId');
+      return query.addDistinctBy(r'productoId', caseSensitive: caseSensitive);
     });
   }
 }
@@ -618,10 +1083,24 @@ extension InventarioCamionModelQueryProperty on QueryBuilder<
     });
   }
 
+  QueryBuilder<InventarioCamionModel, String, QQueryOperations>
+      canastaIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'canastaId');
+    });
+  }
+
   QueryBuilder<InventarioCamionModel, int, QQueryOperations>
       cantidadProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cantidad');
+    });
+  }
+
+  QueryBuilder<InventarioCamionModel, String, QQueryOperations>
+      codigoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'codigo');
     });
   }
 
@@ -632,14 +1111,7 @@ extension InventarioCamionModelQueryProperty on QueryBuilder<
     });
   }
 
-  QueryBuilder<InventarioCamionModel, int, QQueryOperations>
-      numeroCanastaProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'numeroCanasta');
-    });
-  }
-
-  QueryBuilder<InventarioCamionModel, int, QQueryOperations>
+  QueryBuilder<InventarioCamionModel, String, QQueryOperations>
       productoIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'productoId');

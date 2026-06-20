@@ -87,7 +87,7 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
       final limite = double.parse(_limiteCtrl.text.trim());
       final saldo = double.parse(_saldoCtrl.text.trim());
       final nuevo = Cliente(
-        id: widget.cliente?.id ?? 0,
+        codigo: widget.cliente?.codigo ?? '',
         nombre: _nombreCtrl.text.trim(),
         identificadorFiscal: _nitCtrl.text.trim(),
         direccion: _direccionCtrl.text.trim(),

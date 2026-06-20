@@ -9,7 +9,7 @@ enum ConflictResolution { serverWins, lastWriteWins }
 
 class ConflictInfo {
   final String table;
-  final int recordId;
+  final String recordId;
   final DateTime localUpdatedAt;
   final DateTime serverUpdatedAt;
   final Map<String, dynamic> serverRecord;
@@ -146,16 +146,16 @@ class SyncService {
 
   Future<ConflictInfo?> _checkForConflict(dynamic client, SyncQueueItem item) async {
     final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
-    final idField = item.table == 'facturas' ? 'numero_factura' : 'id';
+    final idField = item.table == 'facturas' ? 'codigo' : 'codigo';
     final id = record[idField]?.toString();
     if (id == null) return null;
 
     try {
       dynamic response;
       if (item.table == 'facturas') {
-        response = await client.from(item.table).select().eq('numero_factura', id).maybeSingle();
+        response = await client.from(item.table).select().eq('codigo', id).maybeSingle();
       } else {
-        response = await client.from(item.table).select().eq('id', id).maybeSingle();
+        response = await client.from(item.table).select().eq('codigo', id).maybeSingle();
       }
       if (response == null) return null;
 
@@ -169,7 +169,7 @@ class SyncService {
       if (serverUpdatedAt.isAfter(localUpdatedAt)) {
         return ConflictInfo(
           table: item.table,
-          recordId: int.tryParse(id) ?? 0,
+          recordId: id,
           localUpdatedAt: localUpdatedAt,
           serverUpdatedAt: serverUpdatedAt,
           serverRecord: Map<String, dynamic>.from(response),
@@ -185,59 +185,59 @@ class SyncService {
     final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
     switch (item.table) {
       case 'clientes':
-        await client.from('clientes').upsert(record, onConflict: 'id');
+        await client.from('clientes').upsert(record, onConflict: 'codigo');
         break;
       case 'facturas':
-        await client.from('facturas').upsert(record, onConflict: 'numero_factura');
+        await client.from('facturas').upsert(record, onConflict: 'codigo');
         break;
       case 'detalles_factura':
-        await client.from('detalles_factura').upsert(record, onConflict: 'id');
+        await client.from('detalles_factura').upsert(record, onConflict: 'codigo');
         break;
       case 'devoluciones':
-        await client.from('devoluciones').upsert(record, onConflict: 'id');
+        await client.from('devoluciones').upsert(record, onConflict: 'codigo');
         break;
       case 'proveedores':
-        await client.from('proveedores').upsert(record, onConflict: 'id');
+        await client.from('proveedores').upsert(record, onConflict: 'codigo');
         break;
       case 'historial_precios':
-        await client.from('historial_precios').upsert(record, onConflict: 'id');
+        await client.from('historial_precios').upsert(record, onConflict: 'codigo');
         break;
       case 'productos':
-        await client.from('productos').upsert(record, onConflict: 'id');
+        await client.from('productos').upsert(record, onConflict: 'codigo');
         break;
       case 'inventario_camion':
-        await client.from('inventario_camion').upsert(record, onConflict: 'id');
+        await client.from('inventario_camion').upsert(record, onConflict: 'codigo');
         break;
       case 'inventario_bodega':
-        await client.from('inventario_bodega').upsert(record, onConflict: 'id');
+        await client.from('inventario_bodega').upsert(record, onConflict: 'codigo');
         break;
     }
   }
 
   Future<void> _deleteRecord(dynamic client, SyncQueueItem item) async {
     final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
-    final idField = item.table == 'facturas' ? 'numero_factura' : 'id';
+    final idField = 'codigo';
     final id = record[idField]?.toString();
     if (id == null) return;
 
     switch (item.table) {
       case 'clientes':
-        await client.from('clientes').delete().eq('id', id);
+        await client.from('clientes').delete().eq('codigo', id);
         break;
       case 'facturas':
-        await client.from('facturas').delete().eq('numero_factura', id);
+        await client.from('facturas').delete().eq('codigo', id);
         break;
       case 'devoluciones':
-        await client.from('devoluciones').delete().eq('id', id);
+        await client.from('devoluciones').delete().eq('codigo', id);
         break;
       case 'proveedores':
-        await client.from('proveedores').delete().eq('id', id);
+        await client.from('proveedores').delete().eq('codigo', id);
         break;
       case 'historial_precios':
-        await client.from('historial_precios').delete().eq('id', id);
+        await client.from('historial_precios').delete().eq('codigo', id);
         break;
       case 'productos':
-        await client.from('productos').delete().eq('id', id);
+        await client.from('productos').delete().eq('codigo', id);
         break;
     }
   }
