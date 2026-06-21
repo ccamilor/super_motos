@@ -982,3 +982,106 @@ docs: create testing_guide.md with full test cases
 | FAB Nuevo Producto | ✅ Visible solo en Inventario Total |
 | Navegación | ✅ Sin iconos duplicados |
 | Badge texto completo | ✅ ORIGINAL/GENÉRICO/STOCK BAJO |
+
+---
+
+## Sesión 8 — 2026-06-20 — Módulo Recepción + Migración String ID completa
+
+### Objetivos de la sesión
+- Implementar módulo completo de Recepciones (CRUD, split stock, upsert historial precios)
+- Completar migración de IDs a String (alphanumérico libre) + canastas alfanuméricas
+- Integrar Recepción en Proveedores (badge reactivo + botón registrar)
+- Documentación completa en agent.md, CONTEXT.md, historical.md
+- Tests completos (12 tests recepción, total 47/47 passing)
+
+### Lo realizado
+
+**Migración String ID (completada):**
+- Todos los modelos Isar: `Id id` (PK interno) + `@Index(unique: true) String codigo` (business key)
+- Entidades de dominio: `String codigo` en todas (PROD-, CLI-, FAC-, DEV-, PROV-, HP-, USR-, REC-)
+- Supabase: tablas con `TEXT` primary keys, `onConflict: 'codigo'`
+- Canastas: `canasta_id` String (ej. `A-1`, `B-5`) en lugar de `numero_canasta` int
+- CSV: primera columna `codigo` (String), columna canasta `canasta_id` (String)
+
+**Módulo Recepción (nuevo):**
+- **Entidades**: `Recepcion` (codigo, proveedorId, fecha, nroRemito, observaciones, detalles[]) + `DetalleRecepcion` (productoId, cantidad, precioUnitario, destino {camion|bodega|split}, cantidadCamion?, cantidadBodega?)
+- **Modelos Isar**: `RecepcionModel` (@collection, codigo unique) + `DetalleRecepcionModel` (@embedded, destino CHECK camion|bodega|split)
+- **Repositorio**: `IsarRecepcionRepository` con **inyección de dependencias** via constructor (`InventoryRepository`, `HistorialPreciosRepository`) para testabilidad
+  - `create()`: valida split → incrementa stock (crea entrada si no existe) → upsert HistorialPrecio → enqueue sync
+  - Validación split: `cantidadCamion + cantidadBodega == cantidad` (lanza StateError si falla)
+  - `loadByProveedor()`, `getByCodigo()`, `delete()` (soft, no revierte stock)
+- **UI**: 
+  - `RecepcionesPage`: lista + búsqueda + FAB → formulario
+  - `RecepcionFormPage`: selector proveedor + cabecera + líneas modales (destino SegmentedButton + split condicional) + footer total
+  - `RecepcionDetailPage`: cabecera + líneas + footer + delete soft
+- **Integración Proveedores**:
+  - `ProveedoresPage`: badge "Recepciones" con contador → navega a `RecepcionesPage(proveedorId:)` filtrada
+  - `ProveedorFormPage`: botón "Registrar recepción" → `RecepcionFormPage(proveedorId:)` pre-seleccionado
+  - `RecepcionesPage` acepta `proveedorId?` → filtra + AppBar dinámico
+  - `RecepcionFormPage` acepta `proveedorId?` → pre-selecciona proveedor
+- **Sync**: `recepciones` + `detalles_recepcion` en SyncService (`onConflict: 'codigo'`, push/pull)
+- **Supabase**: 2 tablas nuevas (`recepciones`, `detalles_recepcion`) con FK, índices, triggers, RLS
+- **Tests** (`recepcion_test.dart`): 12 tests (CRUD, stock camion/bodega/split, upsert HistorialPrecio, sync, validación split)
+
+**Cambios transversales:**
+- `IsarRecepcionRepository`: constructor con inyección de dependencias (testabilidad)
+- `InventoryRepository`: `incrementBodegaStock()` + `createProductFromRecepcion()` (IO + Web)
+- `HistorialPreciosRepository`: `upsertPrecio()` (IO + Web)
+- `SyncService`: soporte tablas `recepciones` + `detalles_recepcion`
+- `database/schema.sql`: 2 tablas nuevas + índices + RLS + triggers
+
+### Archivos creados
+- `lib/features/recepcion/domain/entities/recepcion.dart`
+- `lib/features/recepcion/domain/entities/detalle_recepcion.dart`
+- `lib/features/recepcion/data/models/recepcion_model.dart`
+- `lib/features/recepcion/data/repositories/recepcion_repository.dart`
+- `lib/features/recepcion/data/repositories/recepcion_repository_io.dart`
+- `lib/features/recepcion/data/repositories/recepcion_repository_web.dart`
+- `lib/features/recepcion/data/services/recepcion_seed_data.dart`
+- `lib/features/recepcion/presentation/pages/recepciones_page.dart`
+- `lib/features/recepcion/presentation/pages/recepcion_form_page.dart`
+- `lib/features/recepcion/presentation/pages/recepcion_detail_page.dart`
+- `test/features/recepcion/recepcion_test.dart` (12 tests)
+
+### Archivos modificados
+- `lib/core/database/isar_service.dart` (registro RecepcionModelSchema)
+- `lib/features/recepcion/data/repositories/recepcion_repository_io.dart` (DI constructor + validación split)
+- `lib/features/inventory/data/repositories/inventory_repository.dart` (incrementBodegaStock, createProductFromRecepcion)
+- `lib/features/inventory/data/repositories/inventory_repository_io.dart` (incrementBodegaStock, createProductFromRecepcion)
+- `lib/features/inventory/data/repositories/inventory_repository_web.dart` (incrementBodegaStock, createProductFromRecepcion)
+- `lib/features/suppliers/data/repositories/historial_precios_repository.dart` (upsertPrecio)
+- `lib/features/suppliers/data/repositories/historial_precios_repository_io.dart` (upsertPrecio)
+- `lib/features/suppliers/data/repositories/historial_precios_repository_web.dart` (upsertPrecio)
+- `lib/core/services/sync_service.dart` (recepciones + detalles_recepcion en upsert/delete/pull)
+- `database/schema.sql` (tablas recepciones + detalles_recepcion + índices + RLS)
+- `lib/features/suppliers/presentation/pages/proveedores_page.dart` (badge recepciones + nav)
+- `lib/features/suppliers/presentation/pages/proveedor_form_page.dart` (botón registrar recepción)
+- `lib/features/recepcion/presentation/pages/recepciones_page.dart` (proveedorId filter + AppBar dinámico)
+- `lib/features/recepcion/presentation/pages/recepcion_form_page.dart` (proveedorId pre-select)
+- `agent.md` (sección 5.8 Recepción completa)
+- `CONTEXT.md` (fases, estructura, modelos 11, sync, tests)
+- `docs/historical.md` (esta entrada)
+
+### Commits de esta sesión
+```
+feat: add Recepción module with split stock + HistorialPrecio upsert + Proveedores integration
+refactor: IsarRecepcionRepository DI constructor for testability
+feat: String ID migration (alphanumeric) + canasta_id String
+feat: ProveedoresPage badge + ProveedorFormPage recepción button
+docs: update agent.md + CONTEXT.md + historical.md with Recepción module
+test: 12 new recepcion tests (total 47/47 passing)
+```
+
+### Estado del proyecto post-sesión
+| Feature | Estado |
+|---|---|
+| **Recepción** | ✅ CRUD + split + upsert historial + sync + UI + integración Proveedores |
+| **Migración String ID** | ✅ Completada (todos los modelos, entidades, Supabase, CSV, seeds) |
+| **Tests** | ✅ 47/47 passing (12 nuevos recepción) |
+| **Documentación** | ✅ agent.md + CONTEXT.md + historical.md actualizados |
+
+---
+
+## Sesión 7 — 2026-06-11 — UI del InventoryPage
+
+### Problema original

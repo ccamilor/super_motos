@@ -4,6 +4,7 @@ import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
+import 'package:super_motos/features/recepcion/presentation/pages/recepcion_form_page.dart';
 import 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository.dart';
 import 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository_io.dart';
@@ -435,6 +436,30 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
                         _sectionLabel('Historial de precios', colorScheme),
                         const SizedBox(height: 8),
                         _buildHistorialSection(colorScheme),
+                        const SizedBox(height: 24),
+                        _sectionLabel('Recepciones', colorScheme),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RecepcionFormPage(
+                                    proveedorId: widget.proveedor?.codigo,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.inventory_outlined, size: 18),
+                            label: const Text('Registrar recepcion'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colorScheme.secondary,
+                              side: BorderSide(color: colorScheme.secondary.withValues(alpha: 0.4)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 32),
                       ],
                     ),

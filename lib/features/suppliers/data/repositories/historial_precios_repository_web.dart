@@ -53,6 +53,38 @@ class WebHistorialPreciosRepository implements HistorialPreciosRepository {
     _persist();
   }
 
+  @override
+  Future<HistorialPrecio> upsertPrecio({
+    required String proveedorId,
+    required String productoId,
+    required double precioCompra,
+  }) async {
+    await loadAll();
+    final existingIdx = _historial.indexWhere(
+      (h) => h.proveedorId == proveedorId && h.productoId == productoId
+    );
+
+    HistorialPrecio historial;
+    if (existingIdx >= 0) {
+      historial = _historial[existingIdx].copyWith(
+        precioCompra: precioCompra,
+        fechaRegistro: DateTime.now(),
+      );
+      _historial[existingIdx] = historial;
+    } else {
+      historial = HistorialPrecio(
+        codigo: 'HP-${DateTime.now().millisecondsSinceEpoch}',
+        proveedorId: proveedorId,
+        productoId: productoId,
+        precioCompra: precioCompra,
+        fechaRegistro: DateTime.now(),
+      );
+      _historial = [..._historial, historial];
+    }
+    _persist();
+    return historial;
+  }
+
   void _persist() {
     getWebStorage().setItem(_historialStorageKey, _encode(_historial));
   }

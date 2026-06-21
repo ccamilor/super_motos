@@ -75,6 +75,8 @@ class IsarFacturasRepository implements FacturasRepository {
     await isar.writeTxn(() async {
       for (final factura in FacturasSeedData.demoFacturas) {
         final model = FacturaModel.fromDomain(factura);
+        final existing = await isar.facturaModels.filter().codigoEqualTo(model.codigo).findFirst();
+        if (existing != null) model.id = existing.id;
         await isar.facturaModels.put(model);
       }
     });

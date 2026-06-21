@@ -69,6 +69,8 @@ class IsarProveedoresRepository implements ProveedoresRepository {
     await isar.writeTxn(() async {
       for (final proveedor in ProveedoresSeedData.demoProveedores) {
         final model = ProveedorModel.fromDomain(proveedor);
+        final existing = await isar.proveedorModels.filter().codigoEqualTo(model.codigo).findFirst();
+        if (existing != null) model.id = existing.id;
         await isar.proveedorModels.put(model);
       }
     });

@@ -23,7 +23,7 @@
 |---|---|---|
 | Fase 1 — Local-first inventario | ✅ | Parser CSV, seed demo, soporte web con localStorage |
 | Fase 2 — Backend remoto (Supabase) | ✅ | SupabaseService singleton, SyncService cola offline, conflict detection |
-| Fase 3 — Módulos reales | ✅ | Inventory, Clientes, Facturación, Devoluciones, Auth, Proveedores |
+| Fase 3 — Módulos reales | ✅ | Inventory, Clientes, Facturación, Devoluciones, Auth, Proveedores, **Recepción** |
 | Fase 4 — Operación en ruta | ✅ | Sync bidireccional, Notificaciones stock bajo, Geoposicionamiento |
 
 ---
@@ -63,7 +63,8 @@ lib/
     ├── home/              # Dashboard
     ├── inventory/         # Producto + InventarioCamion + InventarioBodega
     ├── returns/           # Devoluciones
-    └── suppliers/         # Proveedores + HistorialPrecios
+    ├── suppliers/         # Proveedores + HistorialPrecios
+    └── recepcion/         # Recepcion + DetalleRecepcion
 ```
 
 ### Repositorios (patrón)
@@ -83,7 +84,7 @@ WebXRepository     → Chrome (localStorage + JSON)
 createXRepository() // factory selecciona según plataforma
 ```
 
-### Modelos Isar (9 colecciones)
+### Modelos Isar (11 colecciones)
 1. ProductoModel
 2. InventarioCamionModel
 3. InventarioBodegaModel
@@ -93,6 +94,8 @@ createXRepository() // factory selecciona según plataforma
 7. ProveedorModel
 8. HistorialPreciosModel
 9. DevolucionModel
+10. RecepcionModel
+11. DetalleRecepcionModel
 
 **Todos tienen `isSynced = false` por defecto y `updatedAt` en `toJson()` para conflict detection.**
 **Todos tienen `Id id` (PK interno Isar) + `@Index(unique: true) String codigo` como business key.**
@@ -109,7 +112,7 @@ createXRepository() // factory selecciona según plataforma
 - Conflict detection: compara `updated_at` entre local y server
 - Estrategia: `lastWriteWins`
 - `getUnsyncedCount(table)`, `getUnsyncedItems(table)`, `isRecordPending(table, id)`
-- Tablas soportadas: clientes, facturas, devoluciones, proveedores, historial_precios, productos, inventario_camion, inventario_bodega
+- Tablas soportadas: clientes, facturas, devoluciones, proveedores, historial_precios, productos, inventario_camion, inventario_bodega, **recepciones, detalles_recepcion**
 
 ### Repositorios con sync conectado
 - IsarClientesRepository: create + update + delete
@@ -117,12 +120,13 @@ createXRepository() // factory selecciona según plataforma
 - IsarDevolucionesRepository: create + delete
 - IsarProveedoresRepository: create + update + delete
 - IsarHistorialPreciosRepository: create + delete + deleteByProveedorId
+- **IsarRecepcionRepository: create + delete**
 - InventoryRepository: importCsv (sin sync específico — solo local)
 
 ### Widgets de sync
 - `SyncStatusBadge` — chip compacto (icono nube) o badge completo con label + timestamp
 - `SyncIndicator` — header del dashboard ("Todo sincronizado" o "N pendientes")
-- Mostrado en: facturas_page, devoluciones_page, clientes_page, proveedores_page, inventory_page (3 tabs), factura_detail_page, devolucion_detail_page
+- Mostrado en: facturas_page, devoluciones_page, clientes_page, proveedores_page, inventory_page (3 tabs), factura_detail_page, devolucion_detail_page, **recepciones_page, recepcion_detail_page**
 
 ---
 
@@ -225,11 +229,12 @@ flutter clean && flutter pub get
 | features/inventory/inventory_test.dart | ✅ |
 | features/auth/auth_session_test.dart | ✅ |
 | features/billing/facturas_test.dart | ✅ |
-| features/customers/clientes_test.dart | ✅ |
+| features/customers/clientes/clientes_test.dart | ✅ |
 | features/returns/devoluciones_test.dart | ✅ |
 | features/suppliers/proveedores_test.dart | ✅ |
+| **features/recepcion/recepcion_test.dart (12 tests)** | ✅ |
 
-**Total: 35 tests pasando**
+**Total: 47 tests pasando**
 
 ---
 

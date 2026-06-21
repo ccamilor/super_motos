@@ -167,6 +167,37 @@ CREATE TRIGGER trg_historial_precios_updated_at
     BEFORE UPDATE ON historial_precios
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- 3.10 Recepciones (cabecera de recepción de mercadería)
+CREATE TABLE IF NOT EXISTS recepciones (
+    codigo          TEXT PRIMARY KEY,
+    proveedor_id    TEXT NOT NULL REFERENCES proveedores(codigo),
+    fecha           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    nro_remito      TEXT,
+    observaciones   TEXT,
+    is_synced       BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TRIGGER trg_recepciones_updated_at
+    BEFORE UPDATE ON recepciones
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 3.11 Detalles de Recepción (líneas de cada recepción)
+CREATE TABLE IF NOT EXISTS detalles_recepcion (
+    codigo              TEXT PRIMARY KEY,
+    recepcion_codigo    TEXT NOT NULL REFERENCES recepciones(codigo) ON DELETE CASCADE,
+    producto_id         TEXT REFERENCES productos(codigo),
+    cantidad            INTEGER NOT NULL DEFAULT 0,
+    precio_unitario     DOUBLE PRECISION DEFAULT 0,
+    destino             TEXT NOT NULL DEFAULT 'camion'
+                        CHECK (destino IN ('camion', 'bodega', 'split')),
+    cantidad_camion     INTEGER,
+    cantidad_bodega     INTEGER,
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TRIGGER trg_detalles_recepcion_updated_at
+    BEFORE UPDATE ON detalles_recepcion
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================================================
 -- 4. INDICES (para busquedas frecuentes)
 -- ============================================================================
@@ -184,6 +215,11 @@ CREATE INDEX IF NOT EXISTS idx_proveedores_nit ON proveedores(nit);
 CREATE INDEX IF NOT EXISTS idx_historial_precios_producto ON historial_precios(producto_id);
 CREATE INDEX IF NOT EXISTS idx_historial_precios_proveedor ON historial_precios(proveedor_id);
 
+CREATE INDEX IF NOT EXISTS idx_recepciones_proveedor ON recepciones(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_recepciones_fecha ON recepciones(fecha);
+CREATE INDEX IF NOT EXISTS idx_detalles_recepcion_recepcion ON detalles_recepcion(recepcion_codigo);
+CREATE INDEX IF NOT EXISTS idx_detalles_recepcion_producto ON detalles_recepcion(producto_id);
+
 -- ============================================================================
 -- 5. RLS — POLITICAS DE SEGURIDAD (modo desarrollo: todo abierto)
 -- ============================================================================
@@ -197,6 +233,8 @@ ALTER TABLE detalles_factura    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devoluciones        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proveedores         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE historial_precios   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recepciones         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE detalles_recepcion  ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all for anon"
     ON productos FOR ALL TO anon USING (true) WITH CHECK (true);
@@ -216,6 +254,10 @@ CREATE POLICY "Allow all for anon"
     ON proveedores FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for anon"
     ON historial_precios FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon"
+    ON recepciones FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon"
+    ON detalles_recepcion FOR ALL TO anon USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow all for authenticated"
     ON productos FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -235,6 +277,10 @@ CREATE POLICY "Allow all for authenticated"
     ON proveedores FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for authenticated"
     ON historial_precios FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for authenticated"
+    ON recepciones FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for authenticated"
+    ON detalles_recepcion FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ============================================================================
 -- FIN DEL SCRIPT

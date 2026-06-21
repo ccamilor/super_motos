@@ -83,6 +83,8 @@ class IsarClientesRepository implements ClientesRepository {
     await isar.writeTxn(() async {
       for (final cliente in ClientesSeedData.demoClientes) {
         final model = ClienteModel.fromDomain(cliente);
+        final existing = await isar.clienteModels.filter().codigoEqualTo(model.codigo).findFirst();
+        if (existing != null) model.id = existing.id;
         await isar.clienteModels.put(model);
       }
     });

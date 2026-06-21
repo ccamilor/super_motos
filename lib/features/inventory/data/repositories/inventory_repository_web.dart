@@ -170,6 +170,57 @@ class WebInventoryRepository implements InventoryRepository {
     _bodega = List<InventarioBodegaModel>.from(_bodega)..removeWhere((b) => b.productoId == codigo);
     return _snapshot();
   }
+  @override
+  Future<void> incrementBodegaStock(String productoId, int cantidad) async {
+    final idx = _bodega.indexWhere((b) => b.productoId == productoId);
+    if (idx == -1) {
+      throw StateError('No hay registro de stock en la bodega para producto $productoId');
+    }
+    final model = _bodega[idx];
+    final updated = InventarioBodegaModel()
+      ..id = model.id
+      ..codigo = model.codigo
+      ..productoId = model.productoId
+      ..cantidad = model.cantidad + cantidad;
+    _bodega = List<InventarioBodegaModel>.from(_bodega)..[idx] = updated;
+  }
+
+  @override
+  Future<void> createProductFromRecepcion(String productoId, int cantCamion, int cantBodega) async {
+    // Verificar si el producto ya existe
+    ProductoModel? existingProducto;
+    for (final p in _productos) {
+      if (p.codigo == productoId) {
+        existingProducto = p;
+        break;
+      }
+    }
+    if (existingProducto != null) return;
+
+    // Crear entrada mínima
+    final productoModel = ProductoModel()
+      ..codigo = productoId
+      ..nombre = 'Producto $productoId'
+      ..precio = 0
+      ..isOriginal = false
+      ..motosCompatibles = ''
+      ..stockMinimo = 0;
+
+    _productos = List<ProductoModel>.from(_productos)..add(productoModel);
+    if (cantCamion > 0) {
+      _camion = List<InventarioCamionModel>.from(_camion)..add(InventarioCamionModel()
+        ..codigo = '${productoId}_CAMION'
+        ..productoId = productoId
+        ..canastaId = '0'
+        ..cantidad = cantCamion);
+    }
+    if (cantBodega > 0) {
+      _bodega = List<InventarioBodegaModel>.from(_bodega)..add(InventarioBodegaModel()
+        ..codigo = '${productoId}_BODEGA'
+        ..productoId = productoId
+        ..cantidad = cantBodega);
+    }
+  }
 }
 
 InventoryRepository createInventoryRepository() => WebInventoryRepository();

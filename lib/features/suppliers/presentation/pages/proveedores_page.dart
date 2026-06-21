@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
+import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository.dart';
+import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/recepcion/data/repositories/recepcion_repository_io.dart';
+import 'package:super_motos/features/recepcion/presentation/pages/recepciones_page.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/suppliers/data/repositories/proveedores_repository_io.dart';
@@ -14,10 +18,12 @@ class ProveedoresPage extends StatefulWidget {
 }
 
 class _ProveedoresPageState extends State<ProveedoresPage> {
-  final ProveedoresRepository _repository = createProveedoresRepository();
+  final ProveedoresRepository _proveedoresRepo = createProveedoresRepository();
+  final RecepcionRepository _recepcionRepo = createRecepcionRepository();
   final TextEditingController _searchController = TextEditingController();
 
   List<Proveedor> _proveedores = [];
+  Map<String, int> _recepcionCountByProveedor = {};
   String _searchQuery = '';
   bool _isLoading = false;
 
@@ -36,9 +42,16 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
   Future<void> _loadProveedores() async {
     setState(() => _isLoading = true);
     try {
-      final proveedores = await _repository.loadAll();
+      final proveedores = await _proveedoresRepo.loadAll();
+      final recepciones = await _recepcionRepo.loadAll();
       if (!mounted) return;
-      setState(() => _proveedores = proveedores);
+      setState(() {
+        _proveedores = proveedores;
+        _recepcionCountByProveedor = {};
+        for (final r in recepciones) {
+          _recepcionCountByProveedor[r.proveedorId] = (_recepcionCountByProveedor[r.proveedorId] ?? 0) + 1;
+        }
+      });
     } catch (e) {
       debugPrint('Error al cargar proveedores: $e');
     } finally {
@@ -82,7 +95,7 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
     if (confirmar != true) return;
 
     try {
-      await _repository.delete(proveedor.codigo);
+      await _proveedoresRepo.delete(proveedor.codigo);
       if (!mounted) return;
       setState(() {
         _proveedores = _proveedores.where((p) => p.codigo != proveedor.codigo).toList();
@@ -264,6 +277,55 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
                   style: TextStyle(color: colorScheme.primary, fontSize: 13),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RecepcionesPage(proveedorId: proveedor.codigo),
+                ),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.inventory_outlined, size: 14, color: colorScheme.secondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Recepciones',
+                      style: TextStyle(
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${_recepcionCountByProveedor[proveedor.codigo] ?? 0}',
+                        style: TextStyle(
+                          color: colorScheme.secondary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios, size: 10, color: colorScheme.secondary),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

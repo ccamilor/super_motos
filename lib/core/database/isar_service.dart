@@ -10,6 +10,7 @@ import 'package:super_motos/features/auth/data/models/usuario_model.dart';
 import 'package:super_motos/features/suppliers/data/models/proveedor_model.dart';
 import 'package:super_motos/features/suppliers/data/models/historial_precios_model.dart';
 import 'package:super_motos/features/returns/data/models/devolucion_model.dart';
+import 'package:super_motos/features/recepcion/data/models/recepcion_model.dart';
 
 class IsarService {
   late Isar isar;
@@ -34,6 +35,7 @@ class IsarService {
         ProveedorModelSchema,
         HistorialPreciosModelSchema,
         DevolucionModelSchema,
+        RecepcionModelSchema,
       ],
       directory: directory,
     );

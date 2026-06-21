@@ -74,6 +74,52 @@ class IsarHistorialPreciosRepository implements HistorialPreciosRepository {
           .deleteAll();
     });
   }
+
+  @override
+  Future<HistorialPrecio> upsertPrecio({
+    required String proveedorId,
+    required String productoId,
+    required double precioCompra,
+  }) async {
+    final isar = _isar;
+    if (isar == null) throw StateError('Isar no esta inicializado.');
+
+    // Buscar si ya existe un registro para este proveedor+producto
+    final existing = await isar.historialPreciosModels
+        .filter()
+        .proveedorIdEqualTo(proveedorId)
+        .productoIdEqualTo(productoId)
+        .findFirst();
+
+    HistorialPreciosModel model;
+    if (existing != null) {
+      model = existing
+        ..precioCompra = precioCompra
+        ..fechaRegistro = DateTime.now()
+        ..isSynced = false;
+    } else {
+      model = HistorialPreciosModel()
+        ..codigo = 'HP-${DateTime.now().millisecondsSinceEpoch}'
+        ..proveedorId = proveedorId
+        ..productoId = productoId
+        ..precioCompra = precioCompra
+        ..fechaRegistro = DateTime.now()
+        ..isSynced = false;
+    }
+
+    await isar.writeTxn(() async {
+      await isar.historialPreciosModels.put(model);
+    });
+
+    final saved = await isar.historialPreciosModels
+        .filter()
+        .proveedorIdEqualTo(proveedorId)
+        .productoIdEqualTo(productoId)
+        .findFirst();
+    
+    SyncService.instance.enqueue('historial_precios', SyncOperation.update, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
+  }
 }
 
 HistorialPreciosRepository createHistorialPreciosRepository() =>

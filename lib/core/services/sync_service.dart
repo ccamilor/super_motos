@@ -211,6 +211,12 @@ class SyncService {
       case 'inventario_bodega':
         await client.from('inventario_bodega').upsert(record, onConflict: 'codigo');
         break;
+      case 'recepciones':
+        await client.from('recepciones').upsert(record, onConflict: 'codigo');
+        break;
+      case 'detalles_recepcion':
+        await client.from('detalles_recepcion').upsert(record, onConflict: 'codigo');
+        break;
     }
   }
 
@@ -239,6 +245,12 @@ class SyncService {
       case 'productos':
         await client.from('productos').delete().eq('codigo', id);
         break;
+      case 'recepciones':
+        await client.from('recepciones').delete().eq('codigo', id);
+        break;
+      case 'detalles_recepcion':
+        await client.from('detalles_recepcion').delete().eq('codigo', id);
+        break;
     }
   }
 
@@ -253,6 +265,8 @@ class SyncService {
       await _pullTable(client, 'productos');
       await _pullTable(client, 'inventario_camion');
       await _pullTable(client, 'inventario_bodega');
+      await _pullTable(client, 'recepciones');
+      await _pullTable(client, 'detalles_recepcion');
     } catch (e) {
       debugPrint('SyncService: pullAll failed: $e');
     }

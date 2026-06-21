@@ -75,6 +75,8 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
     await isar.writeTxn(() async {
       for (final devolucion in DevolucionesSeedData.demoDevoluciones) {
         final model = DevolucionModel.fromDomain(devolucion);
+        final existing = await isar.devolucionModels.filter().codigoEqualTo(model.codigo).findFirst();
+        if (existing != null) model.id = existing.id;
         await isar.devolucionModels.put(model);
       }
     });

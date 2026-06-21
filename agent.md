@@ -28,6 +28,7 @@
 | `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales; tarjeta Alertas de Stock dinamica |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
+| `recepcion` | ✅ Completo | Listado + crear recepción con proveedor/lineas + split + upsert historial precios; badge reactivo en proveedores |
 | Backend remoto (Supabase) | ✅ Funcional | `SupabaseService` singleton, credenciales configuradas, `supabase_flutter` conectado |
 | Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at` |
 | Notificaciones de stock bajo | ✅ Implementado | `StockAlertService` singleton, verificacion en `decrementCamionStock`, notificacion local, tarjeta amber en dashboard |
@@ -224,6 +225,75 @@ Factory con import condicional: `createProveedoresRepository()` y `createHistori
 **Seed demo (3 proveedores):** Repuestos Moto JC (Bogotá), Distribuidora Pegasus (Medellín), Importados El Sol (Cali). Además 3 registros de historial de precios demo (precio compra por producto/proveedor).
 
 **Tests:** `test/features/suppliers/proveedores_test.dart` — 4 tests cubriendo CRUD.
+
+---
+
+### 5.8 `recepcion` — módulo completo
+
+**Pantallas:**
+- `RecepcionesPage`: lista con búsqueda (por proveedor, nroRemito, fecha), card por recepción con proveedor, fecha, nroRemito, total + `SyncStatusBadge` (compact). FAB "Nueva" para crear recepción.
+- `RecepcionFormPage`: selector de proveedor (Dropdown), cabecera (fecha, nroRemito, observaciones), líneas dinámicas con modal bottom sheet (producto dropdown del inventario, cantidad, precio unitario, destino: SegmentedButton {camión|bodega|split} con campos condicionales para split). Footer sticky con total $. Validación split: `cantidadCamion + cantidadBodega == cantidad`.
+- `RecepcionDetailPage`: cabecera con proveedor + nroRemito + total; lista de líneas con badge de destino; footer con fecha, observaciones + `SyncStatusBadge`; botón eliminar (soft delete, no revierte stock).
+
+**Modelo de datos:**
+```dart
+// Entidades de dominio (lib/features/recepcion/domain/entities/)
+class Recepcion {
+  final String codigo;           // REC-001
+  final String proveedorId;      // FK → Proveedor.codigo
+  final DateTime fecha;
+  final String? nroRemito;
+  final String? observaciones;
+  final List<DetalleRecepcion> detalles;
+}
+
+class DetalleRecepcion {
+  final String productoId;       // FK → Producto.codigo
+  final int cantidad;
+  final double precioUnitario;
+  final String destino;          // 'camion' | 'bodega' | 'split'
+  final int? cantidadCamion;     // requerido si split
+  final int? cantidadBodega;     // requerido si split
+  double get subtotal => cantidad * precioUnitario;
+}
+```
+
+**Modelo Isar** (`lib/features/recepcion/data/models/recepcion_model.dart`):
+- `RecepcionModel`: `@collection` con `Id id` (PK interno Isar) + `@Index(unique: true) String codigo` (business key). `proveedorId`, `fecha`, `nroRemito`, `observaciones`, `List<DetalleRecepcionModel>? detalles`, `isSynced`.
+- `DetalleRecepcionModel`: `@embedded` con `productoId`, `cantidad`, `precioUnitario`, `destino`, `cantidadCamion`, `cantidadBodega`.
+
+**Repositorio** (`lib/features/recepcion/data/repositories/`):
+```dart
+abstract class RecepcionRepository {
+  Future<List<Recepcion>> loadAll();
+  Future<List<Recepcion>> loadByProveedor(String proveedorId);
+  Future<Recepcion> create(Recepcion r);      // incrementa stock + upsert HistorialPrecio
+  Future<Recepcion?> getByCodigo(String codigo);
+  Future<void> delete(String codigo);         // soft delete, no revierte stock
+}
+```
+- `IsarRecepcionRepository`: implementación nativa con **inyección de dependencias** via constructor (`InventoryRepository`, `HistorialPreciosRepository`) para testabilidad. En `create()`:
+  1. Valida split: `cantidadCamion + cantidadBodega == cantidad`
+  2. Por cada detalle → `incrementCamionStock` / `incrementBodegaStock` según `destino` (crea entrada en inventario si no existe)
+  3. `HistorialPreciosRepository.upsertPrecio(proveedorId, productoId, precioUnitario)` → último precio real
+  4. Enqueua en `SyncService` tabla `recepciones`
+- `WebRecepcionRepository`: localStorage + JSON
+
+**Seed data** (`recepcion_seed_data.dart`): 2 recepciones demo (PROV-001 con 2 líneas camión/bodega; PROV-002 con split 15+25 y bodega).
+
+**Sync** (`SyncService`): tablas `recepciones` y `detalles_recepcion` con `onConflict: 'codigo'`, push/pull automático.
+
+**Integración Proveedores:**
+- `ProveedoresPage`: badge "Recepciones" con contador por proveedor → tap → `RecepcionesPage(proveedorId:)` filtrada.
+- `ProveedorFormPage`: botón "Registrar recepción" → abre `RecepcionFormPage(proveedorId: widget.proveedor.codigo)` con proveedor pre-seleccionado.
+- `RecepcionesPage` acepta `proveedorId?` opcional → filtra lista y muestra "Recepciones de [Proveedor]" en AppBar.
+- `RecepcionFormPage` acepta `proveedorId?` → pre-selecciona proveedor en dropdown.
+
+**Tests** (`test/features/recepcion/recepcion_test.dart`): 12 tests (CRUD, stock camion/bodega/split, upsert HistorialPrecio, sync queue, validación split inválido). **Total suite: 47/47 tests passing**.
+
+**Supabase schema** (`database/schema.sql`): tablas `recepciones` (codigo PK, proveedor_id FK, fecha, nro_remito, observaciones) y `detalles_recepcion` (codigo PK, recepcion_codigo FK cascade, producto_id FK, cantidad, precio_unitario, destino CHECK camion|bodega|split, cantidad_camion, cantidad_bodega) + índices + RLS policies.
+
+---
 
 ---
 
