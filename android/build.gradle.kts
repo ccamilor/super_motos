@@ -26,8 +26,8 @@ subprojects {
             android.namespace = knownNamespaces[project.name]
                 ?: ("com.example." + project.name.replace("-", "_").replace(".", "_"))
         }
-        if (android.compileSdk == null || android.compileSdk!! < 36) {
-            android.compileSdk = 36
+        if (android.compileSdk == null || android.compileSdk!! < 35) {
+            android.compileSdk = 35
         }
     }
 }
