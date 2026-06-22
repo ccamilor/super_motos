@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:super_motos/core/enums/estado_cuenta.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
@@ -28,12 +29,21 @@ class _ClientesPageState extends State<ClientesPage> {
   void initState() {
     super.initState();
     _loadClientes();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
   }
 
   @override
   void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (!mounted) return;
+    _repository.loadAll().then((clientes) {
+      if (mounted) setState(() => _clientes = clientes);
+    });
   }
 
   Future<void> _loadClientes() async {
@@ -161,7 +171,12 @@ class _ClientesPageState extends State<ClientesPage> {
           children: [
             Icon(Icons.people_outline_rounded, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Clientes', style: TextStyle(fontWeight: FontWeight.w900)),
+            Flexible(
+              child: Text('Clientes',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
             if (_clientes.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(

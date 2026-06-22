@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
@@ -28,7 +29,12 @@ class IsarInventoryRepository implements InventoryRepository {
 
     var productos = await isar.productoModels.where().findAll();
     if (productos.isEmpty) {
-      await _seedDemoData(isar);
+      final prefs = await SharedPreferences.getInstance();
+      final alreadySeeded = prefs.getBool('super_motos_seeded') ?? false;
+      if (!alreadySeeded) {
+        await _seedDemoData(isar);
+        await prefs.setBool('super_motos_seeded', true);
+      }
       productos = await isar.productoModels.where().findAll();
     }
 
@@ -77,20 +83,42 @@ class IsarInventoryRepository implements InventoryRepository {
           if (cancelToken?.isCancelled == true) {
             throw StateError('Importación cancelada por el usuario');
           }
-          await isar.productoModels.put(entry.toProductoModel());
-          await isar.inventarioCamionModels.put(entry.toCamionModel());
-          await isar.inventarioBodegaModels.put(entry.toBodegaModel());
+          final pModel = entry.toProductoModel();
+          final existingP = await isar.productoModels.filter().codigoEqualTo(pModel.codigo).findFirst();
+          if (existingP != null) pModel.id = existingP.id;
+          await isar.productoModels.put(pModel);
+
+          final cModel = entry.toCamionModel();
+          final existingC = await isar.inventarioCamionModels.filter().codigoEqualTo(cModel.codigo).findFirst();
+          if (existingC != null) cModel.id = existingC.id;
+          await isar.inventarioCamionModels.put(cModel);
+
+          final bModel = entry.toBodegaModel();
+          final existingB = await isar.inventarioBodegaModels.filter().codigoEqualTo(bModel.codigo).findFirst();
+          if (existingB != null) bModel.id = existingB.id;
+          await isar.inventarioBodegaModels.put(bModel);
         }
       });
 
-      // Enqueue for sync after each chunk
       for (final entry in chunk) {
         if (cancelToken?.isCancelled == true) {
           throw StateError('Importación cancelada por el usuario');
         }
-        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(entry.toProductoModel().toJson()));
-        SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(entry.toCamionModel().toJson()));
-        SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(entry.toBodegaModel().toJson()));
+
+        final savedP = await isar.productoModels.filter().codigoEqualTo(entry.codigo).findFirst();
+        if (savedP != null) {
+          SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(savedP.toJson()));
+        }
+
+        final savedC = await isar.inventarioCamionModels.filter().codigoEqualTo(entry.toCamionModel().codigo).findFirst();
+        if (savedC != null) {
+          SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(savedC.toJson()));
+        }
+
+        final savedB = await isar.inventarioBodegaModels.filter().codigoEqualTo(entry.toBodegaModel().codigo).findFirst();
+        if (savedB != null) {
+          SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(savedB.toJson()));
+        }
       }
 
       processed += chunk.length;
@@ -151,6 +179,7 @@ class IsarInventoryRepository implements InventoryRepository {
   }
 
   Future<void> _seedDemoData(Isar isar) async {
+    final syncedCodigos = <String>[];
     await isar.writeTxn(() async {
       for (final entry in InventorySeedData.demoEntries) {
         final pModel = entry.toProductoModel();
@@ -167,8 +196,25 @@ class IsarInventoryRepository implements InventoryRepository {
         final existingB = await isar.inventarioBodegaModels.filter().codigoEqualTo(bModel.codigo).findFirst();
         if (existingB != null) bModel.id = existingB.id;
         await isar.inventarioBodegaModels.put(bModel);
+
+        syncedCodigos.add(pModel.codigo);
       }
     });
+
+    for (final codigo in syncedCodigos) {
+      final savedP = await isar.productoModels.filter().codigoEqualTo(codigo).findFirst();
+      if (savedP != null) {
+        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(savedP.toJson()));
+      }
+      final savedC = await isar.inventarioCamionModels.filter().productoIdEqualTo(codigo).findFirst();
+      if (savedC != null) {
+        SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(savedC.toJson()));
+      }
+      final savedB = await isar.inventarioBodegaModels.filter().productoIdEqualTo(codigo).findFirst();
+      if (savedB != null) {
+        SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(savedB.toJson()));
+      }
+    }
   }
 
   @override
@@ -213,6 +259,10 @@ class IsarInventoryRepository implements InventoryRepository {
         .productoIdEqualTo(productoId)
         .findFirst();
     if (updated != null) {
+      final productoParaSync = await isar.productoModels.filter().codigoEqualTo(productoId).findFirst();
+      if (productoParaSync != null) {
+        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(productoParaSync.toJson()));
+      }
       SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(updated.toJson()));
     }
   }
@@ -271,6 +321,7 @@ class IsarInventoryRepository implements InventoryRepository {
           .filter().productoIdEqualTo(entry.codigo).findFirst();
       if (existingCamion != null) {
         if (entry.cantidadCamion > 0) {
+          camion.id = existingCamion.id;
           await isar.inventarioCamionModels.put(camion);
         } else {
           await isar.inventarioCamionModels.delete(existingCamion.id);
@@ -282,6 +333,7 @@ class IsarInventoryRepository implements InventoryRepository {
           .filter().productoIdEqualTo(entry.codigo).findFirst();
       if (existingBodega != null) {
         if (entry.cantidadBodega > 0) {
+          bodega.id = existingBodega.id;
           await isar.inventarioBodegaModels.put(bodega);
         } else {
           await isar.inventarioBodegaModels.delete(existingBodega.id);
@@ -366,6 +418,10 @@ class IsarInventoryRepository implements InventoryRepository {
         .productoIdEqualTo(productoId)
         .findFirst();
     if (updated != null) {
+      final productoParaSync = await isar.productoModels.filter().codigoEqualTo(productoId).findFirst();
+      if (productoParaSync != null) {
+        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(productoParaSync.toJson()));
+      }
       SyncService.instance.enqueue('inventario_camion', SyncOperation.update, jsonEncode(updated.toJson()));
     }
   }
@@ -394,6 +450,10 @@ class IsarInventoryRepository implements InventoryRepository {
         .productoIdEqualTo(productoId)
         .findFirst();
     if (updated != null) {
+      final productoParaSync = await isar.productoModels.filter().codigoEqualTo(productoId).findFirst();
+      if (productoParaSync != null) {
+        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(productoParaSync.toJson()));
+      }
       SyncService.instance.enqueue('inventario_bodega', SyncOperation.update, jsonEncode(updated.toJson()));
     }
   }

@@ -139,10 +139,10 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(d, colorScheme),
+                    const SizedBox(height: 16),
+                    _buildFacturaOrigenBanner(d, colorScheme),
                     const SizedBox(height: 24),
                     Text('DETALLES', style: TextStyle(color: colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
-                    const SizedBox(height: 8),
-                    _buildInfoRow('Factura origen', '#${d.facturaId}', colorScheme),
                     const SizedBox(height: 8),
                     _buildInfoRow('Producto', _producto?.nombre ?? '#${d.productoId}', colorScheme),
                     const SizedBox(height: 8),
@@ -188,6 +188,75 @@ class _DevolucionDetailPageState extends State<DevolucionDetailPage> {
                 Text('+${d.cantidad}', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 22)),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFacturaOrigenBanner(Devolucion d, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.secondary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.secondary.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.secondary.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.receipt_long_outlined,
+              color: colorScheme.secondary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'FACTURA ORIGEN',
+                  style: TextStyle(
+                    color: colorScheme.secondary.withValues(alpha: 0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '#${d.facturaId}',
+                  style: TextStyle(
+                    color: colorScheme.secondary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Venta asociada a esta devolucion',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: colorScheme.secondary.withValues(alpha: 0.6),
+            size: 18,
           ),
         ],
       ),

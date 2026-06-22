@@ -21,16 +21,17 @@
 
 | Feature | Estado | Notas |
 |---|---|---|
-| `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas |
+| `inventory` | ✅ Completo | Carga, búsqueda, importación CSV, formato COP, 3 pestañas, export CSV |
 | `customers` | ✅ Completo | CRUD: lista con búsqueda, crear/editar/eliminar, formato COP, soporte Isar + web |
 | `billing` | ✅ Completo | Listado + crear con line items + detalle + geolocalizacion; descuenta stock del camión al guardar |
 | `returns` | ✅ Completo | Listado + crear con factura/producto filtrado + detalle; repone stock del camión al guardar |
-| `home` (dashboard) | ✅ UI | Todas las tarjetas y botones de Operaciones de Ruta navegan a módulos reales; tarjeta Alertas de Stock dinamica |
+| `home` (dashboard) | ✅ UI | Reordenado: Ubicación | Operaciones | Accesos | Métricas |
 | `auth` | ✅ Completo | Login con 2 usuarios (Mayra admin, Mateo vendedor), session singleton, logout |
 | `suppliers` | ✅ Completo | CRUD: lista con busqueda, crear/editar/eliminar, historial de precios colapsable dentro del form |
 | `recepcion` | ✅ Completo | Listado + crear recepción con proveedor/lineas + split + upsert historial precios; badge reactivo en proveedores |
+| `code_generator` | ✅ Implementado | Códigos secuenciales de 3 dígitos (CLI-001, FAC-001, etc.) |
 | Backend remoto (Supabase) | ✅ Funcional | `SupabaseService` singleton, credenciales configuradas, `supabase_flutter` conectado |
-| Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at` |
+| Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at`, migración única de productos no sincronizados |
 | Notificaciones de stock bajo | ✅ Implementado | `StockAlertService` singleton, verificacion en `decrementCamionStock`, notificacion local, tarjeta amber en dashboard |
 | Geoposicionamiento en factura | ✅ Implementado | `LocationService` singleton, captura coords al guardar factura, muestra icono+coords en detalle |
 | SyncStateIndicator global AppBar | ✅ Implementado | `SyncStateIndicator` en AppBar de 6 páginas, clicable → navega a `SyncQueuePage` |

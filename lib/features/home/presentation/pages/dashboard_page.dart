@@ -22,9 +22,14 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
     if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
+import 'package:super_motos/features/returns/presentation/pages/devoluciones_page.dart';
+import 'package:super_motos/features/returns/data/repositories/devoluciones_repository.dart';
+import 'package:super_motos/features/returns/data/repositories/devoluciones_repository_web.dart'
+    if (dart.library.io) 'package:super_motos/features/returns/data/repositories/devoluciones_repository_io.dart';
 import 'package:super_motos/features/suppliers/presentation/pages/proveedores_page.dart';
 import 'package:super_motos/features/sync/presentation/widgets/sync_badge.dart';
 import 'package:super_motos/features/sync/presentation/pages/sync_queue_page.dart';
+import 'package:super_motos/features/home/presentation/pages/backup_history_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -37,8 +42,12 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   final FacturasRepository _facturasRepo = createFacturasRepository();
   final ClientesRepository _clientesRepo = createClientesRepository();
   final InventoryRepository _inventoryRepo = createInventoryRepository();
+  final DevolucionesRepository _devolucionesRepo = createDevolucionesRepository();
   int _lowStockCount = 0;
   double _ventaTotalDia = 0.0;
+  double _ventaBrutaDia = 0.0;
+  double _montoDevolucionesDia = 0.0;
+  int _cantidadDevolucionesDia = 0;
   int _totalClientes = 0;
   int _totalProductos = 0;
   double? _latitud;
@@ -47,6 +56,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   bool _syncButtonLoading = false;
   bool _backupButtonLoading = false;
   DateTime? _lastBackupTime;
+  String? _lastSyncMessage;
 
   @override
   void initState() {
@@ -56,6 +66,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     _updatePendingCount();
     _updateLowStockCount();
     _loadVentaTotal();
+    _loadDevolucionesDia();
     _loadTotalClientes();
     _loadTotalProductos();
     _loadLocation();
@@ -130,6 +141,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
     _updatePendingCount();
 
+    if (result.pushed == 0 && result.failed == 0) return;
+
     String message;
     Color bgColor;
     switch (result.status) {
@@ -146,6 +159,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       default:
         return;
     }
+
+    if (message == _lastSyncMessage) return;
+    _lastSyncMessage = message;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -168,6 +184,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       _updatePendingCount();
       _updateLowStockCount();
       _loadVentaTotal();
+      _loadDevolucionesDia();
       _loadTotalClientes();
       _loadTotalProductos();
       _loadLocation();
@@ -211,11 +228,48 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           .fold(0.0, (sum, f) => sum + f.total);
       if (mounted) {
         setState(() {
-          _ventaTotalDia = total;
+          _ventaBrutaDia = total;
+          _ventaTotalDia = total - _montoDevolucionesDia;
         });
       }
     } catch (e) {
       debugPrint('Error calculando venta total: $e');
+    }
+  }
+
+  Future<void> _loadDevolucionesDia() async {
+    try {
+      final devoluciones = await _devolucionesRepo.loadAll();
+      final facturas = await _facturasRepo.loadAll();
+      final hoy = DateTime.now();
+
+      final devsHoy = devoluciones.where((d) =>
+          d.fechaDevolucion.year == hoy.year &&
+          d.fechaDevolucion.month == hoy.month &&
+          d.fechaDevolucion.day == hoy.day).toList();
+
+      double montoTotal = 0.0;
+      for (final d in devsHoy) {
+        final factura = facturas.where((f) => f.codigo == d.facturaId).firstOrNull;
+        if (factura != null) {
+          final detalle = factura.detalles
+              .where((det) => det.productoId == d.productoId)
+              .firstOrNull;
+          if (detalle != null) {
+            montoTotal += detalle.precioUnitario * d.cantidad;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _cantidadDevolucionesDia = devsHoy.length;
+          _montoDevolucionesDia = montoTotal;
+          _ventaTotalDia = _ventaBrutaDia - montoTotal;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error calculando devoluciones del dia: $e');
     }
   }
 
@@ -268,12 +322,15 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           children: [
             Icon(Icons.two_wheeler, color: colorScheme.primary, size: 28),
             const SizedBox(width: 10),
-            Text(
-              'MotoRuta Pro',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                color: colorScheme.onSurface,
-                letterSpacing: 0.5,
+            Flexible(
+              child: Text(
+                'MotoRuta Pro',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -301,9 +358,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(Icons.cloud_upload_outlined, color: colorScheme.primary),
-            tooltip: _lastBackupTime != null
-                ? 'Último backup: ${_formatBackupTime(_lastBackupTime!)}'
-                : 'Backup manual',
+            tooltip: 'Backup manual',
           ),
           _UserBadge(),
         ],
@@ -322,58 +377,71 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                 child: const SyncStateIndicator(),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Métricas del Día',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+
+              _buildLocationCard(colorScheme),
+
+              const SizedBox(height: 20),
+
+              Card(
+                elevation: 4,
+                color: colorScheme.surface,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operaciones de Ruta',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const FacturaFormPage()),
+                              ),
+                              icon: const Icon(Icons.shopping_cart_outlined, size: 20),
+                              label: const Text('Nueva Venta'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const DevolucionFormPage()),
+                              ),
+                              icon: const Icon(Icons.replay_outlined, size: 20),
+                              label: const Text('Devolucion'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricCard(
-                      colorScheme: colorScheme,
-                      label: 'Venta Total',
-                      value: formatCOP(_ventaTotalDia),
-                      valueColor: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricCard(
-                      colorScheme: colorScheme,
-                      label: 'Total Clientes',
-                      value: '$_totalClientes',
-                      valueColor: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricCard(
-                      colorScheme: colorScheme,
-                      label: 'Total Productos',
-                      value: '$_totalProductos',
-                      valueColor: colorScheme.secondary,
-                      borderColor: colorScheme.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildLocationCard(colorScheme),
-                  ),
-                ],
-              ),
+
+              if (_lastBackupTime != null) ...[
+                const SizedBox(height: 12),
+                _buildBackupCard(colorScheme),
+              ],
               if (_lowStockCount > 0) ...[
                 const SizedBox(height: 12),
                 InkWell(
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const InventoryPage()),
+                    MaterialPageRoute(builder: (context) => const InventoryPage(lowStockOnly: true)),
                   ),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
@@ -503,9 +571,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                   ),
                 ),
               ],
+
               const SizedBox(height: 28),
 
-              // Main Grid: 2x2 tarjetas (Inventario, Clientes, Historial, Proveedores)
               Text(
                 'Accesos Rapidos',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -532,7 +600,6 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                       MaterialPageRoute(builder: (context) => const InventoryPage()),
                     ),
                   ),
-
                   _buildShortcutCard(
                     context,
                     title: 'Clientes',
@@ -545,7 +612,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                   ),
                   _buildShortcutCard(
                     context,
-                    title: 'Historial',
+                    title: 'Facturas',
                     icon: Icons.history_edu_outlined,
                     bgColor: colorScheme.error.withValues(alpha: 0.1),
                     iconColor: colorScheme.error,
@@ -563,60 +630,67 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                       MaterialPageRoute(builder: (context) => const ProveedoresPage()),
                     ),
                   ),
+                  _buildShortcutCard(
+                    context,
+                    title: 'Devoluciones',
+                    icon: Icons.replay_outlined,
+                    bgColor: Colors.teal.withValues(alpha: 0.1),
+                    iconColor: Colors.teal,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const DevolucionesPage()),
+                    ),
+                  ),
                 ],
               ),
+
               const SizedBox(height: 32),
 
-              // Floating/Highlighted Buttons: Nueva Venta y Devolucion
-              Card(
-                elevation: 4,
-                color: colorScheme.surface,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Operaciones de Ruta',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => const FacturaFormPage()),
-                              ),
-                              icon: const Icon(Icons.shopping_cart_outlined, size: 20),
-                              label: const Text('Nueva Venta'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => const DevolucionFormPage()),
-                              ),
-                              icon: const Icon(Icons.replay_outlined, size: 20),
-                              label: const Text('Devolucion'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              Text(
+                'Métricas del Día',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Venta Neta',
+                      value: formatCOP(_ventaTotalDia),
+                      valueColor: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Total Clientes',
+                      value: '$_totalClientes',
+                      valueColor: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricCard(
+                      colorScheme: colorScheme,
+                      label: 'Total Productos',
+                      value: '$_totalProductos',
+                      valueColor: colorScheme.secondary,
+                      borderColor: colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDevolucionesCard(colorScheme),
+                  ),
+                ],
               ),
             ],
           ),
@@ -687,7 +761,75 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     );
   }
 
+  Widget _buildDevolucionesCard(ColorScheme colorScheme) {
+    final hasDevoluciones = _cantidadDevolucionesDia > 0;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasDevoluciones
+              ? colorScheme.error.withValues(alpha: 0.4)
+              : colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.error.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.assignment_return_outlined,
+                  size: 14,
+                  color: hasDevoluciones ? colorScheme.error : Colors.white38,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Devoluciones Hoy',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: hasDevoluciones ? Colors.white70 : Colors.white38,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${_cantidadDevolucionesDia}',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: hasDevoluciones ? colorScheme.error : Colors.white38,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              formatCOP(_montoDevolucionesDia),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: hasDevoluciones ? colorScheme.error.withValues(alpha: 0.8) : Colors.white38,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLocationCard(ColorScheme colorScheme) {
+
     final hasLocation = _latitud != null && _longitud != null;
     return Container(
       decoration: BoxDecoration(
@@ -762,6 +904,77 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackupCard(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_done_outlined,
+                color: colorScheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Backup',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ultimo: ${_formatBackupTime(_lastBackupTime!)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BackupHistoryPage()),
+              ),
+              icon: const Icon(Icons.history, size: 16),
+              label: const Text('Ver historial', style: TextStyle(fontSize: 12)),
+            ),
           ],
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
@@ -33,7 +34,12 @@ class WebInventoryRepository implements InventoryRepository {
         }
       }
 
-      _applyEntries(InventorySeedData.demoEntries);
+      final prefs = await SharedPreferences.getInstance();
+      final alreadySeeded = prefs.getBool('super_motos_seeded') ?? false;
+      if (!alreadySeeded) {
+        _applyEntries(InventorySeedData.demoEntries);
+        await prefs.setBool('super_motos_seeded', true);
+      }
     }
 
     return _snapshot();

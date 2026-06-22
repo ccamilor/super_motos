@@ -23,7 +23,9 @@ import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/core/utils/import_progress.dart';
 
 class InventoryPage extends StatefulWidget {
-  const InventoryPage({super.key});
+  final bool lowStockOnly;
+
+  const InventoryPage({super.key, this.lowStockOnly = false});
 
   @override
   State<InventoryPage> createState() => _InventoryPageState();
@@ -41,10 +43,12 @@ class _InventoryPageState extends State<InventoryPage>
   String _searchQuery = '';
   bool _isLoading = false;
   bool _syncButtonLoading = false;
+  late bool _lowStockOnly;
 
   @override
   void initState() {
     super.initState();
+    _lowStockOnly = widget.lowStockOnly;
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
@@ -111,21 +115,22 @@ class _InventoryPageState extends State<InventoryPage>
 
       if (previewResult == null) return;
 
-      // Show progress dialog
       final cancelToken = CancelToken();
       final progressController = StreamController<ImportProgress>();
 
-      await showDialog(
+      if (!mounted) return;
+
+      showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
             title: const Text('Importando CSV...'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 StreamBuilder<ImportProgress>(
-                  stream: _createProgressStream(input, progressController, cancelToken),
+                  stream: progressController.stream,
                   builder: (context, snapshot) {
                     final progress = snapshot.data;
                     if (progress == null) return const SizedBox.shrink();
@@ -165,6 +170,8 @@ class _InventoryPageState extends State<InventoryPage>
                 onPressed: () {
                   if (!cancelToken.isCancelled) {
                     cancelToken.cancel();
+                    setDialogState(() {});
+                    Navigator.of(ctx).pop();
                   }
                 },
                 child: Text(cancelToken.isCancelled ? 'Cancelando...' : 'Cancelar'),
@@ -175,9 +182,18 @@ class _InventoryPageState extends State<InventoryPage>
       );
 
       try {
-        setState(() => _isLoading = true);
+        final snapshot = await _repository.importCsv(
+          input,
+          onProgress: (progress) {
+            if (!progressController.isClosed) {
+              progressController.add(progress);
+            }
+          },
+          cancelToken: cancelToken,
+        );
 
-        final snapshot = await _repository.importCsv(input);
+        progressController.close();
+
         if (!mounted) return;
 
         setState(() {
@@ -186,11 +202,24 @@ class _InventoryPageState extends State<InventoryPage>
           _bodega = snapshot.bodega;
         });
 
-        if (mounted) {
-          _showPostImportReport(colorScheme, previewResult);
-        }
+        _showPostImportReport(colorScheme, previewResult);
       } catch (e) {
-        if (mounted) {
+        progressController.close();
+
+        if (!mounted) return;
+
+        if (cancelToken.isCancelled) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.amber.shade700,
+              content: const Text(
+                'Importación cancelada',
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: colorScheme.error,
@@ -205,9 +234,6 @@ class _InventoryPageState extends State<InventoryPage>
             ),
           );
         }
-      } finally {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) {
@@ -231,26 +257,6 @@ class _InventoryPageState extends State<InventoryPage>
     }
   }
 
-  Stream<ImportProgress> _createProgressStream(
-    String csvContent,
-    StreamController<ImportProgress> controller,
-    CancelToken cancelToken,
-  ) {
-    _repository.importCsv(
-      csvContent,
-      onProgress: (progress) {
-        controller.add(progress);
-      },
-      cancelToken: cancelToken,
-    ).then((_) {
-      controller.close();
-    }).catchError((error) {
-      controller.addError(error);
-      controller.close();
-    });
-
-    return controller.stream;
-  }
 
   Future<void> _exportCSV(ColorScheme colorScheme) async {
     try {
@@ -474,13 +480,28 @@ class _InventoryPageState extends State<InventoryPage>
   }
 
   List<ProductoModel> get _filteredProductos {
-    if (_searchQuery.isEmpty) return _productos;
-    final q = _searchQuery.toLowerCase();
-    return _productos.where((p) {
-      final nameMatches = p.nombre.toLowerCase().contains(q);
-      final compatibilityMatches = p.motosCompatibles.toLowerCase().contains(q);
-      return nameMatches || compatibilityMatches;
-    }).toList();
+    var results = _productos;
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      results = results.where((p) {
+        final nameMatches = p.nombre.toLowerCase().contains(q);
+        final compatibilityMatches = p.motosCompatibles.toLowerCase().contains(q);
+        return nameMatches || compatibilityMatches;
+      }).toList();
+    }
+
+    if (_lowStockOnly) {
+      results = results.where((p) {
+        final camion = _camion.cast<InventarioCamionModel?>().firstWhere(
+          (item) => item?.productoId == p.codigo,
+          orElse: () => null,
+        );
+        return camion != null && camion.cantidad < p.stockMinimo;
+      }).toList();
+    }
+
+    return results;
   }
 
   @override
@@ -615,11 +636,60 @@ class _InventoryPageState extends State<InventoryPage>
     );
   }
 
+  Widget _buildLowStockBanner(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'Mostrando solo stock bajo (${_filteredProductos.length} producto${_filteredProductos.length != 1 ? 's' : ''})',
+            style: const TextStyle(fontSize: 12, color: Colors.amber),
+          ),
+          const Spacer(),
+          InkWell(
+            onTap: () => setState(() => _lowStockOnly = false),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Mostrar todo',
+                style: TextStyle(fontSize: 11, color: Colors.amber),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wrapWithBanner(Widget content, ColorScheme colorScheme) {
+    if (!_lowStockOnly) return content;
+    return Column(
+      children: [
+        _buildLowStockBanner(colorScheme),
+        Expanded(child: content),
+      ],
+    );
+  }
+
   Widget _buildCamionTab(ColorScheme colorScheme) {
     final filtered = _filteredProductos;
-    if (filtered.isEmpty) return _emptyState(colorScheme);
+    if (filtered.isEmpty) return _wrapWithBanner(_emptyState(colorScheme), colorScheme);
 
-    return ListView.separated(
+    final listView = ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 6),
@@ -657,13 +727,14 @@ class _InventoryPageState extends State<InventoryPage>
         );
       },
     );
+    return _wrapWithBanner(listView, colorScheme);
   }
 
   Widget _buildBodegaTab(ColorScheme colorScheme) {
     final filtered = _filteredProductos;
-    if (filtered.isEmpty) return _emptyState(colorScheme);
+    if (filtered.isEmpty) return _wrapWithBanner(_emptyState(colorScheme), colorScheme);
 
-    return ListView.separated(
+    final listView = ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 6),
@@ -695,13 +766,14 @@ class _InventoryPageState extends State<InventoryPage>
         );
       },
     );
+    return _wrapWithBanner(listView, colorScheme);
   }
 
   Widget _buildTotalTab(ColorScheme colorScheme) {
     final filtered = _filteredProductos;
-    if (filtered.isEmpty) return _emptyState(colorScheme);
+    if (filtered.isEmpty) return _wrapWithBanner(_emptyState(colorScheme), colorScheme);
 
-    return ListView.separated(
+    final listView = ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 6),
@@ -934,6 +1006,7 @@ class _InventoryPageState extends State<InventoryPage>
         );
       },
     );
+    return _wrapWithBanner(listView, colorScheme);
   }
 
   Widget _emptyState(ColorScheme colorScheme) {

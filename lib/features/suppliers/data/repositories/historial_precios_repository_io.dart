@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:isar/isar.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/features/suppliers/data/models/historial_precios_model.dart';
 import 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository.dart';
 import 'package:super_motos/features/suppliers/domain/entities/historial_precio.dart';
@@ -99,7 +100,7 @@ class IsarHistorialPreciosRepository implements HistorialPreciosRepository {
         ..isSynced = false;
     } else {
       model = HistorialPreciosModel()
-        ..codigo = 'HP-${DateTime.now().millisecondsSinceEpoch}'
+        ..codigo = await CodeGenerator.next('PVHS')
         ..proveedorId = proveedorId
         ..productoId = productoId
         ..precioCompra = precioCompra

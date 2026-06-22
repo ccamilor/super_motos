@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:super_motos/core/enums/estado_cuenta.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/customers/data/repositories/clientes_repository_io.dart';
@@ -87,7 +88,7 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
       final limite = double.parse(_limiteCtrl.text.trim());
       final saldo = double.parse(_saldoCtrl.text.trim());
       final nuevo = Cliente(
-        codigo: widget.cliente?.codigo ?? '',
+        codigo: widget.cliente?.codigo ?? await CodeGenerator.next('CLI'),
         nombre: _nombreCtrl.text.trim(),
         identificadorFiscal: _nitCtrl.text.trim(),
         direccion: _direccionCtrl.text.trim(),
@@ -105,6 +106,18 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
       }
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.amber.shade700,
+          content: Text(
+            _isEdit
+                ? 'Cliente actualizado — Pendiente de sincronización'
+                : 'Cliente creado — Pendiente de sincronización',
+            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;

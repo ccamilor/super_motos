@@ -221,12 +221,15 @@ class _CsvPreviewModalState extends State<CsvPreviewModal> {
             children: [
               Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 20),
               const SizedBox(width: 8),
-              Text(
-                'No se puede importar este archivo',
-                style: TextStyle(
-                  color: colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              Flexible(
+                child: Text(
+                  'No se puede importar este archivo',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -308,6 +311,7 @@ class _CsvPreviewModalState extends State<CsvPreviewModal> {
           ),
           Text(
             label,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color.withValues(alpha: 0.7),
               fontSize: 11,
@@ -417,19 +421,22 @@ class _CsvPreviewModalState extends State<CsvPreviewModal> {
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton.icon(
-            onPressed: _isValid ? () => Navigator.of(context).pop(_result) : null,
-            icon: const Icon(Icons.download, size: 18),
-            label: Text(
-              _result.hasErrors
-                  ? 'No se puede importar'
-                  : 'Importar ${_result.totalRows} productos',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: Colors.black,
-              disabledBackgroundColor: Colors.grey.withValues(alpha: 0.3),
-              disabledForegroundColor: Colors.grey,
+          Flexible(
+            child: ElevatedButton.icon(
+              onPressed: _isValid ? () => Navigator.of(context).pop(_result) : null,
+              icon: const Icon(Icons.download, size: 18),
+              label: Text(
+                _result.hasErrors
+                    ? 'No se puede importar'
+                    : 'Importar ${_result.totalRows} productos',
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: Colors.grey.withValues(alpha: 0.3),
+                disabledForegroundColor: Colors.grey,
+              ),
             ),
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
@@ -121,7 +122,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
     setState(() => _isSaving = true);
     try {
       final nuevo = Proveedor(
-        codigo: widget.proveedor?.codigo ?? '',
+        codigo: widget.proveedor?.codigo ?? await CodeGenerator.next('PROV'),
         nombre: _nombreCtrl.text.trim(),
         nit: _nitCtrl.text.trim(),
         telefono: _telefonoCtrl.text.trim(),
@@ -135,7 +136,7 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
       for (final entry in _precioEntries) {
         if (entry.productoId.isEmpty) continue;
         await _historialRepo.create(HistorialPrecio(
-          codigo: '',
+          codigo: await CodeGenerator.next('PVHS'),
           productoId: entry.productoId,
           proveedorId: saved.codigo,
           precioCompra: entry.precio,
@@ -144,6 +145,18 @@ class _ProveedorFormPageState extends State<ProveedorFormPage> {
       }
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.amber.shade700,
+          content: Text(
+            _isEdit
+                ? 'Proveedor actualizado — Pendiente de sincronización'
+                : 'Proveedor creado — Pendiente de sincronización',
+            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;

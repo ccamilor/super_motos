@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository_web.dart'
@@ -31,12 +32,21 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
   void initState() {
     super.initState();
     _loadProveedores();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
   }
 
   @override
   void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (!mounted) return;
+    _proveedoresRepo.loadAll().then((proveedores) {
+      if (mounted) setState(() => _proveedores = proveedores);
+    });
   }
 
   Future<void> _loadProveedores() async {
@@ -147,7 +157,12 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
           children: [
             Icon(Icons.local_shipping_outlined, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Proveedores', style: TextStyle(fontWeight: FontWeight.w900)),
+            Flexible(
+              child: Text('Proveedores',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
             if (_proveedores.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(

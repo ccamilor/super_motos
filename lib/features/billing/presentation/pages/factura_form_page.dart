@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:super_motos/core/constants/vendedor.dart';
 import 'package:super_motos/core/enums/tipo_pago.dart';
 import 'package:super_motos/core/services/location_service.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
@@ -203,7 +204,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     try {
       final position = await LocationService.instance.getCurrentPosition();
       final factura = Factura(
-        codigo: 'FAC-${DateTime.now().millisecondsSinceEpoch}',
+        codigo: await CodeGenerator.next('FAC'),
         clienteId: _clienteSeleccionado!.codigo,
         vendedorId: kVendedorPorDefecto,
         fecha: DateTime.now(),
@@ -228,6 +229,16 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
 
       if (!mounted) return;
       if (stockWarnings.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.amber.shade700,
+            content: const Text(
+              'Venta guardada — Pendiente de sincronización',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

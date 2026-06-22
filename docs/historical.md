@@ -1233,3 +1233,133 @@ chore: replace deprecated withOpacity with withValues
 ### Tests
 - ✅ 47/47 tests pasando
 - ✅ 0 errores en `flutter analyze`
+
+---
+
+## Sesión 9 — 2026-06-22 — Release v1.0: Sync fixes, CSV import fix, dashboard reorder, 3-digit codes, RLS security
+
+### Objetivos de la sesión
+- Arreglar flujo de sync (eliminar push inmediato, auto-marcar como synced en Isar)
+- Arreglar importación CSV (eliminar doble import, preservar IDs en Isar, llenar loop de sync vacío)
+- Corregir FK violation en Supabase (auto-encolar productos, migración única al iniciar)
+- Agregar snackbars de confirmación en todas las entidades
+- Reordenar dashboard (Ubicación → Operaciones → Accesos → Métricas)
+- Agregar historial de devoluciones en Accesos Rápidos
+- Reemplazar códigos largos (timestamp) por códigos secuenciales de 3 dígitos
+- Corregir RLS de Supabase para producción (anon solo SELECT)
+- Actualizar documentación y preparar release
+
+### Lo realizado
+
+**SyncService fixes:**
+- Eliminado `_tryPushOne()` de `enqueue()` — los items ya no se pushean inmediatamente
+- Agregado `_notifyResult()` en `enqueue()` para que el `SyncStateIndicator` muestre items pendientes
+- Agregado `_markLocalAsSynced()` — tras push exitoso, actualiza `isSynced = true` en Isar local para 9 tablas
+- Agregado `_migrateUnsyncedProducts()` — migración única al iniciar que encolea productos no sincronizados
+
+**CSV import fixes:**
+- Eliminado doble import en `inventory_page.dart` — ahora hay 1 sola llamada a `importCsv()` que reporta progreso y devuelve el snapshot
+- Diálogo de progreso se auto-cierra al completar, botón cancelar funcional
+- `inventory_repository_io.dart`: `importCsv()` preserva `id` de registros existentes antes de `put()`
+- Loop de sync vacío rellenado — ahora encolea `productos`, `inventario_camion`, `inventario_bodega`
+- `_seedDemoData()` ahora también encolea al sync
+- Stock operations (`decrementCamionStock`, `incrementCamionStock`, `incrementBodegaStock`) aseguran producto encoleado antes del inventario
+
+**FK violation fix (producto_id no existe en Supabase):**
+- Causa raíz: seed data crea productos locales pero nunca los encoleaba al sync
+- Fix: `inventory_repository_io.dart:loadInventory()` + `sync_service.dart:init()` encolean productos no sincronizados automáticamente
+- Flag `super_motos_seeded` en SharedPreferences evita re-seeding
+- Flag `super_motos_unsynced_migrated` para migración única
+
+**Dashboard reorder:**
+- Nuevo orden: 1-Ubicación 2-Operaciones de Ruta 3-Condicionales 4-Accesos Rápidos 5-Métricas del Día
+- Agregado "Devoluciones" a Accesos Rápidos (icono teal)
+- Renombrado "Historial" → "Facturas" en grid
+- Fix `_onSyncResult`: guards para evitar popups repetitivos de "Sincronización exitosa" y "Fallo en sincronización"
+
+**CodeGenerator (códigos de 3 dígitos):**
+- `lib/core/utils/code_generator.dart` — contador secuencial por prefijo persistido en SharedPreferences
+- Prefijos: CLI, FAC, DEV, PROV, PVHS (historial precios), REC, PROD
+- En primera ejecución, escanea Isar para no colisionar con datos existentes
+- Fallback a timestamp si SharedPreferences no está disponible (tests)
+- Fix: si contador almacenado ≥ 1000 (legado de códigos largos), fuerza re-escaneo
+
+**Row overflow fix (Devoluciones):**
+- `devoluciones_page.dart`: `Text` del código envuelto en `Expanded` + `Flexible` + `overflow: TextOverflow.ellipsis`
+
+**RLS Supabase para producción:**
+- `database/schema.sql`: políticas `"Allow all for anon"` reemplazadas por `"Read only for anon"` (solo SELECT)
+- `"Allow all for authenticated"` se mantiene intacto
+- Storage bucket `backups`: política pública reemplazada por solo `authenticated`
+
+**Snackbars de confirmación:**
+- Agregados snackbars ámbar "Pendiente de sincronización" en los 5 forms:
+  - Cliente (crear/editar)
+  - Factura (nueva venta)
+  - Devolución
+  - Proveedor (crear/editar)
+  - Recepción
+
+**Sync listeners en list pages:**
+- Agregado listener `syncResultNotifier` en: clientes_page, facturas_page, devoluciones_page, proveedores_page, recepciones_page
+- Recargan silenciosamente la lista cuando sync completa, actualizando badges
+
+### Archivos modificados/creados
+
+| Archivo | Tipo | Descripción |
+|---------|------|-------------|
+| `lib/core/utils/code_generator.dart` | **Nuevo** | Generador secuencial de códigos de 3 dígitos |
+| `lib/core/services/sync_service.dart` | Modificado | Quitar push inmediato, _notifyResult, _markLocalAsSynced, _migrateUnsyncedProducts |
+| `lib/features/inventory/presentation/pages/inventory_page.dart` | Modificado | Eliminar doble import CSV, auto-cerrar diálogo, cancelar funcional |
+| `lib/features/inventory/data/repositories/inventory_repository_io.dart` | Modificado | importCsv preserva IDs, sync enqueue, seed encolea, stock ops aseguran producto |
+| `lib/features/inventory/data/repositories/inventory_repository_web.dart` | Modificado | Seed-only-once flag |
+| `lib/features/home/presentation/pages/dashboard_page.dart` | Modificado | Reordenar secciones, Devoluciones en grid, _onSyncResult guards |
+| `lib/features/home/presentation/pages/backup_history_page.dart` | (sin cambios) | Fix via SQL storage policy |
+| `lib/features/customers/presentation/pages/cliente_form_page.dart` | Modificado | Snackbar éxito + CodeGenerator |
+| `lib/features/billing/presentation/pages/factura_form_page.dart` | Modificado | Snackbar éxito + CodeGenerator |
+| `lib/features/returns/presentation/pages/devolucion_form_page.dart` | Modificado | Snackbar éxito + CodeGenerator |
+| `lib/features/returns/presentation/pages/devoluciones_page.dart` | Modificado | Row overflow fix (Expanded + Flexible) |
+| `lib/features/suppliers/presentation/pages/proveedor_form_page.dart` | Modificado | Snackbar éxito + CodeGenerator (PROV, PVHS) |
+| `lib/features/suppliers/data/repositories/historial_precios_repository_io.dart` | Modificado | CodeGenerator PVHS |
+| `lib/features/recepcion/presentation/pages/recepcion_form_page.dart` | Modificado | Snackbar éxito + CodeGenerator |
+| `lib/features/inventory/presentation/pages/producto_form_page.dart` | Modificado | CodeGenerator PROD |
+| `lib/features/customers/presentation/pages/clientes_page.dart` | Modificado | Listener syncResultNotifier |
+| `lib/features/billing/presentation/pages/facturas_page.dart` | Modificado | Listener syncResultNotifier |
+| `lib/features/returns/presentation/pages/devoluciones_page.dart` | Modificado | Listener syncResultNotifier |
+| `lib/features/suppliers/presentation/pages/proveedores_page.dart` | Modificado | Listener syncResultNotifier |
+| `lib/features/recepcion/presentation/pages/recepciones_page.dart` | Modificado | Listener syncResultNotifier |
+| `database/schema.sql` | Modificado | RLS: anon solo SELECT, authenticated ALL |
+| `agent.md` | Modificado | Esta sesión |
+| `CONTEXT.md` | Modificado | Fase 6, CodeGenerator, RLS, dashboard reorder |
+| `docs/historical.md` | Modificado | Esta entrada |
+
+### Commits
+```
+```
+
+### Tests: 47/47 ✅
+
+### Estado del proyecto (post-release v1.0)
+| Feature | Estado |
+|---------|--------|
+| inventory | ✅ Completo |
+| customers | ✅ Completo |
+| billing | ✅ Completo (+ geolocalización) |
+| returns | ✅ Completo |
+| home (dashboard) | ✅ Reordenado + Devoluciones |
+| auth | ✅ Login rápido offline + Login real via Supabase |
+| suppliers | ✅ Completo |
+| Notificaciones stock bajo | ✅ Implementado |
+| Geoposicionamiento | ✅ Implementado |
+| Sync bidireccional | ✅ Push/pull + badges + cola + conflict detection |
+| CSV import | ✅ Preview + progreso + cancelar + sync |
+| Backup Supabase | ✅ Automático + manual + historial |
+| CodeGenerator | ✅ Códigos secuenciales de 3 dígitos |
+| Supabase RLS | ✅ Producción: anon solo SELECT |
+| Dashboard | ✅ Reordenado: Ubicación → Operaciones → Accesos → Métricas |
+
+### Próximos pasos sugeridos
+- Logo de la app (`flutter_launcher_icons`)
+- Publicar en Play Store
+- Pruebas en dispositivo físico real
+- Agregar más métricas al dashboard

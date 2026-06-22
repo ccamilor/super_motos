@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
@@ -69,7 +70,7 @@ class _ProductoFormPageState extends State<ProductoFormPage> {
     setState(() => _isSaving = true);
 
     final entry = InventoryEntry(
-      codigo: widget.entry?.codigo ?? '',
+      codigo: widget.entry?.codigo ?? await CodeGenerator.next('PROD'),
       nombre: _nombreCtrl.text.trim(),
       precio: double.tryParse(_precioCtrl.text) ?? 0,
       isOriginal: _isOriginal,

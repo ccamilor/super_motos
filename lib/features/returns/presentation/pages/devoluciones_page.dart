@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
@@ -34,12 +35,21 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
   void initState() {
     super.initState();
     _loadData();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
   }
 
   @override
   void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (!mounted) return;
+    _devolucionesRepo.loadAll().then((devoluciones) {
+      if (mounted) setState(() => _devoluciones = devoluciones);
+    });
   }
 
   Future<void> _loadData() async {
@@ -87,9 +97,12 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
     if (_searchQuery.isEmpty) return _devoluciones;
     final q = _searchQuery.toLowerCase();
     return _devoluciones.where((d) {
+      final producto = _productosByStringId[d.productoId];
+      final productoNombre = producto?.nombre.toLowerCase() ?? '';
       return d.facturaId.toLowerCase().contains(q) ||
           d.motivo.toLowerCase().contains(q) ||
-          d.canastaDestino.toLowerCase().contains(q);
+          d.canastaDestino.toLowerCase().contains(q) ||
+          productoNombre.contains(q);
     }).toList();
   }
 
@@ -115,7 +128,12 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
           children: [
             Icon(Icons.replay_outlined, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Devoluciones', style: TextStyle(fontWeight: FontWeight.w900)),
+            Flexible(
+              child: Text('Devoluciones',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
             if (_devoluciones.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
@@ -146,7 +164,7 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
                 controller: _searchController,
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
-                  hintText: 'Buscar por factura, motivo o canasta...',
+                  hintText: 'Buscar por producto, factura, motivo o canasta...',
                   prefixIcon: Icon(Icons.search, color: colorScheme.primary),
                   suffixIcon: _searchQuery.isEmpty
                       ? null
@@ -207,15 +225,20 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'Devolucion ${devolucion.codigo}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    SyncStatusBadge(isSynced: devolucion.isSynced, compact: true),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Devolucion ${devolucion.codigo}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SyncStatusBadge(isSynced: devolucion.isSynced, compact: true),
+                    ],
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

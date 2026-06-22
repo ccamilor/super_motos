@@ -221,7 +221,7 @@ CREATE INDEX IF NOT EXISTS idx_detalles_recepcion_recepcion ON detalles_recepcio
 CREATE INDEX IF NOT EXISTS idx_detalles_recepcion_producto ON detalles_recepcion(producto_id);
 
 -- ============================================================================
--- 5. RLS — POLITICAS DE SEGURIDAD (modo desarrollo: todo abierto)
+-- 5. RLS — POLITICAS DE SEGURIDAD (producción: solo lectura para anon)
 -- ============================================================================
 
 ALTER TABLE productos           ENABLE ROW LEVEL SECURITY;
@@ -236,29 +236,31 @@ ALTER TABLE historial_precios   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recepciones         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE detalles_recepcion  ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all for anon"
-    ON productos FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON inventario_camion FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON inventario_bodega FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON clientes FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON facturas FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON detalles_factura FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON devoluciones FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON proveedores FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON historial_precios FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON recepciones FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon"
-    ON detalles_recepcion FOR ALL TO anon USING (true) WITH CHECK (true);
+-- Anon: solo puede LEER (SELECT) — necesario para connection check en app
+CREATE POLICY "Read only for anon"
+    ON productos FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON inventario_camion FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON inventario_bodega FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON clientes FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON facturas FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON detalles_factura FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON devoluciones FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON proveedores FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON historial_precios FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON recepciones FOR SELECT TO anon USING (true);
+CREATE POLICY "Read only for anon"
+    ON detalles_recepcion FOR SELECT TO anon USING (true);
 
+-- Autenticados: acceso completo (CREATE, READ, UPDATE, DELETE)
 CREATE POLICY "Allow all for authenticated"
     ON productos FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for authenticated"

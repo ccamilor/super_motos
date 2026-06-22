@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:super_motos/core/enums/tipo_pago.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
@@ -36,12 +37,21 @@ class _FacturasPageState extends State<FacturasPage> {
   void initState() {
     super.initState();
     _loadFacturas();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
   }
 
   @override
   void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (!mounted) return;
+    _facturasRepo.loadAll().then((facturas) {
+      if (mounted) setState(() => _facturas = facturas);
+    });
   }
 
   Future<void> _loadFacturas() async {
@@ -140,7 +150,12 @@ class _FacturasPageState extends State<FacturasPage> {
           children: [
             Icon(Icons.receipt_long_outlined, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Historial de Ventas', style: TextStyle(fontWeight: FontWeight.w900)),
+            Flexible(
+              child: Text('Historial de Ventas',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
             if (_facturas.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(

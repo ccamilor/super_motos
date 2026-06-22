@@ -5,6 +5,7 @@ import 'package:super_motos/features/billing/data/repositories/facturas_reposito
 import 'package:super_motos/features/billing/data/repositories/facturas_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/billing/data/repositories/facturas_repository_io.dart';
 import 'package:super_motos/features/billing/domain/entities/factura.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
@@ -206,7 +207,7 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
     try {
       final cantidad = int.parse(_cantidadCtrl.text.trim());
       final devolucion = Devolucion(
-        codigo: 'DEV-${DateTime.now().millisecondsSinceEpoch}',
+        codigo: await CodeGenerator.next('DEV'),
         facturaId: _facturaSeleccionada!.codigo,
         productoId: _productoSeleccionado!.codigo,
         cantidad: cantidad,
@@ -225,6 +226,16 @@ class _DevolucionFormPageState extends State<DevolucionFormPage> {
 
       if (!mounted) return;
       if (stockWarnings.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.amber.shade700,
+            content: const Text(
+              'Devolución guardada — Pendiente de sincronización',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

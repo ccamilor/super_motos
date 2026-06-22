@@ -26,6 +26,7 @@
 | Fase 3 — Módulos reales | ✅ | Inventory, Clientes, Facturación, Devoluciones, Auth, Proveedores, **Recepción** |
 | Fase 4 — Operación en ruta | ✅ | Sync bidireccional, Notificaciones stock bajo, Geoposicionamiento |
 | Fase 5 — Flujo CSV→Supabase mejorado | ✅ | Indicador global sync, cola pendientes, export CSV, SyncLog web, backup Supabase Storage |
+| **Fase 6 — Release v1.0** | ✅ | Sync fixes, CSV import fix, dashboard reorder, 3-digit codes, Supabase RLS seguridad |
 
 ---
 
@@ -113,11 +114,13 @@ createXRepository() // factory selecciona según plataforma
 ### SyncService (lib/core/services/sync_service.dart)
 - Singleton: `SyncService.instance`
 - Cola en SharedPreferences (`super_motos_sync_queue`)
-- Push automático cada 10 segundos (`Timer.periodic`)
+- Push automático cada 10 segundos (`Timer.periodic`) — ya no hay push inmediato en `enqueue()`
 - Pull manual con `pullAll()` y `forcePushAll()`
 - Conflict detection: compara `updated_at` entre local y server
 - Estrategia: `lastWriteWins`
 - `getUnsyncedCount(table)`, `getUnsyncedItems(table)`, `isRecordPending(table, id)`
+- `_markLocalAsSynced()` — tras push exitoso, actualiza `isSynced = true` en Isar local
+- `_migrateUnsyncedProducts()` — migración única al iniciar que encolea productos no sincronizados
 - Tablas soportadas: clientes, facturas, devoluciones, proveedores, historial_precios, productos, inventario_camion, inventario_bodega, **recepciones, detalles_recepcion**
 
 ### Repositorios con sync conectado
@@ -450,3 +453,77 @@ Todos los identificadores de dominio migraron de `int id` a `String codigo` (alf
 ### Bugs corregidos
 - `inventory_page.dart`: ambiguous import `createInventoryRepository`, `StreamController` sin import, `lastProgress` no definido
 - `withOpacity` deprecado reemplazado por `withValues` en 3 archivos
+
+---
+
+## 18. CodeGenerator — Códigos de 3 dígitos (2026-06-22)
+
+### Archivo
+`lib/core/utils/code_generator.dart`
+
+### Funcionamiento
+- Contador secuencial por prefijo, persistido en `SharedPreferences`
+- En primera ejecución, escanea Isar para encontrar el máximo número existente y evita colisiones
+- Si el contador almacenado es ≥ 1000 (legado de códigos largos con timestamp), fuerza re-escaneo
+- Fallback a timestamp original si SharedPreferences no está disponible (tests)
+
+### Prefijos
+| Prefijo | Entidad | Primer código |
+|---------|---------|--------------|
+| `CLI-` | Cliente | `CLI-001` |
+| `FAC-` | Factura | `FAC-001` |
+| `DEV-` | Devolución | `DEV-001` |
+| `PROV-` | Proveedor | `PROV-001` |
+| `PVHS-` | HistorialPrecio | `PVHS-001` |
+| `REC-` | Recepción | `REC-001` |
+| `PROD-` | Producto | `PROD-001` (seed data) → `PROD-007` (nuevos) |
+
+### Uso
+```dart
+codigo: await CodeGenerator.next('CLI'),   // → CLI-001, CLI-002...
+codigo: await CodeGenerator.next('FAC'),   // → FAC-001, FAC-002...
+```
+
+---
+
+## 19. Dashboard Reorder + Sync Snackbar Fix (2026-06-22)
+
+### Nuevo orden del Dashboard
+```
+1. Ubicación            (GPS)
+2. Operaciones de Ruta  (Nueva Venta + Devolución)
+3. (Alertas Stock / Backup / Pendientes Sync)
+4. Accesos Rápidos      (Inventario, Clientes, Facturas, Proveedores, Devoluciones)
+5. Métricas del Día     (Venta Neta, Clientes, Productos, Devoluciones Hoy)
+```
+
+### Fix Sync Snackbars repetitivos
+Se agregaron 2 guards en `dashboard_page.dart:_onSyncResult()`:
+- `pushed == 0 && failed == 0` → no muestra snackbar cuando solo se encola algo sin sync real
+- `message == _lastSyncMessage` → no repite el mismo mensaje (evita spam del timer cada 10s)
+
+### Devoluciones en Accesos Rápidos
+- Nuevo item en grid con icono `replay_outlined` y color teal
+- Navega a `DevolucionesPage`
+- Renombrado "Historial" → "Facturas"
+
+---
+
+## 20. RLS Supabase — Producción (2026-06-22)
+
+### Cambio en `database/schema.sql`
+| Rol | Antes | Ahora |
+|-----|-------|-------|
+| `anon` | `FOR ALL` (lectura + escritura) | `FOR SELECT` (solo lectura) |
+| `authenticated` | `FOR ALL` (sin cambios) | `FOR ALL` (sin cambios) |
+
+### Storage backups
+- Política `"Public access for backups"` → reemplazada por `"Authenticated access for backups"`
+- Solo usuarios autenticados pueden listar/borrar backups
+
+### SQL para aplicar en producción
+```sql
+-- Ejecutar en Supabase SQL Editor
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+```
+(Los GRANT ya están ejecutados. Las políticas RLS controlan el acceso a nivel fila.)

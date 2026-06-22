@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/services/sync_log_service.dart';
+import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 
 class SyncQueuePage extends StatefulWidget {
@@ -10,18 +12,25 @@ class SyncQueuePage extends StatefulWidget {
 }
 
 class _SyncQueuePageState extends State<SyncQueuePage> {
+  List<SyncQueueItem> _pendingItems = [];
   List<SyncLogEntry> _logs = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _loadData();
   }
 
-  Future<void> _loadLogs() async {
+  Future<void> _loadData() async {
     setState(() => _isLoading = true);
+
+    _pendingItems = SyncService.instance.pendingItems
+        .where((item) => !item.synced)
+        .toList();
+
     final logs = await createSyncLogService().getLogs(limit: 100);
+
     if (mounted) {
       setState(() {
         _logs = logs;
@@ -30,24 +39,54 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
     }
   }
 
-  Future<void> _retryItem(SyncLogEntry log) async {
+  Future<void> _retryLogItem(SyncLogEntry log) async {
     await createSyncLogService().updateLogStatus(
       log.id ?? -1,
       SyncLogStatus.pending,
       retryCount: 0,
     );
+    final record = {'codigo': log.recordId};
+    SyncService.instance.enqueue(
+      log.table,
+      SyncOperation.insert,
+      jsonEncode(record),
+    );
     await SyncService.instance.forcePushAll();
-    await _loadLogs();
+    await _loadData();
   }
 
-  Future<void> _deleteItem(SyncLogEntry log) async {
+  Future<void> _retryQueueItem(SyncQueueItem item) async {
+    item.retryCount = 0;
+    await SyncService.instance.forcePushAll();
+    await _loadData();
+  }
+
+  Future<void> _deleteLogItem(SyncLogEntry log) async {
     await createSyncLogService().deleteLog(log.id ?? -1);
-    await _loadLogs();
+    await _loadData();
   }
 
   Future<void> _clearOldLogs() async {
     await createSyncLogService().clearOldLogs(maxAgeDays: 1);
-    await _loadLogs();
+    await _loadData();
+  }
+
+  String _getRecordId(SyncQueueItem item) {
+    try {
+      final record = jsonDecode(item.recordJson) as Map<String, dynamic>;
+      return record['codigo']?.toString() ?? record['id']?.toString() ?? 'unknown';
+    } catch (_) {
+      return 'unknown';
+    }
+  }
+
+  Map<String, List<SyncQueueItem>> _groupPendingByTable() {
+    final grouped = <String, List<SyncQueueItem>>{};
+    for (final item in _pendingItems) {
+      grouped.putIfAbsent(item.table, () => []);
+      grouped[item.table]!.add(item);
+    }
+    return grouped;
   }
 
   Map<String, List<SyncLogEntry>> _groupLogsByTable() {
@@ -62,7 +101,7 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final groupedLogs = _groupLogsByTable();
+    final groupedPending = _groupPendingByTable();
 
     return Scaffold(
       appBar: AppBar(
@@ -75,59 +114,64 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadLogs,
+            onPressed: _loadData,
             tooltip: 'Actualizar',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _logs.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.cloud_done,
-                        size: 80,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Todo sincronizado',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No hay elementos pendientes en la cola',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (SyncService.instance.lastError != null)
+                    _buildErrorBanner(colorScheme),
+                  _buildSectionHeader(
+                    'Pendientes de sincronizar',
+                    _pendingItems.length,
+                    Icons.cloud_upload,
+                    colorScheme,
+                    pending: true,
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadLogs,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: groupedLogs.length,
-                    itemBuilder: (context, index) {
-                      final table = groupedLogs.keys.elementAt(index);
-                      final logs = groupedLogs[table]!;
-                      return _buildTableGroup(table, logs, colorScheme);
-                    },
+                  if (_pendingItems.isEmpty)
+                    _buildEmptyState(
+                      'No hay elementos pendientes',
+                      Icons.cloud_done,
+                      colorScheme.primary,
+                    )
+                  else
+                    ...groupedPending.entries.map(
+                      (entry) => _buildPendingGroup(entry.key, entry.value, colorScheme),
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(
+                    'Historial de sincronización',
+                    _logs.length,
+                    Icons.history,
+                    colorScheme,
+                    pending: false,
                   ),
-                ),
+                  if (_logs.isEmpty)
+                    _buildEmptyState(
+                      'No hay registros de sincronización',
+                      Icons.history_toggle_off,
+                      colorScheme.onSurface.withValues(alpha: 0.6),
+                    )
+                  else
+                    ..._groupLogsByTable().entries.map(
+                      (entry) => _buildLogGroup(entry.key, entry.value, colorScheme),
+                    ),
+                ],
+              ),
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await SyncService.instance.forcePushAll();
-          await _loadLogs();
+          await _loadData();
         },
         icon: const Icon(Icons.sync),
         label: const Text('Sincronizar ahora'),
@@ -135,26 +179,155 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
     );
   }
 
-  Widget _buildTableGroup(String table, List<SyncLogEntry> logs, ColorScheme colorScheme) {
-    final pendingCount = logs.where((l) => 
-      l.status == SyncLogStatus.pending || 
-      l.status == SyncLogStatus.retrying || 
-      l.status == SyncLogStatus.failed
-    ).length;
+  Widget _buildErrorBanner(ColorScheme colorScheme) {
+    final error = SyncService.instance.lastError ?? 'Error desconocido';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: colorScheme.error, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              error,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildSectionHeader(String title, int count, IconData icon, ColorScheme colorScheme, {required bool pending}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: pending ? Colors.orange : colorScheme.primary, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: (pending && count > 0)
+                  ? Colors.orange.withValues(alpha: 0.2)
+                  : colorScheme.primary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: (pending && count > 0) ? Colors.orange : colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message, IconData icon, Color color) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(icon, size: 48, color: color),
+            const SizedBox(height: 8),
+            Text(message, style: TextStyle(color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingGroup(String table, List<SyncQueueItem> items, ColorScheme colorScheme) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         initiallyExpanded: true,
-        leading: Icon(
-          _getTableIcon(table),
-          color: colorScheme.primary,
-        ),
+        leading: Icon(_getTableIcon(table), color: Colors.orange),
         title: Text(
           _formatTableName(table),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('$pendingCount pendientes'),
+        subtitle: Text('${items.length} pendiente(s)'),
+        children: items.map((item) => _buildPendingItem(item, colorScheme)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildPendingItem(SyncQueueItem item, ColorScheme colorScheme) {
+    final recordId = _getRecordId(item);
+    return ListTile(
+      leading: Icon(
+        item.retryCount > 0 ? Icons.autorenew : Icons.hourglass_empty,
+        color: Colors.orange,
+      ),
+      title: Text(recordId, style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${item.operation.name} • ${_formatTimestamp(item.createdAt)}',
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+          ),
+          if (item.retryCount > 0)
+            Text(
+              'Reintentos: ${item.retryCount}/5',
+              style: const TextStyle(fontSize: 12, color: Colors.orange),
+            ),
+        ],
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) async {
+          if (value == 'retry') {
+            await _retryQueueItem(item);
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'retry',
+            child: Row(
+              children: [
+                Icon(Icons.refresh),
+                SizedBox(width: 8),
+                Text('Reintentar'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogGroup(String table, List<SyncLogEntry> logs, ColorScheme colorScheme) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        leading: Icon(_getTableIcon(table), color: colorScheme.primary),
+        title: Text(
+          _formatTableName(table),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('${logs.length} registros'),
         children: logs.map((log) => _buildLogItem(log, colorScheme)).toList(),
       ),
     );
@@ -163,44 +336,32 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
   Widget _buildLogItem(SyncLogEntry log, ColorScheme colorScheme) {
     return ListTile(
       leading: _buildStatusIcon(log.status, colorScheme),
-      title: Text(
-        log.recordId,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
+      title: Text(log.recordId, style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '${log.operation} • ${_formatTimestamp(log.timestamp)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
           if (log.errorMessage != null)
             Text(
               log.errorMessage!,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.error,
-              ),
+              style: TextStyle(fontSize: 12, color: colorScheme.error),
             ),
           if (log.retryCount > 0)
             Text(
               'Reintentos: ${log.retryCount}/5',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
             ),
         ],
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) async {
           if (value == 'retry') {
-            await _retryItem(log);
+            await _retryLogItem(log);
           } else if (value == 'delete') {
-            await _deleteItem(log);
+            await _deleteLogItem(log);
           }
         },
         itemBuilder: (context) => [
@@ -233,15 +394,15 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
   Widget _buildStatusIcon(SyncLogStatus status, ColorScheme colorScheme) {
     switch (status) {
       case SyncLogStatus.pending:
-        return Icon(Icons.pending, color: Colors.orange);
+        return const Icon(Icons.pending, color: Colors.orange);
       case SyncLogStatus.retrying:
-        return Icon(Icons.autorenew, color: Colors.orange);
+        return const Icon(Icons.autorenew, color: Colors.orange);
       case SyncLogStatus.failed:
-        return Icon(Icons.error, color: Colors.red);
+        return const Icon(Icons.error, color: Colors.red);
       case SyncLogStatus.permanentFailed:
         return Icon(Icons.error_outline, color: Colors.red.shade900);
       case SyncLogStatus.synced:
-        return Icon(Icons.check_circle, color: Colors.green);
+        return const Icon(Icons.check_circle, color: Colors.green);
     }
   }
 
@@ -302,12 +463,12 @@ class _SyncQueuePageState extends State<SyncQueuePage> {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
-    
+
     if (diff.inMinutes < 1) return 'Ahora';
     if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
     if (diff.inHours < 24) return 'Hace ${diff.inHours} h';
     if (diff.inDays < 7) return 'Hace ${diff.inDays} d';
-    
+
     return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
   }
 }

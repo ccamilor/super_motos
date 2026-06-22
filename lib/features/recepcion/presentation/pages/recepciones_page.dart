@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/core/widgets/sync_status_badge.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository_web.dart'
@@ -35,12 +36,21 @@ class _RecepcionesPageState extends State<RecepcionesPage> {
   void initState() {
     super.initState();
     _loadData();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
   }
 
   @override
   void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (!mounted) return;
+    _recepcionRepo.loadAll().then((recepciones) {
+      if (mounted) setState(() => _recepciones = recepciones);
+    });
   }
 
   Future<void> _loadData() async {

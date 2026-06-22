@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:super_motos/core/utils/code_generator.dart';
 import 'package:super_motos/core/utils/currency_formatter.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
@@ -172,7 +173,7 @@ class _RecepcionFormPageState extends State<RecepcionFormPage> {
     setState(() => _isSaving = true);
     try {
       final recepcion = Recepcion(
-        codigo: 'REC-${DateTime.now().millisecondsSinceEpoch}',
+        codigo: await CodeGenerator.next('REC'),
         proveedorId: _proveedorSeleccionado!.codigo,
         fecha: _fecha,
         nroRemito: _nroRemitoCtrl.text.trim().isEmpty ? null : _nroRemitoCtrl.text.trim(),
@@ -183,6 +184,16 @@ class _RecepcionFormPageState extends State<RecepcionFormPage> {
       await _recepcionRepo.create(recepcion);
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.amber.shade700,
+          content: const Text(
+            'Recepción guardada — Pendiente de sincronización',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
