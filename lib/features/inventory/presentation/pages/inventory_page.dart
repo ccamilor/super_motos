@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'inventory_file_reader_stub.dart'
     if (dart.library.io) 'inventory_file_reader_io.dart';
+import 'inventory_file_writer_stub.dart'
+    if (dart.library.io) 'inventory_file_writer_io.dart'
+    if (dart.library.js_interop) 'inventory_file_writer_web.dart';
+import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart'
     if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_io.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
@@ -12,6 +17,10 @@ import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
 import 'package:super_motos/features/inventory/presentation/pages/producto_form_page.dart';
+import 'package:super_motos/features/inventory/presentation/widgets/csv_preview_modal.dart';
+import 'package:super_motos/features/sync/presentation/widgets/sync_badge.dart';
+import 'package:super_motos/core/widgets/sync_status_badge.dart';
+import 'package:super_motos/core/utils/import_progress.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -31,6 +40,7 @@ class _InventoryPageState extends State<InventoryPage>
   List<InventarioBodegaModel> _bodega = [];
   String _searchQuery = '';
   bool _isLoading = false;
+  bool _syncButtonLoading = false;
 
   @override
   void initState() {
@@ -82,35 +92,122 @@ class _InventoryPageState extends State<InventoryPage>
         return;
       }
 
-      setState(() => _isLoading = true);
-
       final input = kIsWeb
           ? String.fromCharCodes(result.files.single.bytes!)
           : await readPickedFileAsString(result.files.single);
 
-      final snapshot = await _repository.importCsv(input);
+      final existingCodes = _productos.map((p) => p.codigo).toSet();
+
       if (!mounted) return;
 
-      setState(() {
-        _productos = snapshot.productos;
-        _camion = snapshot.camion;
-        _bodega = snapshot.bodega;
-      });
+      final previewResult = await showDialog<CsvPreviewResult>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => CsvPreviewModal(
+          csvContent: input,
+          existingProductCodes: existingCodes,
+        ),
+      );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: colorScheme.primary,
-            duration: const Duration(seconds: 3),
-            content: const Text(
-              'EXITO: Inventario cargado y guardado satisfactoriamente.',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
+      if (previewResult == null) return;
+
+      // Show progress dialog
+      final cancelToken = CancelToken();
+      final progressController = StreamController<ImportProgress>();
+
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Importando CSV...'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StreamBuilder<ImportProgress>(
+                  stream: _createProgressStream(input, progressController, cancelToken),
+                  builder: (context, snapshot) {
+                    final progress = snapshot.data;
+                    if (progress == null) return const SizedBox.shrink();
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LinearProgressIndicator(
+                          value: progress.total > 0 ? progress.progress : 0,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          progress.currentItem != null
+                              ? 'Procesando: ${progress.currentItem}'
+                              : 'Preparando...',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${progress.processed} / ${progress.total} productos',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  cancelToken.isCancelled
+                      ? 'Cancelando...'
+                      : 'Importando productos...',
+                  style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  if (!cancelToken.isCancelled) {
+                    cancelToken.cancel();
+                  }
+                },
+                child: Text(cancelToken.isCancelled ? 'Cancelando...' : 'Cancelar'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      try {
+        setState(() => _isLoading = true);
+
+        final snapshot = await _repository.importCsv(input);
+        if (!mounted) return;
+
+        setState(() {
+          _productos = snapshot.productos;
+          _camion = snapshot.camion;
+          _bodega = snapshot.bodega;
+        });
+
+        if (mounted) {
+          _showPostImportReport(colorScheme, previewResult);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: colorScheme.error,
+              duration: const Duration(seconds: 4),
+              content: Text(
+                'ERROR al importar archivo: $e',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        );
+          );
+        }
+      } finally {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) {
@@ -134,12 +231,210 @@ class _InventoryPageState extends State<InventoryPage>
     }
   }
 
+  Stream<ImportProgress> _createProgressStream(
+    String csvContent,
+    StreamController<ImportProgress> controller,
+    CancelToken cancelToken,
+  ) {
+    _repository.importCsv(
+      csvContent,
+      onProgress: (progress) {
+        controller.add(progress);
+      },
+      cancelToken: cancelToken,
+    ).then((_) {
+      controller.close();
+    }).catchError((error) {
+      controller.addError(error);
+      controller.close();
+    });
+
+    return controller.stream;
+  }
+
+  Future<void> _exportCSV(ColorScheme colorScheme) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final csvContent = await _repository.exportCsv();
+      if (!mounted) return;
+
+      final fileName = 'inventario_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final saved = await saveCsvContent(csvContent, fileName);
+
+      if (!mounted) return;
+
+      if (saved) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: colorScheme.primary,
+            duration: const Duration(seconds: 3),
+            content: Text(
+              'Inventario exportado correctamente',
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: colorScheme.error,
+            duration: const Duration(seconds: 4),
+            content: Text(
+              'Error al exportar: $e',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showPostImportReport(ColorScheme colorScheme, CsvPreviewResult previewResult) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    color: colorScheme.primary,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Importación completada',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildReportRow(
+                  colorScheme: colorScheme,
+                  icon: Icons.add_circle_outline,
+                  label: 'Productos creados',
+                  value: '${previewResult.newProducts}',
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(height: 8),
+                _buildReportRow(
+                  colorScheme: colorScheme,
+                  icon: Icons.update,
+                  label: 'Productos actualizados',
+                  value: '${previewResult.existingProducts}',
+                  color: colorScheme.secondary,
+                ),
+                const SizedBox(height: 8),
+                _buildReportRow(
+                  colorScheme: colorScheme,
+                  icon: Icons.list_alt,
+                  label: 'Total procesados',
+                  value: '${previewResult.totalRows}',
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Aceptar',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportRow({
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openForm({InventoryEntry? entry}) async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => ProductoFormPage(entry: entry)),
     );
     if (result == true) {
       _loadInventory();
+    }
+  }
+
+  Future<void> _triggerSync() async {
+    setState(() => _syncButtonLoading = true);
+    await SyncService.instance.forcePushAll();
+    await SyncService.instance.pullAll();
+    if (mounted) {
+      setState(() => _syncButtonLoading = false);
     }
   }
 
@@ -203,10 +498,32 @@ class _InventoryPageState extends State<InventoryPage>
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+          SyncBadge(
+            child: IconButton(
+              onPressed: _syncButtonLoading ? null : _triggerSync,
+              icon: _syncButtonLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+              tooltip: _syncButtonLoading ? 'Sincronizando...' : 'Sincronizar ahora',
+            ),
+          ),
           IconButton(
             onPressed: () => _importCSV(colorScheme),
             icon: const Icon(Icons.upload_file_outlined),
             tooltip: 'Cargar CSV',
+          ),
+          IconButton(
+            onPressed: () => _exportCSV(colorScheme),
+            icon: const Icon(Icons.download_outlined),
+            tooltip: 'Exportar CSV',
           ),
         ],
       ),

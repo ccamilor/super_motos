@@ -151,6 +151,12 @@ class _ClientesPageState extends State<ClientesPage> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+        ],
         title: Row(
           children: [
             Icon(Icons.people_outline_rounded, color: colorScheme.primary),

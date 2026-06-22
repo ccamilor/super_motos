@@ -130,6 +130,12 @@ class _FacturasPageState extends State<FacturasPage> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+        ],
         title: Row(
           children: [
             Icon(Icons.receipt_long_outlined, color: colorScheme.primary),

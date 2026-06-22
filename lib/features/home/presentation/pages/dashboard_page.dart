@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:super_motos/core/enums/rol_usuario.dart';
 import 'package:super_motos/core/services/auth_session.dart';
+import 'package:super_motos/core/services/backup_service.dart';
 import 'package:super_motos/core/services/location_service.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
 import 'package:super_motos/core/services/sync_service.dart';
@@ -22,6 +23,8 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
 import 'package:super_motos/features/inventory/presentation/pages/inventory_page.dart';
 import 'package:super_motos/features/returns/presentation/pages/devolucion_form_page.dart';
 import 'package:super_motos/features/suppliers/presentation/pages/proveedores_page.dart';
+import 'package:super_motos/features/sync/presentation/widgets/sync_badge.dart';
+import 'package:super_motos/features/sync/presentation/pages/sync_queue_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -34,7 +37,6 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   final FacturasRepository _facturasRepo = createFacturasRepository();
   final ClientesRepository _clientesRepo = createClientesRepository();
   final InventoryRepository _inventoryRepo = createInventoryRepository();
-  int _pendingCount = 0;
   int _lowStockCount = 0;
   double _ventaTotalDia = 0.0;
   int _totalClientes = 0;
@@ -42,23 +44,122 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   double? _latitud;
   double? _longitud;
   String? _ciudad;
+  bool _syncButtonLoading = false;
+  bool _backupButtonLoading = false;
+  DateTime? _lastBackupTime;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SyncService.instance.syncResultNotifier.addListener(_onSyncResult);
     _updatePendingCount();
     _updateLowStockCount();
     _loadVentaTotal();
     _loadTotalClientes();
     _loadTotalProductos();
     _loadLocation();
+    _loadLastBackupTime();
+    _performAutoBackup();
+  }
+
+  Future<void> _loadLastBackupTime() async {
+    final time = await BackupService.instance.getLastBackupTime();
+    if (mounted) {
+      setState(() => _lastBackupTime = time);
+    }
+  }
+
+  Future<void> _performAutoBackup() async {
+    final shouldBackup = await BackupService.instance.shouldBackup();
+    if (shouldBackup && mounted) {
+      final success = await BackupService.instance.performBackup();
+      if (success && mounted) {
+        _loadLastBackupTime();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup automático completado'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _triggerManualBackup() async {
+    setState(() => _backupButtonLoading = true);
+    
+    final success = await BackupService.instance.performBackup();
+    
+    if (mounted) {
+      setState(() => _backupButtonLoading = false);
+      
+      if (success) {
+        _loadLastBackupTime();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup completado exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al realizar backup'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncResult);
     super.dispose();
+  }
+
+  void _onSyncResult() {
+    final result = SyncService.instance.syncResultNotifier.value;
+    if (result.timestamp.year == 2000) return;
+    if (!mounted) return;
+
+    _updatePendingCount();
+
+    String message;
+    Color bgColor;
+    switch (result.status) {
+      case SyncStatus.synced:
+        final partes = <String>[];
+        if (result.pushed > 0) partes.add('${result.pushed} subidos');
+        if (result.failed > 0) partes.add('${result.failed} fallidos');
+        final detalle = partes.isNotEmpty ? ' ($partes)' : '';
+        message = 'Sincronizacion exitosa$detalle';
+        bgColor = Theme.of(context).colorScheme.primary;
+      case SyncStatus.error:
+        message = 'Fallo en sincronizacion: ${result.failed} registro${result.failed == 1 ? '' : 's'} pendiente${result.failed == 1 ? '' : 's'}';
+        bgColor = Theme.of(context).colorScheme.error;
+      default:
+        return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: bgColor,
+        duration: const Duration(seconds: 3),
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -75,9 +176,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
   void _updatePendingCount() {
     if (mounted) {
-      setState(() {
-        _pendingCount = SyncService.instance.queueLength;
-      });
+      setState(() {});
     }
   }
 
@@ -87,6 +186,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       setState(() {
         _lowStockCount = count;
       });
+    }
+  }
+
+  Future<void> _triggerSync() async {
+    setState(() => _syncButtonLoading = true);
+    await SyncService.instance.forcePushAll();
+    await SyncService.instance.pullAll();
+    if (mounted) {
+      setState(() => _syncButtonLoading = false);
+      _updatePendingCount();
     }
   }
 
@@ -170,6 +279,32 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           ],
         ),
         actions: [
+          SyncBadge(
+            child: IconButton(
+              onPressed: _syncButtonLoading ? null : _triggerSync,
+              icon: _syncButtonLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.sync, color: colorScheme.primary),
+              tooltip: 'Sincronizar ahora',
+            ),
+          ),
+          IconButton(
+            onPressed: _backupButtonLoading ? null : _triggerManualBackup,
+            icon: _backupButtonLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.cloud_upload_outlined, color: colorScheme.primary),
+            tooltip: _lastBackupTime != null
+                ? 'Último backup: ${_formatBackupTime(_lastBackupTime!)}'
+                : 'Backup manual',
+          ),
           _UserBadge(),
         ],
       ),
@@ -179,7 +314,13 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SyncIndicator(pendingCount: _pendingCount),
+              InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SyncQueuePage()),
+                ),
+                borderRadius: BorderRadius.circular(8),
+                child: const SyncStateIndicator(),
+              ),
               const SizedBox(height: 16),
               Text(
                 'Métricas del Día',
@@ -288,6 +429,73 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                           const Icon(
                             Icons.chevron_right,
                             color: Colors.amber,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (SyncService.instance.queueLength > 0) ...[
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SyncQueuePage()),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.secondary.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: colorScheme.secondary.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.cloud_upload_rounded,
+                              color: colorScheme.secondary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Pendientes de Sync',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.secondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${SyncService.instance.queueLength} registro${SyncService.instance.queueLength > 1 ? 's' : ''} por sincronizar',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            color: colorScheme.secondary,
                           ),
                         ],
                       ),
@@ -415,6 +623,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
         ),
       ),
     );
+  }
+
+  String _formatBackupTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'ahora';
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'hace ${diff.inHours}h';
+    if (diff.inDays < 7) return 'hace ${diff.inDays}d';
+    return '${time.day}/${time.month}/${time.year}';
   }
 
   Widget _buildMetricCard({

@@ -117,6 +117,12 @@ class _RecepcionesPageState extends State<RecepcionesPage> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+        ],
         title: Row(
           children: [
             Icon(Icons.inventory_outlined, color: colorScheme.primary),

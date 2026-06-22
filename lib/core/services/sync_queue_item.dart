@@ -7,6 +7,7 @@ class SyncQueueItem {
   final String recordJson;
   final DateTime createdAt;
   bool _synced;
+  int retryCount;
 
   SyncQueueItem({
     required this.id,
@@ -15,6 +16,7 @@ class SyncQueueItem {
     required this.recordJson,
     required this.createdAt,
     bool synced = false,
+    this.retryCount = 0,
   }) : _synced = synced;
 
   bool get synced => _synced;
@@ -28,6 +30,7 @@ class SyncQueueItem {
       'recordJson': recordJson,
       'createdAt': createdAt.toIso8601String(),
       'synced': _synced,
+      'retryCount': retryCount,
     };
   }
 
@@ -39,10 +42,19 @@ class SyncQueueItem {
       recordJson: json['recordJson'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       synced: json['synced'] as bool? ?? false,
+      retryCount: json['retryCount'] as int? ?? 0,
     );
   }
 
-  SyncQueueItem copyWith({int? id, String? table, SyncOperation? operation, String? recordJson, DateTime? createdAt, bool? synced}) {
+  SyncQueueItem copyWith({
+    int? id,
+    String? table,
+    SyncOperation? operation,
+    String? recordJson,
+    DateTime? createdAt,
+    bool? synced,
+    int? retryCount,
+  }) {
     return SyncQueueItem(
       id: id ?? this.id,
       table: table ?? this.table,
@@ -50,6 +62,7 @@ class SyncQueueItem {
       recordJson: recordJson ?? this.recordJson,
       createdAt: createdAt ?? this.createdAt,
       synced: synced ?? this._synced,
+      retryCount: retryCount ?? this.retryCount,
     );
   }
 }

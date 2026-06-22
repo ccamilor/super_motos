@@ -105,6 +105,12 @@ class _DevolucionesPageState extends State<DevolucionesPage> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+        ],
         title: Row(
           children: [
             Icon(Icons.replay_outlined, color: colorScheme.primary),

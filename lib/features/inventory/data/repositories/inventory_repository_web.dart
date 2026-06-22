@@ -4,8 +4,10 @@ import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
+import 'package:super_motos/features/inventory/data/services/inventory_csv_exporter.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
+import 'package:super_motos/core/utils/import_progress.dart';
 import '../../presentation/pages/web_storage_stub.dart'
     if (dart.library.js_interop) '../../presentation/pages/web_storage_web.dart';
 
@@ -17,6 +19,7 @@ class WebInventoryRepository implements InventoryRepository {
   static List<InventarioBodegaModel> _bodega = [];
 
   final InventoryCsvParser _parser = const InventoryCsvParser();
+  final InventoryCsvExporter _exporter = const InventoryCsvExporter();
 
   @override
   Future<InventorySnapshot> loadInventory() async {
@@ -37,15 +40,88 @@ class WebInventoryRepository implements InventoryRepository {
   }
 
   @override
-  Future<InventorySnapshot> importCsv(String csvContent) async {
+  Future<InventorySnapshot> importCsv(String csvContent, {
+    void Function(ImportProgress)? onProgress,
+    CancelToken? cancelToken,
+  }) async {
     final entries = _parser.parse(csvContent);
     if (entries.isEmpty) {
       throw FormatException('El CSV está vacío o no contiene filas válidas.');
     }
 
+    const chunkSize = 500;
+    final total = entries.length;
+    int processed = 0;
+
+    // Report initial progress
+    onProgress?.call(ImportProgress(processed: 0, total: total));
+
+    // Process in chunks
+    for (int i = 0; i < total; i += chunkSize) {
+      if (cancelToken?.isCancelled == true) {
+        throw StateError('Importación cancelada por el usuario');
+      }
+
+      final chunk = entries.skip(i).take(chunkSize).toList();
+
+      _applyEntries(chunk);
+
+      processed += chunk.length;
+      onProgress?.call(ImportProgress(
+        processed: processed,
+        total: total,
+        currentItem: chunk.last.nombre,
+      ));
+
+      // Small delay to keep UI responsive
+      await Future.delayed(const Duration(milliseconds: 1));
+    }
+
+    // Final progress
+    onProgress?.call(ImportProgress(
+      processed: total,
+      total: total,
+      done: true,
+    ));
+
     getWebStorage().setItem(_csvStorageKey, csvContent);
-    _applyEntries(entries);
     return _snapshot();
+  }
+
+  @override
+  Future<String> exportCsv() async {
+    final snapshot = await loadInventory();
+    final entries = <InventoryEntry>[];
+
+    for (final producto in snapshot.productos) {
+      final camion = _camion.firstWhere(
+        (c) => c.productoId == producto.codigo,
+        orElse: () => InventarioCamionModel()
+          ..productoId = producto.codigo
+          ..cantidad = 0
+          ..canastaId = '0',
+      );
+      final bodega = _bodega.firstWhere(
+        (b) => b.productoId == producto.codigo,
+        orElse: () => InventarioBodegaModel()
+          ..productoId = producto.codigo
+          ..cantidad = 0,
+      );
+
+      entries.add(InventoryEntry(
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        precio: producto.precio,
+        isOriginal: producto.isOriginal,
+        motosCompatibles: producto.motosCompatibles,
+        stockMinimo: producto.stockMinimo,
+        cantidadCamion: camion.cantidad,
+        canastaId: camion.canastaId,
+        cantidadBodega: bodega.cantidad,
+      ));
+    }
+
+    return _exporter.export(entries);
   }
 
   void _applyEntries(Iterable<dynamic> entries) {

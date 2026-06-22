@@ -9,12 +9,15 @@ import 'package:super_motos/features/inventory/data/models/producto_model.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
+import 'package:super_motos/features/inventory/data/services/inventory_csv_exporter.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
+import 'package:super_motos/core/utils/import_progress.dart';
 
 class IsarInventoryRepository implements InventoryRepository {
   Isar? get _isar => Isar.getInstance();
   final InventoryCsvParser _parser = const InventoryCsvParser();
+  final InventoryCsvExporter _exporter = const InventoryCsvExporter();
 
   @override
   Future<InventorySnapshot> loadInventory() async {
@@ -40,7 +43,10 @@ class IsarInventoryRepository implements InventoryRepository {
   }
 
   @override
-  Future<InventorySnapshot> importCsv(String csvContent) async {
+  Future<InventorySnapshot> importCsv(String csvContent, {
+    void Function(ImportProgress)? onProgress,
+    CancelToken? cancelToken,
+  }) async {
     final isar = _isar;
     if (isar == null) {
       throw StateError('Isar no está inicializado.');
@@ -51,21 +57,97 @@ class IsarInventoryRepository implements InventoryRepository {
       throw FormatException('El CSV está vacío o no contiene filas válidas.');
     }
 
-    await isar.writeTxn(() async {
-      for (final entry in entries) {
-        await isar.productoModels.put(entry.toProductoModel());
-        await isar.inventarioCamionModels.put(entry.toCamionModel());
-        await isar.inventarioBodegaModels.put(entry.toBodegaModel());
-      }
-    });
+    const chunkSize = 500;
+    final total = entries.length;
+    int processed = 0;
 
-    for (final entry in entries) {
-      SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(entry.toProductoModel().toJson()));
-      SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(entry.toCamionModel().toJson()));
-      SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(entry.toBodegaModel().toJson()));
+    // Report initial progress
+    onProgress?.call(ImportProgress(processed: 0, total: total));
+
+    // Process in chunks
+    for (int i = 0; i < total; i += chunkSize) {
+      if (cancelToken?.isCancelled == true) {
+        throw StateError('Importación cancelada por el usuario');
+      }
+
+      final chunk = entries.skip(i).take(chunkSize).toList();
+
+      await isar.writeTxn(() async {
+        for (final entry in chunk) {
+          if (cancelToken?.isCancelled == true) {
+            throw StateError('Importación cancelada por el usuario');
+          }
+          await isar.productoModels.put(entry.toProductoModel());
+          await isar.inventarioCamionModels.put(entry.toCamionModel());
+          await isar.inventarioBodegaModels.put(entry.toBodegaModel());
+        }
+      });
+
+      // Enqueue for sync after each chunk
+      for (final entry in chunk) {
+        if (cancelToken?.isCancelled == true) {
+          throw StateError('Importación cancelada por el usuario');
+        }
+        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(entry.toProductoModel().toJson()));
+        SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(entry.toCamionModel().toJson()));
+        SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(entry.toBodegaModel().toJson()));
+      }
+
+      processed += chunk.length;
+      onProgress?.call(ImportProgress(
+        processed: processed,
+        total: total,
+        currentItem: chunk.last.nombre,
+      ));
+
+      // Small delay to keep UI responsive
+      await Future.delayed(const Duration(milliseconds: 1));
     }
 
+    // Final progress
+    onProgress?.call(ImportProgress(
+      processed: total,
+      total: total,
+      done: true,
+    ));
+
     return loadInventory();
+  }
+
+  @override
+  Future<String> exportCsv() async {
+    final snapshot = await loadInventory();
+    final entries = <InventoryEntry>[];
+
+    for (final producto in snapshot.productos) {
+      final camion = snapshot.camion.firstWhere(
+        (c) => c.productoId == producto.codigo,
+        orElse: () => InventarioCamionModel()
+          ..productoId = producto.codigo
+          ..cantidad = 0
+          ..canastaId = '0',
+      );
+      final bodega = snapshot.bodega.firstWhere(
+        (b) => b.productoId == producto.codigo,
+        orElse: () => InventarioBodegaModel()
+          ..productoId = producto.codigo
+          ..cantidad = 0,
+      );
+
+      entries.add(InventoryEntry(
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        precio: producto.precio,
+        isOriginal: producto.isOriginal,
+        motosCompatibles: producto.motosCompatibles,
+        stockMinimo: producto.stockMinimo,
+        cantidadCamion: camion.cantidad,
+        canastaId: camion.canastaId,
+        cantidadBodega: bodega.cantidad,
+      ));
+    }
+
+    return _exporter.export(entries);
   }
 
   Future<void> _seedDemoData(Isar isar) async {

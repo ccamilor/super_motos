@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:super_motos/core/services/sync_service.dart';
+import 'package:super_motos/features/sync/presentation/pages/sync_queue_page.dart';
 
 class SyncStatusBadge extends StatelessWidget {
   final bool isSynced;
@@ -158,6 +160,104 @@ class SyncIndicator extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SyncStateIndicator extends StatefulWidget {
+  const SyncStateIndicator({super.key});
+
+  @override
+  State<SyncStateIndicator> createState() => _SyncStateIndicatorState();
+}
+
+class _SyncStateIndicatorState extends State<SyncStateIndicator> {
+  @override
+  void initState() {
+    super.initState();
+    SyncService.instance.syncResultNotifier.addListener(_onSyncChanged);
+  }
+
+  @override
+  void dispose() {
+    SyncService.instance.syncResultNotifier.removeListener(_onSyncChanged);
+    super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = SyncService.instance.syncResultNotifier.value;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    IconData icon;
+    Color color;
+    String label;
+
+    switch (result.status) {
+      case SyncStatus.syncing:
+        icon = Icons.cloud_sync_rounded;
+        color = Colors.orange;
+        label = 'Sincronizando...';
+      case SyncStatus.synced:
+        if (result.totalPending > 0) {
+          icon = Icons.cloud_upload_rounded;
+          color = colorScheme.secondary;
+          label = '${result.totalPending} pendiente${result.totalPending == 1 ? '' : 's'}';
+        } else {
+          icon = Icons.cloud_done_rounded;
+          color = colorScheme.primary;
+          label = 'Sincronizado';
+        }
+      case SyncStatus.error:
+        icon = Icons.cloud_off_rounded;
+        color = colorScheme.error;
+        label = 'Error de sync';
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SyncQueuePage()),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (result.status == SyncStatus.syncing)
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              )
+            else
+              Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

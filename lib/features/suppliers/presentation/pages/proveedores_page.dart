@@ -137,6 +137,12 @@ class _ProveedoresPageState extends State<ProveedoresPage> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SyncStateIndicator(),
+          ),
+        ],
         title: Row(
           children: [
             Icon(Icons.local_shipping_outlined, color: colorScheme.primary),
