@@ -1,13 +1,13 @@
 codigo,nombre,precio,is_original,motos_compatibles,stock_minimo,cantidad_camion,canasta_id,cantidad_bodega
-101,Cadena Reforzada 428H-130L,35000,true,Yamaha YBR125 - Honda CB125F - Suzuki GN125,3,12,1,50
-102,Pastillas Freno Delantero Semi-Metalicas,18500,false,Pulsar NS200 - KTM Duke 200 - Dominar 250,8,25,2,120
-103,Kit Empaques Motor Completo,92000,true,Yamaha FZ25 - Honda CB190R - Suzuki Gixxer 250,2,5,3,15
-104,Aceite Motor 10W40 Sintetico 1L,28000,true,Universal todas las motos,15,40,1,200
-105,Filtro Aire Alto Rendimiento K&N,45000,true,Yamaha R15 V3 - Pulsar RS200 - Suzuki Gixxer SF,4,8,4,30
-106,Bujia Iridium NGK CR8EIX,12500,true,Universal 110cc-250cc,10,30,2,150
-107,Tensor Cadena Automatico,22000,false,Honda XR150 - Yamaha XTZ125 - Suzuki DR150,5,10,5,40
-108,Manigueta Freno Aluminio CNC,15000,false,Yamaha MT03 - Honda CB500X - KTM Duke 390,6,15,3,60
-109,Llanta Trasera Pirelli 140/70-17,185000,true,Yamaha R3 - Ninja 300 - Benelli 302S,2,4,6,12
-110,Amortiguador Trasero Gas Premium,135000,true,Pulsar NS200 - Yamaha FZ25 - Suzuki Gixxer 250,3,6,4,18
-111,Kit Luces LED H4 6000K,38000,false,Universal todas las motos,7,20,1,80
-112,Espejos Retrovisores Deportivos,16000,false,Yamaha R15 - Pulsar RS200 - Honda CBR250R,8,18,5,70
+LSM-7030,Tapa Tornillo de Lujo (PEQUEÑO),6500,FALSE,Universal,5,0,0,56
+ACB-MLL-ECO,Cortavientos ACERBIS Economico,16000,TRUE,Universal,5,0,0,34
+UNI-FLTR,Filtro UNI,21000,TRUE,Universal,5,0,0,18
+GY-ACL,Guaya Clutch Universal,750,TRUE,Universal,5,0,0,100
+BJPS-AK,Buje Porta Sprocket AKT,3500,FALSE,AKT 125 - AKT SL,5,0,0,10
+LEV-BXCT,Leva de freno trasero BOXER CT,3500,FALSE,BOXER CT,5,0,0,20
+TP-ACEI-AK,Tapa de Aceite AKT,4000,FALSE,AKT TODAS - BROSS,5,0,0,520
+TP-ACEI-DSC,Tapa de Aceite DISCOVER,4000,FALSE,DISCOVER+ - DISCOVER ST - PULSAR 135 - NS,5,0,0,50
+TRLL-SPKT-BX,Tornillo Porta Sprocket BOXER CT,3500,FALSE,BOXER CT,5,0,0,30
+TRN-SPKT-GN,Tornillo Porta Sprocket GN,3500,FALSE,GN - GS,5,0,0,35
+TCS-DEL-NK,Tacos Delanteros AKT NKD (par),4500,FALSE,AKT NKD,5,0,0,13
+ESP-RT-DEP,Espejos Retrovisores Deportivos,16000,false,Yamaha R15 - Pulsar RS200 - Honda CBR250R,8,18,5,70

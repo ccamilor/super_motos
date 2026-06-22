@@ -34,11 +34,11 @@ void main() {
 
     test('Every parsed row has valid numeric data', () {
       for (final entry in parsedEntries) {
-        expect(int.parse(entry.codigo) >= 100, true);
+        expect(entry.codigo.isNotEmpty, true);
         expect(entry.precio > 0, true);
         expect(entry.stockMinimo >= 0, true);
         expect(entry.cantidadCamion >= 0, true);
-        expect(int.parse(entry.canastaId) >= 0, true);
+        expect(entry.canastaId, isNotNull);
         expect(entry.cantidadBodega >= 0, true);
       }
     });
@@ -47,14 +47,14 @@ void main() {
       final first = parsedEntries.first;
       final last = parsedEntries.last;
 
-      expect(first.codigo, '101');
-      expect(first.nombre, 'Cadena Reforzada 428H-130L');
-      expect(first.precio, 35000.0);
-      expect(first.isOriginal, true);
-      expect(first.cantidadCamion, 12);
-      expect(first.cantidadBodega, 50);
+      expect(first.codigo, 'LSM-7030');
+      expect(first.nombre, 'Tapa Tornillo de Lujo (PEQUEÑO)');
+      expect(first.precio, 6500.0);
+      expect(first.isOriginal, false);
+      expect(first.cantidadCamion, 0);
+      expect(first.cantidadBodega, 56);
 
-      expect(last.codigo, '112');
+      expect(last.codigo, 'ESP-RT-DEP');
       expect(last.nombre, 'Espejos Retrovisores Deportivos');
       expect(last.precio, 16000.0);
       expect(last.isOriginal, false);
