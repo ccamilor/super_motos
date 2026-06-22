@@ -33,6 +33,10 @@
 | Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at` |
 | Notificaciones de stock bajo | ✅ Implementado | `StockAlertService` singleton, verificacion en `decrementCamionStock`, notificacion local, tarjeta amber en dashboard |
 | Geoposicionamiento en factura | ✅ Implementado | `LocationService` singleton, captura coords al guardar factura, muestra icono+coords en detalle |
+| SyncStateIndicator global AppBar | ✅ Implementado | `SyncStateIndicator` en AppBar de 6 páginas, clicable → navega a `SyncQueuePage` |
+| Exportar CSV | ✅ Implementado | `InventoryCsvExporter`, botón en AppBar de Inventario, guarda/descarga cross-platform |
+| Backup automático Supabase | ✅ Implementado | `BackupService`, auto cada 24h + manual, bucket `backups/inventory/` |
+| SyncLog cross-platform | ✅ Implementado | `SyncLogService` con sqflite (Android) y SharedPreferences (Chrome) |
 
 **Leyenda:** ✅ funcional · 🟡 parcial / sólo esqueleto · ❌ no iniciado
 
@@ -77,6 +81,12 @@ super_motos/
 │   │   ├── theme/app_theme.dart               # Tema dark "JapaniRacer"
 │   │   ├── enums/                             # estado_cuenta, rol_usuario, tipo_pago
 │   │   ├── services/sync_service.dart         # SyncService cola offline + push/pull
+│   │   ├── services/sync_log_service.dart     # Logs sync (condicional io/web)
+│   │   ├── services/sync_log_entry.dart       # SyncLogEntry + SyncLogStatus
+│   │   ├── services/sync_log_service_stub.dart  # Interfaz abstracta + factory
+│   │   ├── services/sync_log_service_io.dart    # Impl Android (sqflite)
+│   │   ├── services/sync_log_service_web.dart   # Impl Web (SharedPreferences)
+│   │   ├── services/backup_service.dart       # Backup Supabase Storage
 │   │   ├── services/supabase_service.dart     # Cliente singleton Supabase
 │   │   ├── services/stock_alert_service.dart  # Notificaciones stock bajo
 │   │   ├── services/location_service.dart     # GPS geolocalizacion
@@ -91,9 +101,9 @@ super_motos/
 │       │   ├── data/
 │       │   │   ├── models/                    # producto, inventario_camion, inventario_bodega
 │       │   │   ├── repositories/              # contrato + impl web + impl io + snapshot
-│       │   │   └── services/                  # csv parser + seed data
+│       │   │   └── services/                  # csv parser + csv exporter + seed data
 │       │   ├── domain/entities/              # inventory_entry, producto, etc.
-│       │   └── presentation/pages/            # inventory_page + web_storage_stub/web
+│       │   └── presentation/pages/            # inventory_page + web_storage_stub/web + file_writer_*
 │       ├── returns/                           # model + entity + pages
 │       └── suppliers/                         # model + entity + pages
 ├── test/
@@ -125,6 +135,7 @@ super_motos/
 **Capacidades:**
 - Búsqueda por `nombre` o `motos_compatibles`
 - Botón **"Cargar CSV"** → `FilePicker` → parse → persist → reload
+- Botón **"Exportar CSV"** → `InventoryCsvExporter` → guarda en archivo (Android) o descarga (Chrome)
 - Precios formateados en COP (`$ 35.000 COP`)
 
 ### 5.2 `home` (dashboard)
@@ -471,6 +482,13 @@ flutter clean && flutter pub get
 - Seed data con prefijos: `PROD-`, `CLI-`, `FAC-`, `DEV-`, `PROV-`, `HP-`, `USR-`
 - Canastas alfanuméricas: `A-1`, `B-2`, etc.
 
+**Fase 6 — Flujo CSV→Supabase mejorado** ✅ (completada)
+- Indicador global de sync en AppBar (`SyncStateIndicator` clicable)
+- Pantalla "Pendientes de Sync" (`SyncQueuePage`) con reintentar/eliminar
+- Exportar CSV desde Inventario (cross-platform: Android/Chrome)
+- SyncLogService cross-platform (sqflite + SharedPreferences via factory)
+- Backup automático cada 24h a Supabase Storage + botón manual
+
 ---
 
 ## 14. Índice de archivos clave
@@ -484,12 +502,19 @@ flutter clean && flutter pub get
 | `lib/core/enums/tipo_pago.dart` | `TipoPago { contado, credito, transferencia }` |
 | `lib/core/constants/vendedor.dart` | `kVendedorPorDefecto = 1` (placeholder hasta auth) |
 | `lib/core/services/sync_service.dart` | Cola offline + push automático cada 10s + conflict detection + `_canSync` guard; query methods (`getUnsyncedCount`, `isRecordPending`) |
+| `lib/core/services/sync_log_service.dart` | Logs de sync (export condicional io/web) |
+| `lib/core/services/sync_log_entry.dart` | SyncLogEntry + SyncLogStatus comunes |
+| `lib/core/services/backup_service.dart` | Backup automático/diario a Supabase Storage |
 | `lib/core/services/supabase_service.dart` | Cliente singleton Supabase (URL + anon key hardcoded) |
 | `lib/core/services/stock_alert_service.dart` | Notificaciones locales de stock bajo; verificacion en `decrementCamionStock`, persistencia de count en SharedPreferences |
 | `lib/core/services/location_service.dart` | Geolocalizacion (singleton); requestPermission, isPermissionGranted, getCurrentPosition (medium accuracy, 10s timeout) |
-| `lib/core/widgets/sync_status_badge.dart` | Widgets `SyncStatusBadge` (compact chip + full badge) y `SyncIndicator` (pending count header) |
+| `lib/core/widgets/sync_status_badge.dart` | Widgets `SyncStatusBadge` (compact chip + full badge), `SyncIndicator`, `SyncStateIndicator` (clicable) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
-| `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs |
+| `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs + botones importar/exportar CSV |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_io.dart` | Guardar CSV en Android |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_web.dart` | Descargar CSV en Chrome |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_stub.dart` | Stub condicional |
+| `lib/features/sync/presentation/pages/sync_queue_page.dart` | Pantalla "Pendientes de Sync" |
 | `lib/features/customers/presentation/pages/clientes_page.dart` | Lista de clientes con búsqueda |
 | `lib/features/customers/presentation/pages/cliente_form_page.dart` | Form crear/editar cliente |
 | `lib/features/customers/data/repositories/clientes_repository.dart` | Contrato abstracto |
@@ -517,6 +542,7 @@ flutter clean && flutter pub get
 | `lib/features/inventory/data/repositories/inventory_repository_io.dart` | Impl nativa (Isar) |
 | `lib/features/inventory/data/repositories/inventory_snapshot.dart` | DTO de salida del repositorio |
 | `lib/features/inventory/data/services/inventory_csv_parser.dart` | Parser CSV común |
+| `lib/features/inventory/data/services/inventory_csv_exporter.dart` | Exportador CSV común |
 | `lib/features/inventory/data/services/inventory_seed_data.dart` | Semilla demo unificada |
 | `lib/features/inventory/domain/entities/inventory_entry.dart` | DTO común de fila de inventario |
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |

@@ -1085,3 +1085,151 @@ test: 12 new recepcion tests (total 47/47 passing)
 ## Sesión 7 — 2026-06-11 — UI del InventoryPage
 
 ### Problema original
+- Grid 2 columnas con aspectRatio 0.85 causaba overflow vertical
+- TabBar colapza incorrectamente con scroll (Bottom Overflowed by 26px)
+- Tarjetas muy grandes (~200px) o muy pequeñas (~76px)
+- Iconos duplicados en AppBar (flecha de regreso + search icon compitiendo)
+- FAB "Nuevo Producto" no visible
+- Badge truncado ("ORIG"/"GEN" en vez de "ORIGINAL"/"GENÉRICO")
+- "STOCK BAJO" con icono en vez de texto puro en rojo
+
+### Soluciones aplicadas
+
+#### Scroll y collapse
+- `NestedScrollView` + `SliverAppBar(pinned: false, floating: true, snap: true)` para search
+- `SliverPersistentHeader(pinned: true)` con `_TabBarHeaderDelegate` para TabBar FIJA
+- `SliverAppBar.automaticallyImplyLeading: false` elimina icono automático
+- `Scaffold AppBar` con `leading: IconButton(arrow_back)` explícito
+
+#### Tarjetas compactas (punto medio de legibilidad)
+- `ListView.separated` con cards Row 2 columnas
+- Padding 12, fonts: título 15px, subtitle 12px, price 15px, values 14px, labels 11px
+- Divisor vertical 70px alto
+- Altura aproximada: ~76-80px
+
+#### Navegación
+- Flecha de regreso en Scaffold AppBar (leading explícito)
+- Icono de búsqueda verde (`prefixIcon: colorScheme.primary`) en TextField
+- FAB visible solo en tab Inventario Total
+
+#### Total tab
+- "ORIGINAL" / "GENÉRICO" texto completo
+- "STOCK BAJO" en rojo (`colorScheme.error`) sin icono cuando stock bajo en camión
+
+### Archivos modificados
+- `lib/features/inventory/presentation/pages/inventory_page.dart`
+- `CONTEXT.md` — sección 15 actualizada
+- `docs/testing_guide.md` — NUEVO
+
+### Commits de esta sesión
+```
+fix(ui): grid 1 column + compact cards + NestedScrollView + SliverAppBar collapse
+fix(navigation): add back arrow to Scaffold AppBar + prefixIcon search green
+fix(ui): restore FAB Nuevo Producto visible only on Total tab
+fix(ui): badge full text ORIGINAL/GENERICO + STOCK BAJO red without icon
+docs: add inventory page UI section to CONTEXT.md
+docs: create testing_guide.md with full test cases
+```
+
+### Estado del proyecto post-sesión
+| Feature | Estado |
+|---|---|
+| InventoryPage UI | ✅ Scroll colapzable + TabBar fija + tarjetas compactas |
+| FAB Nuevo Producto | ✅ Visible solo en Inventario Total |
+| Navegación | ✅ Sin iconos duplicados |
+| Badge texto completo | ✅ ORIGINAL/GENÉRICO/STOCK BAJO |
+
+---
+
+## Sesión 2026-06-21 — Flujo CSV→Supabase: 5 Mejoras Completadas
+
+### Objetivos
+1. Prioridad 1 — Indicador global de sync en AppBar (Alta prioridad)
+2. Prioridad 2 — Pantalla "Pendientes de Sync" navegable
+3. Prioridad 3 — Exportar a CSV desde Inventario
+4. Prioridad 4 — SyncLogService compatible web
+5. Prioridad 5 — Backup programado a Supabase Storage
+
+### Lo realizado
+
+#### Prioridad 1: SyncStateIndicator Global
+- `SyncStateIndicator` agregado a AppBar de 6 páginas: inventory, clientes, facturas, proveedores, devoluciones, recepciones
+- Widget ahora clicable (`InkWell`) → navega a `SyncQueuePage`
+
+#### Prioridad 2: Conexión SyncQueuePage
+- `SyncStateIndicator` clicable → abre `SyncQueuePage`
+- Dashboard: tarjeta "Pendientes de Sync" visible cuando `queueLength > 0`
+
+#### Prioridad 3: Exportar CSV
+- `InventoryCsvExporter` (usa `CsvEncoder` de csv v8)
+- File writers cross-platform: `_io.dart` (FilePicker.saveFile), `_web.dart` (data URI), `_stub.dart`
+- `InventoryRepository.exportCsv()` abstracto + implementaciones IO y Web
+- Botón `download_outlined` en AppBar de InventoryPage
+- SnackBar confirmación al exportar
+
+#### Prioridad 4: SyncLogService Cross-Platform
+- `SyncLogEntry` y `SyncLogStatus` extraídos a archivo común
+- Interfaz abstracta `SyncLogServiceBase` + factory `createSyncLogService()`
+- `SyncLogServiceIO` — Android (sqflite, código original migrado)
+- `SyncLogServiceWeb` — Chrome (SharedPreferences, JSON serializado)
+- Todos los consumidores (`SyncService`, `SyncQueuePage`, `SyncBadge`) migrados a factory
+
+#### Prioridad 5: Backup Supabase Storage
+- `BackupService` singleton con `performBackup()`, `shouldBackup()`, `performBackupIfNeeded()`
+- Auto-backup al iniciar si >24h desde último backup
+- Botón manual `cloud_upload_outlined` en AppBar Dashboard
+- Tooltip muestra "hace 2h", "hace 3d", etc.
+- Sube CSV a bucket `backups/inventory/inventario_backup_{timestamp}.csv`
+
+### Archivos creados (10 nuevos)
+
+| Archivo | Propósito |
+|---|---|
+| `lib/features/inventory/data/services/inventory_csv_exporter.dart` | Serializador CSV |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_io.dart` | Guardar archivo Android |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_web.dart` | Descargar Chrome |
+| `lib/features/inventory/presentation/pages/inventory_file_writer_stub.dart` | Stub condicional |
+| `lib/core/services/sync_log_entry.dart` | SyncLogEntry + SyncLogStatus comunes |
+| `lib/core/services/sync_log_service_stub.dart` | Interfaz abstracta + factory |
+| `lib/core/services/sync_log_service_io.dart` | Impl Android (sqflite) |
+| `lib/core/services/sync_log_service_web.dart` | Impl Chrome (SharedPreferences) |
+| `lib/core/services/backup_service.dart` | Backup a Supabase Storage |
+
+### Archivos modificados (16)
+
+| Archivo | Cambio |
+|---|---|
+| `lib/features/inventory/data/repositories/inventory_repository.dart` | + `exportCsv()` abstracto |
+| `lib/features/inventory/data/repositories/inventory_repository_io.dart` | exportCsv implementación |
+| `lib/features/inventory/data/repositories/inventory_repository_web.dart` | exportCsv implementación |
+| `lib/features/inventory/presentation/pages/inventory_page.dart` | Botón exportar + SyncStateIndicator + fixes bugs |
+| `lib/core/widgets/sync_status_badge.dart` | SyncStateIndicator clicable |
+| `lib/features/customers/presentation/pages/clientes_page.dart` | SyncStateIndicator en AppBar |
+| `lib/features/billing/presentation/pages/facturas_page.dart` | SyncStateIndicator en AppBar |
+| `lib/features/suppliers/presentation/pages/proveedores_page.dart` | SyncStateIndicator en AppBar |
+| `lib/features/returns/presentation/pages/devoluciones_page.dart` | SyncStateIndicator en AppBar |
+| `lib/features/recepcion/presentation/pages/recepciones_page.dart` | SyncStateIndicator en AppBar |
+| `lib/core/services/sync_service.dart` | Factory createSyncLogService() |
+| `lib/core/services/sync_log_service.dart` | Export condicional io/web |
+| `lib/features/sync/presentation/pages/sync_queue_page.dart` | Factory + fix withOpacity |
+| `lib/features/sync/presentation/widgets/sync_badge.dart` | Factory |
+| `lib/features/home/presentation/pages/dashboard_page.dart` | Backup + pending sync card |
+
+### Bugs corregidos
+- `inventory_page.dart`: import ambiguo, `StreamController` sin import, `lastProgress` no definido
+- `withOpacity` deprecado → `withValues` (3 archivos)
+
+### Commits sugeridos
+```
+fix(inventory): resolve ambiguous import, missing StreamController, undefined lastProgress
+feat(sync): add SyncStateIndicator to AppBar on all main pages
+feat(sync): connect SyncQueuePage navigation from SyncStateIndicator + dashboard card
+feat(inventory): add CSV export button + service (chunked, cross-platform)
+refactor(sync_log): make SyncLogService cross-platform (sqflite + shared_preferences)
+feat(backup): add automated daily backup to Supabase Storage + manual trigger
+chore: replace deprecated withOpacity with withValues
+```
+
+### Tests
+- ✅ 47/47 tests pasando
+- ✅ 0 errores en `flutter analyze`

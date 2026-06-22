@@ -25,6 +25,7 @@
 | Fase 2 — Backend remoto (Supabase) | ✅ | SupabaseService singleton, SyncService cola offline, conflict detection |
 | Fase 3 — Módulos reales | ✅ | Inventory, Clientes, Facturación, Devoluciones, Auth, Proveedores, **Recepción** |
 | Fase 4 — Operación en ruta | ✅ | Sync bidireccional, Notificaciones stock bajo, Geoposicionamiento |
+| Fase 5 — Flujo CSV→Supabase mejorado | ✅ | Indicador global sync, cola pendientes, export CSV, SyncLog web, backup Supabase Storage |
 
 ---
 
@@ -34,10 +35,12 @@
 - `isar` + `isar_flutter_libs` — base de datos local (Android)
 - `supabase_flutter` — backend remoto
 - `flutter_local_notifications` — notificaciones locales de stock bajo
-- `shared_preferences` — cola de sync offline
-- `file_picker` — importación CSV
+- `shared_preferences` — cola de sync offline + logs web + backup timestamp
+- `file_picker` — importación y exportación CSV
 - `path_provider` — rutas de archivo
 - `geolocator` — geoposicionamiento en facturas
+- `sqflite` — sync logs en Android
+- `csv` — parser y encoder CSV
 
 ### Estructura de datos
 ```
@@ -50,10 +53,13 @@ lib/
 │   │   ├── auth_session.dart      # Singleton session
 │   │   ├── supabase_service.dart  # Cliente Supabase
 │   │   ├── sync_service.dart      # Cola offline + push/pull + conflict detection
+│   │   ├── sync_log_service.dart  # Logs de sync (export condicional io/web)
+│   │   ├── sync_log_entry.dart    # SyncLogEntry + SyncLogStatus comunes
+│   │   ├── backup_service.dart    # Backup automático Supabase Storage
 │   │   ├── stock_alert_service.dart  # Notificaciones de stock bajo
 │   │   ├── location_service.dart     # Geolocalización GPS
 │   ├── widgets/
-│   │   └── sync_status_badge.dart   # SyncStatusBadge + SyncIndicator
+│   │   └── sync_status_badge.dart   # SyncStatusBadge + SyncIndicator + SyncStateIndicator
 │   └── utils/
 │       └── currency_formatter.dart  # formatCOP()
 └── features/
@@ -108,7 +114,7 @@ createXRepository() // factory selecciona según plataforma
 - Singleton: `SyncService.instance`
 - Cola en SharedPreferences (`super_motos_sync_queue`)
 - Push automático cada 10 segundos (`Timer.periodic`)
-- Pull manual con `pullAll()`
+- Pull manual con `pullAll()` y `forcePushAll()`
 - Conflict detection: compara `updated_at` entre local y server
 - Estrategia: `lastWriteWins`
 - `getUnsyncedCount(table)`, `getUnsyncedItems(table)`, `isRecordPending(table, id)`
@@ -126,7 +132,18 @@ createXRepository() // factory selecciona según plataforma
 ### Widgets de sync
 - `SyncStatusBadge` — chip compacto (icono nube) o badge completo con label + timestamp
 - `SyncIndicator` — header del dashboard ("Todo sincronizado" o "N pendientes")
+- `SyncStateIndicator` — indicador en AppBar con estado en tiempo real, **clicable** → navega a `SyncQueuePage`
+- `SyncBadge` — badge superpuesto con contador de pendientes
+- `SyncQueuePage` — pantalla "Pendientes de Sync" con items agrupados por tabla, reintentar, eliminar, limpiar
+- Tarjeta "Pendientes de Sync" en Dashboard cuando hay items en cola
 - Mostrado en: facturas_page, devoluciones_page, clientes_page, proveedores_page, inventory_page (3 tabs), factura_detail_page, devolucion_detail_page, **recepciones_page, recepcion_detail_page**
+
+### BackupService (lib/core/services/backup_service.dart)
+- Singleton: `BackupService.instance`
+- Exporta inventario a CSV y sube a Supabase Storage bucket `backups/inventory/`
+- Auto-backup al iniciar si pasaron >24h desde el último
+- Botón manual en AppBar del Dashboard (`cloud_upload_outlined`)
+- Último backup persistido en SharedPreferences con tooltip "hace Xh/d"
 
 ---
 
@@ -282,11 +299,11 @@ dart run build_runner build --delete-conflicting-outputs
 flutter analyze
 flutter test
 
-# 5. Implementar siguiente feature (Notificaciones de stock bajo)
-#   - Agregar flutter_local_notifications en pubspec.yaml
-#   - Crear stock_alert_service.dart
-#   - Integrar en inventory_repository_io.dart
-#   - Agregar tarjeta en dashboard_page.dart
+# 5. Próximos features sugeridos
+#   - Export CSV ya implementado (botón en AppBar de Inventario)
+#   - Backup automático a Supabase Storage ya implementado
+#   - Sync Log compatible web (Chrome ya soportado)
+#   - Dashboard con métricas dinámicas completas
 ```
 
 ---
@@ -380,3 +397,56 @@ Todos los identificadores de dominio migraron de `int id` a `String codigo` (alf
 ### Canastas
 - Alfanuméricas: `A-1`, `B-2`, `C-3`, etc.
 - Antes eran numéricas: `1`, `2`, `3`, etc.
+
+---
+
+## 17. Mejoras flujo CSV→Supabase (2026-06-21)
+
+### 1. Visibilidad de Sync en UI ✅
+- `SyncStateIndicator` en AppBar de **6 páginas** (inventory, clientes, facturas, proveedores, devoluciones, recepciones)
+- **Clicable** → navega a `SyncQueuePage`
+- Dashboard: tarjeta "Pendientes de Sync" con contador dinámico
+- Toast/Snackbar al completar push/pull
+
+### 2. Validación y Preview del CSV ✅
+- `CsvPreviewModal` muestra primeras 5 filas, detecta columnas requeridas
+- Detección y conteo de duplicados (nuevos vs existentes)
+- Reporte post-import: "X creados, Y actualizados, Z total"
+
+### 3. Manejo de errores robusto ✅
+- Retry automático con backoff exponencial (máx 5 intentos, 5 min)
+- `SyncQueuePage` con items agrupados por tabla + Reintentar/Eliminar/Limpiar
+- Log local persistente (Android: sqflite, Chrome: SharedPreferences)
+
+### 4. UX para CSVs grandes ✅
+- Progress bar con `LinearProgressIndicator` + nombre del ítem actual
+- Chunking de 500 filas para no bloquear UI
+- `CancelToken` para cancelación
+
+### 5. Export / Backup ✅
+- **Exportar CSV**: botón en AppBar de Inventario, guarda en archivo (Android) o descarga (Chrome)
+- **Backup automático**: `BackupService` sube CSV a Supabase Storage bucket `backups/inventory/` cada 24h
+- **Backup manual**: botón `cloud_upload_outlined` en Dashboard con tooltip "hace Xh/d"
+
+### SyncLogService cross-platform ✅
+- `sync_log_entry.dart` — SyncLogEntry + SyncLogStatus comunes
+- `sync_log_service_io.dart` — Android (sqflite)
+- `sync_log_service_web.dart` — Chrome (SharedPreferences)
+- Factory `createSyncLogService()` con import condicional
+
+### Archivos creados (10)
+| Archivo | Propósito |
+|---|---|
+| `inventory_csv_exporter.dart` | Serializa InventoryEntry → CSV |
+| `inventory_file_writer_io.dart` | Guardar archivo Android |
+| `inventory_file_writer_web.dart` | Descargar Chrome |
+| `inventory_file_writer_stub.dart` | Stub condicional |
+| `sync_log_entry.dart` | SyncLogEntry + SyncLogStatus |
+| `sync_log_service_stub.dart` | Interfaz + factory |
+| `sync_log_service_io.dart` | Impl Android (sqflite) |
+| `sync_log_service_web.dart` | Impl Chrome (SharedPreferences) |
+| `backup_service.dart` | Backup a Supabase Storage |
+
+### Bugs corregidos
+- `inventory_page.dart`: ambiguous import `createInventoryRepository`, `StreamController` sin import, `lastProgress` no definido
+- `withOpacity` deprecado reemplazado por `withValues` en 3 archivos
