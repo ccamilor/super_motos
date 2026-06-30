@@ -157,4 +157,82 @@ void main() {
       throwsA(isA<StateError>()),
     );
   });
+
+  test('update: persists changes to precioUnitario and sets isSynced to false', () async {
+    final original = await facturasRepo.create(buildFactura());
+    expect(original.detalles.first.precioUnitario, equals(25000));
+    expect(original.total, equals(50000));
+
+    final nuevosDetalles = [
+      DetalleFactura(productoId: 'PROD-001', cantidad: 2, precioUnitario: 30000, subtotal: 60000),
+    ];
+    final modificada = original.copyWith(detalles: nuevosDetalles, total: 60000, isSynced: false);
+
+    final updated = await facturasRepo.update(modificada);
+
+    expect(updated.detalles.first.precioUnitario, equals(30000));
+    expect(updated.total, equals(60000));
+    expect(updated.isSynced, isFalse);
+
+    final fetched = await facturasRepo.getByCodigo(original.codigo);
+    expect(fetched, isNotNull);
+    expect(fetched!.detalles.first.precioUnitario, equals(30000));
+    expect(fetched.total, equals(60000));
+  });
+
+  test('update: preserves the original codigo and other fields', () async {
+    final original = await facturasRepo.create(buildFactura(tipoPago: TipoPago.credito));
+
+    final modificada = original.copyWith(total: 99999, isSynced: false);
+    await facturasRepo.update(modificada);
+
+    final fetched = await facturasRepo.getByCodigo(original.codigo);
+    expect(fetched, isNotNull);
+    expect(fetched!.codigo, equals(original.codigo));
+    expect(fetched.clienteId, equals(original.clienteId));
+    expect(fetched.vendedorId, equals(original.vendedorId));
+    expect(fetched.tipoPago, equals(TipoPago.credito));
+    expect(fetched.total, equals(99999));
+  });
+
+  test('DetalleFactura.copyWith: allows changing precioUnitario', () {
+    const original = DetalleFactura(
+      productoId: 'PROD-001',
+      cantidad: 2,
+      precioUnitario: 25000,
+      subtotal: 50000,
+    );
+
+    final modified = original.copyWith(precioUnitario: 30000, subtotal: 60000);
+
+    expect(modified.productoId, equals('PROD-001'));
+    expect(modified.cantidad, equals(2));
+    expect(modified.precioUnitario, equals(30000));
+    expect(modified.subtotal, equals(60000));
+  });
+
+  test('Factura.copyWith: allows changing detalles and total', () {
+    final original = Factura(
+      codigo: 'FAC-001',
+      clienteId: 'CLI-001',
+      vendedorId: 'USR-001',
+      fecha: DateTime(2026, 1, 1),
+      total: 50000,
+      tipoPago: TipoPago.contado,
+      detalles: const [
+        DetalleFactura(productoId: 'PROD-001', cantidad: 2, precioUnitario: 25000, subtotal: 50000),
+      ],
+      isSynced: true,
+    );
+
+    final newDetalles = [
+      DetalleFactura(productoId: 'PROD-001', cantidad: 2, precioUnitario: 30000, subtotal: 60000),
+    ];
+    final modified = original.copyWith(detalles: newDetalles, total: 60000, isSynced: false);
+
+    expect(modified.codigo, equals('FAC-001'));
+    expect(modified.total, equals(60000));
+    expect(modified.isSynced, isFalse);
+    expect(modified.detalles.first.precioUnitario, equals(30000));
+  });
 }

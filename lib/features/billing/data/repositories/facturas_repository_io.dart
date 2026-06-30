@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/billing/data/models/factura_model.dart';
@@ -19,7 +20,12 @@ class IsarFacturasRepository implements FacturasRepository {
 
     var models = await isar.facturaModels.where().sortByFechaDesc().findAll();
     if (models.isEmpty) {
-      await _seedDemoData(isar);
+      final prefs = await SharedPreferences.getInstance();
+      final alreadySeeded = prefs.getBool('super_motos_facturas_seeded') ?? false;
+      if (!alreadySeeded) {
+        await _seedDemoData(isar);
+        await prefs.setBool('super_motos_facturas_seeded', true);
+      }
       models = await isar.facturaModels.where().sortByFechaDesc().findAll();
     }
 
@@ -39,6 +45,27 @@ class IsarFacturasRepository implements FacturasRepository {
     });
     final saved = await isar.facturaModels.filter().codigoEqualTo(factura.codigo).findFirst();
     SyncService.instance.enqueue('facturas', SyncOperation.insert, jsonEncode(saved!.toJson()));
+    return saved.toDomain();
+  }
+
+  @override
+  Future<Factura> update(Factura factura) async {
+    final isar = _isar;
+    if (isar == null) {
+      throw StateError('Isar no esta inicializado.');
+    }
+
+    final existing = await isar.facturaModels.filter().codigoEqualTo(factura.codigo).findFirst();
+    final model = FacturaModel.fromDomain(factura);
+    if (existing != null) {
+      model.id = existing.id;
+    }
+    model.isSynced = false;
+    await isar.writeTxn(() async {
+      await isar.facturaModels.put(model);
+    });
+    final saved = await isar.facturaModels.filter().codigoEqualTo(factura.codigo).findFirst();
+    SyncService.instance.enqueue('facturas', SyncOperation.update, jsonEncode(saved!.toJson()));
     return saved.toDomain();
   }
 

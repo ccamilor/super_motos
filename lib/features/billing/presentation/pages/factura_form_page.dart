@@ -29,7 +29,7 @@ class FacturaFormPage extends StatefulWidget {
 class _LineItem {
   final ProductoModel producto;
   int cantidad;
-  final double precioUnitario;
+  double precioUnitario;
 
   _LineItem({
     required this.producto,
@@ -170,6 +170,16 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
     if (n == null || n < 1) return;
     setState(() {
       _lineas[index].cantidad = n;
+      _isDirty = true;
+    });
+  }
+
+  void _updatePrecio(int index, String raw) {
+    final cleaned = raw.replaceAll('.', '').replaceAll(',', '.');
+    final n = double.tryParse(cleaned);
+    if (n == null || n < 0) return;
+    setState(() {
+      _lineas[index].precioUnitario = n;
       _isDirty = true;
     });
   }
@@ -441,6 +451,7 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
   Widget _buildLineaRow(int index, _LineItem linea, ColorScheme colorScheme) {
     final stock = _stockCamionByProducto[linea.producto.codigo] ?? 0;
     final stockInsuficiente = linea.cantidad > stock;
+    final precioModificado = (linea.precioUnitario - linea.producto.precio).abs() > 0.01;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -462,12 +473,32 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(linea.producto.nombre,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(linea.producto.nombre,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        if (precioModificado)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                            ),
+                            child: const Text(
+                              'PRECIO MODIFICADO',
+                              style: TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 2),
-                    Text('${formatCOP(linea.precioUnitario)} c/u  -  stock: $stock',
+                    Text('stock: $stock',
                         style: TextStyle(
                           color: stock == 0
                               ? colorScheme.error
@@ -503,6 +534,26 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
                   onChanged: (v) => _updateCantidad(index, v),
                 ),
               ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 120,
+                child: TextField(
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                  ],
+                  textAlign: TextAlign.right,
+                  decoration: const InputDecoration(
+                    labelText: 'Precio',
+                    isDense: true,
+                    prefixText: '\$ ',
+                  ),
+                  controller: TextEditingController(text: linea.precioUnitario.toStringAsFixed(0))
+                    ..selection = TextSelection.collapsed(offset: linea.precioUnitario.toStringAsFixed(0).length),
+                  onSubmitted: (v) => _updatePrecio(index, v),
+                  onChanged: (v) => _updatePrecio(index, v),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Container(
@@ -523,6 +574,17 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
               ),
             ],
           ),
+          if (precioModificado) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Original: ${formatCOP(linea.producto.precio)}',
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
+          ],
         ],
       ),
     );

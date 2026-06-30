@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/enums/tipo_pago.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
 import 'package:super_motos/features/billing/data/services/facturas_seed_data.dart';
@@ -11,17 +12,24 @@ const String _facturasStorageKey = 'super_motos_facturas_data';
 
 class WebFacturasRepository implements FacturasRepository {
   static List<Factura> _facturas = [];
+  static bool _loaded = false;
 
   @override
   Future<List<Factura>> loadAll() async {
-    if (_facturas.isEmpty) {
+    if (!_loaded) {
+      _loaded = true;
       final savedData = getWebStorage().getItem(_facturasStorageKey);
       if (savedData != null && savedData.isNotEmpty) {
         _facturas = _decode(savedData);
       }
       if (_facturas.isEmpty) {
-        _facturas = List<Factura>.from(FacturasSeedData.demoFacturas);
-        getWebStorage().setItem(_facturasStorageKey, _encode(_facturas));
+        final prefs = await SharedPreferences.getInstance();
+        final alreadySeeded = prefs.getBool('super_motos_facturas_seeded') ?? false;
+        if (!alreadySeeded) {
+          _facturas = List<Factura>.from(FacturasSeedData.demoFacturas);
+          await prefs.setBool('super_motos_facturas_seeded', true);
+          getWebStorage().setItem(_facturasStorageKey, _encode(_facturas));
+        }
       }
     }
 
@@ -35,6 +43,14 @@ class WebFacturasRepository implements FacturasRepository {
     _facturas = [..._facturas, factura];
     _persist();
     return factura;
+  }
+
+  @override
+  Future<Factura> update(Factura factura) async {
+    final updated = factura.copyWith(isSynced: false);
+    _facturas = _facturas.map((f) => f.codigo == factura.codigo ? updated : f).toList();
+    _persist();
+    return updated;
   }
 
   @override
