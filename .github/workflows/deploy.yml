@@ -31,7 +31,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web App
-        run: flutter build web --release --no-tree-shake-icons
+        run: flutter build web --release --no-tree-shake-icons --base-href "/super_motos/"
 
       - name: Deploy to web_deploy branch
         uses: JamesIves/github-pages-deploy-action@v4

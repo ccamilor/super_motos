@@ -2,7 +2,7 @@
 echo =========================================
 echo Compilando aplicacion web...
 echo =========================================
-call flutter build web --release --no-tree-shake-icons
+call flutter build web --release --no-tree-shake-icons --base-href "/super_motos/"
 if %errorlevel% neq 0 (
     echo Error durante la compilacion.
     pause
