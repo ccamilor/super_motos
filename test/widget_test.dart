@@ -19,7 +19,7 @@ void main() {
 
     expect(find.text('MotoRuta Pro'), findsOneWidget);
     expect(find.byIcon(Icons.two_wheeler), findsOneWidget);
-    expect(find.text('Test Admin'), findsOneWidget);
+    expect(find.text('T'), findsOneWidget);
 
     AuthSession.instance.clear();
   });

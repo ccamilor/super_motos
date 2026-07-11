@@ -16,7 +16,7 @@ extension GetInventarioCamionModelCollection on Isar {
 
 const InventarioCamionModelSchema = CollectionSchema(
   name: r'InventarioCamionModel',
-  id: 2163308590764571913,
+  id: (216330859 * 10000000000 + 764571913),
   properties: {
     r'canastaId': PropertySchema(
       id: 0,
@@ -51,7 +51,7 @@ const InventarioCamionModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

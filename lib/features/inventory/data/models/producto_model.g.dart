@@ -15,7 +15,7 @@ extension GetProductoModelCollection on Isar {
 
 const ProductoModelSchema = CollectionSchema(
   name: r'ProductoModel',
-  id: -8283790178398363742,
+  id: -(828379017 * 10000000000 + 8398363742),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -65,7 +65,7 @@ const ProductoModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

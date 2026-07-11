@@ -1,62 +1,87 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/enums/tipo_pago.dart';
+import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
-import 'package:super_motos/features/billing/data/services/facturas_seed_data.dart';
 import 'package:super_motos/features/billing/domain/entities/factura.dart';
-import 'package:super_motos/features/inventory/presentation/pages/web_storage_stub.dart'
-    if (dart.library.js_interop) 'package:super_motos/features/inventory/presentation/pages/web_storage_web.dart';
-
-const String _facturasStorageKey = 'super_motos_facturas_data';
 
 class WebFacturasRepository implements FacturasRepository {
-  static List<Factura> _facturas = [];
-  static bool _loaded = false;
-
   @override
   Future<List<Factura>> loadAll() async {
-    if (!_loaded) {
-      _loaded = true;
-      final savedData = getWebStorage().getItem(_facturasStorageKey);
-      if (savedData != null && savedData.isNotEmpty) {
-        _facturas = _decode(savedData);
-      }
-      if (_facturas.isEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        final alreadySeeded = prefs.getBool('super_motos_facturas_seeded') ?? false;
-        if (!alreadySeeded) {
-          _facturas = List<Factura>.from(FacturasSeedData.demoFacturas);
-          await prefs.setBool('super_motos_facturas_seeded', true);
-          getWebStorage().setItem(_facturasStorageKey, _encode(_facturas));
-        }
-      }
+    try {
+      final response = await SupabaseService.instance.client
+          .from('facturas')
+          .select('*, detalles_factura(*)');
+      final list = response as List<dynamic>;
+      final domainList = list.map((e) => _facturaFromMap(e as Map<String, dynamic>)).toList();
+      domainList.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return domainList;
+    } catch (e) {
+      return [];
     }
-
-    final sorted = List<Factura>.from(_facturas)
-      ..sort((a, b) => b.fecha.compareTo(a.fecha));
-    return sorted;
   }
 
   @override
   Future<Factura> create(Factura factura) async {
-    _facturas = [..._facturas, factura];
-    _persist();
+    final client = SupabaseService.instance.client;
+    await client.from('facturas').insert(_facturaToMap(factura));
+    if (factura.detalles.isNotEmpty) {
+      final detailsJson = factura.detalles.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final d = entry.value;
+        return {
+          'codigo': '${factura.codigo}_$idx',
+          'factura_codigo': factura.codigo,
+          'producto_id': d.productoId,
+          'cantidad': d.cantidad,
+          'precio_unitario': d.precioUnitario,
+          'subtotal': d.subtotal,
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+      await client.from('detalles_factura').insert(detailsJson);
+    }
     return factura;
   }
 
   @override
   Future<Factura> update(Factura factura) async {
-    final updated = factura.copyWith(isSynced: false);
-    _facturas = _facturas.map((f) => f.codigo == factura.codigo ? updated : f).toList();
-    _persist();
-    return updated;
+    final client = SupabaseService.instance.client;
+    await client
+        .from('facturas')
+        .update(_facturaToMap(factura))
+        .eq('codigo', factura.codigo);
+    await client
+        .from('detalles_factura')
+        .delete()
+        .eq('factura_codigo', factura.codigo);
+    if (factura.detalles.isNotEmpty) {
+      final detailsJson = factura.detalles.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final d = entry.value;
+        return {
+          'codigo': '${factura.codigo}_$idx',
+          'factura_codigo': factura.codigo,
+          'producto_id': d.productoId,
+          'cantidad': d.cantidad,
+          'precio_unitario': d.precioUnitario,
+          'subtotal': d.subtotal,
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+      await client.from('detalles_factura').insert(detailsJson);
+    }
+    return factura;
   }
 
   @override
   Future<Factura?> getByCodigo(String codigo) async {
     try {
-      return _facturas.firstWhere((f) => f.codigo == codigo);
+      final response = await SupabaseService.instance.client
+          .from('facturas')
+          .select('*, detalles_factura(*)')
+          .eq('codigo', codigo)
+          .maybeSingle();
+      if (response == null) return null;
+      return _facturaFromMap(response as Map<String, dynamic>);
     } catch (_) {
       return null;
     }
@@ -64,73 +89,51 @@ class WebFacturasRepository implements FacturasRepository {
 
   @override
   Future<void> delete(String codigo) async {
-    _facturas = _facturas.where((f) => f.codigo != codigo).toList();
-    _persist();
-  }
-
-  void _persist() {
-    getWebStorage().setItem(_facturasStorageKey, _encode(_facturas));
-  }
-
-  String _encode(List<Factura> facturas) {
-    return jsonEncode(facturas.map(_facturaToMap).toList());
-  }
-
-  List<Factura> _decode(String raw) {
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => _facturaFromMap(e as Map<String, dynamic>)).toList();
+    final client = SupabaseService.instance.client;
+    await client.from('detalles_factura').delete().eq('factura_codigo', codigo);
+    await client.from('facturas').delete().eq('codigo', codigo);
   }
 
   Map<String, dynamic> _facturaToMap(Factura f) {
     return {
       'codigo': f.codigo,
-      'clienteId': f.clienteId,
-      'vendedorId': f.vendedorId,
+      'cliente_id': f.clienteId,
+      'vendedor_id': f.vendedorId,
       'fecha': f.fecha.toIso8601String(),
       'total': f.total,
-      'tipoPago': f.tipoPago.name,
-      'latitudVenta': f.latitudVenta,
-      'longitudVenta': f.longitudVenta,
-      'detalles': f.detalles.map(_detalleToMap).toList(),
-      'isSynced': f.isSynced,
-    };
-  }
-
-  Map<String, dynamic> _detalleToMap(DetalleFactura d) {
-    return {
-      'productoId': d.productoId,
-      'cantidad': d.cantidad,
-      'precioUnitario': d.precioUnitario,
-      'subtotal': d.subtotal,
+      'tipo_pago': f.tipoPago.name,
+      'latitud_venta': f.latitudVenta,
+      'longitud_venta': f.longitudVenta,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 
   Factura _facturaFromMap(Map<String, dynamic> m) {
+    final detallesRaw = m['detalles_factura'] as List<dynamic>? ?? [];
     return Factura(
       codigo: m['codigo'] as String,
-      clienteId: m['clienteId'] as String,
-      vendedorId: m['vendedorId'] as String,
+      clienteId: (m['cliente_id'] ?? '').toString(),
+      vendedorId: (m['vendedor_id'] ?? '').toString(),
       fecha: DateTime.parse(m['fecha'] as String),
-      total: (m['total'] as num).toDouble(),
+      total: (m['total'] as num?)?.toDouble() ?? 0.0,
       tipoPago: TipoPago.values.firstWhere(
-        (e) => e.name == m['tipoPago'],
+        (e) => e.name == m['tipo_pago'],
         orElse: () => TipoPago.contado,
       ),
-      latitudVenta: (m['latitudVenta'] as num?)?.toDouble(),
-      longitudVenta: (m['longitudVenta'] as num?)?.toDouble(),
-      detalles: (m['detalles'] as List<dynamic>)
-          .map((d) => _detalleFromMap(d as Map<String, dynamic>))
-          .toList(),
-      isSynced: m['isSynced'] as bool? ?? false,
+      latitudVenta: (m['latitud_venta'] as num?)?.toDouble(),
+      longitudVenta: (m['longitud_venta'] as num?)?.toDouble(),
+      detalles: detallesRaw.map((d) => _detalleFromMap(d as Map<String, dynamic>)).toList(),
+      isSynced: m['is_synced'] as bool? ?? true,
     );
   }
 
   DetalleFactura _detalleFromMap(Map<String, dynamic> m) {
     return DetalleFactura(
-      productoId: m['productoId'] as String,
-      cantidad: m['cantidad'] as int,
-      precioUnitario: (m['precioUnitario'] as num).toDouble(),
-      subtotal: (m['subtotal'] as num).toDouble(),
+      productoId: (m['producto_id'] ?? '').toString(),
+      cantidad: m['cantidad'] as int? ?? 0,
+      precioUnitario: (m['precio_unitario'] as num?)?.toDouble() ?? 0.0,
+      subtotal: (m['subtotal'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

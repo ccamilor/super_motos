@@ -1,54 +1,75 @@
-import 'dart:convert';
+import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository.dart';
-import 'package:super_motos/features/recepcion/data/services/recepcion_seed_data.dart';
 import 'package:super_motos/features/recepcion/domain/entities/recepcion.dart';
 import 'package:super_motos/features/recepcion/domain/entities/detalle_recepcion.dart';
-import 'package:super_motos/features/inventory/presentation/pages/web_storage_stub.dart'
-    if (dart.library.js_interop) 'package:super_motos/features/inventory/presentation/pages/web_storage_web.dart';
-
-const String _recepcionStorageKey = 'super_motos_recepciones_data';
 
 class WebRecepcionRepository implements RecepcionRepository {
-  static List<Recepcion> _recepciones = [];
-
   @override
   Future<List<Recepcion>> loadAll() async {
-    if (_recepciones.isEmpty) {
-      final savedData = getWebStorage().getItem(_recepcionStorageKey);
-      if (savedData != null && savedData.isNotEmpty) {
-        _recepciones = _decode(savedData);
-      }
-      if (_recepciones.isEmpty) {
-        _recepciones = List<Recepcion>.from(RecepcionSeedData.demoRecepciones);
-        getWebStorage().setItem(_recepcionStorageKey, _encode(_recepciones));
-      }
+    try {
+      final response = await SupabaseService.instance.client
+          .from('recepciones')
+          .select('*, detalles_recepcion(*)');
+      final list = response as List<dynamic>;
+      final domainList = list.map((e) => _recepcionFromMap(e as Map<String, dynamic>)).toList();
+      domainList.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return domainList;
+    } catch (e) {
+      return [];
     }
-    final sorted = List<Recepcion>.from(_recepciones)
-      ..sort((a, b) => b.fecha.compareTo(a.fecha));
-    return sorted;
   }
 
   @override
   Future<List<Recepcion>> loadByProveedor(String proveedorId) async {
-    await loadAll();
-    return _recepciones
-        .where((r) => r.proveedorId == proveedorId)
-        .toList()
-      ..sort((a, b) => b.fecha.compareTo(a.fecha));
+    try {
+      final response = await SupabaseService.instance.client
+          .from('recepciones')
+          .select('*, detalles_recepcion(*)')
+          .eq('proveedor_id', proveedorId);
+      final list = response as List<dynamic>;
+      final domainList = list.map((e) => _recepcionFromMap(e as Map<String, dynamic>)).toList();
+      domainList.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return domainList;
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
   Future<Recepcion> create(Recepcion recepcion) async {
-    _recepciones = [..._recepciones, recepcion];
-    _persist();
+    final client = SupabaseService.instance.client;
+    await client.from('recepciones').insert(_recepcionToMap(recepcion));
+    if (recepcion.detalles.isNotEmpty) {
+      final detailsJson = recepcion.detalles.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final d = entry.value;
+        return {
+          'codigo': '${recepcion.codigo}_$idx',
+          'recepcion_codigo': recepcion.codigo,
+          'producto_id': d.productoId,
+          'cantidad': d.cantidad,
+          'precio_unitario': d.precioUnitario,
+          'destino': d.destino,
+          'cantidad_camion': d.cantidadCamion,
+          'cantidad_bodega': d.cantidadBodega,
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+      await client.from('detalles_recepcion').insert(detailsJson);
+    }
     return recepcion;
   }
 
   @override
   Future<Recepcion?> getByCodigo(String codigo) async {
-    await loadAll();
     try {
-      return _recepciones.firstWhere((r) => r.codigo == codigo);
+      final response = await SupabaseService.instance.client
+          .from('recepciones')
+          .select('*, detalles_recepcion(*)')
+          .eq('codigo', codigo)
+          .maybeSingle();
+      if (response == null) return null;
+      return _recepcionFromMap(response as Map<String, dynamic>);
     } catch (_) {
       return null;
     }
@@ -56,62 +77,44 @@ class WebRecepcionRepository implements RecepcionRepository {
 
   @override
   Future<void> delete(String codigo) async {
-    _recepciones = _recepciones.where((r) => r.codigo != codigo).toList();
-    _persist();
+    final client = SupabaseService.instance.client;
+    await client.from('detalles_recepcion').delete().eq('recepcion_codigo', codigo);
+    await client.from('recepciones').delete().eq('codigo', codigo);
   }
 
-  void _persist() {
-    getWebStorage().setItem(_recepcionStorageKey, _encode(_recepciones));
-  }
-
-  String _encode(List<Recepcion> list) {
-    return jsonEncode(list.map(_toMap).toList());
-  }
-
-  List<Recepcion> _decode(String raw) {
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => _fromMap(e as Map<String, dynamic>)).toList();
-  }
-
-  Map<String, dynamic> _toMap(Recepcion r) {
+  Map<String, dynamic> _recepcionToMap(Recepcion r) {
     return {
       'codigo': r.codigo,
-      'proveedorId': r.proveedorId,
+      'proveedor_id': r.proveedorId,
       'fecha': r.fecha.toIso8601String(),
-      'nroRemito': r.nroRemito,
+      'nro_remito': r.nroRemito,
       'observaciones': r.observaciones,
-      'isSynced': r.isSynced,
-      'detalles': r.detalles.map((d) => {
-        'productoId': d.productoId,
-        'cantidad': d.cantidad,
-        'precioUnitario': d.precioUnitario,
-        'destino': d.destino,
-        'cantidadCamion': d.cantidadCamion,
-        'cantidadBodega': d.cantidadBodega,
-      }).toList(),
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 
-  Recepcion _fromMap(Map<String, dynamic> m) {
+  Recepcion _recepcionFromMap(Map<String, dynamic> m) {
+    final detallesRaw = m['detalles_recepcion'] as List<dynamic>? ?? [];
     return Recepcion(
       codigo: m['codigo'] as String,
-      proveedorId: m['proveedorId'] as String,
+      proveedorId: (m['proveedor_id'] ?? '').toString(),
       fecha: DateTime.parse(m['fecha'] as String),
-      nroRemito: m['nroRemito'] as String?,
-      observaciones: m['observaciones'] as String?,
-      isSynced: m['isSynced'] as bool? ?? false,
-      detalles: (m['detalles'] as List<dynamic>).map((d) => _detalleFromMap(d as Map<String, dynamic>)).toList(),
+      nroRemito: m['nro_remito']?.toString(),
+      observaciones: m['observaciones']?.toString(),
+      isSynced: m['is_synced'] as bool? ?? true,
+      detalles: detallesRaw.map((d) => _detalleFromMap(d as Map<String, dynamic>)).toList(),
     );
   }
 
   DetalleRecepcion _detalleFromMap(Map<String, dynamic> m) {
     return DetalleRecepcion(
-      productoId: m['productoId'] as String,
-      cantidad: m['cantidad'] as int,
-      precioUnitario: (m['precioUnitario'] as num).toDouble(),
-      destino: m['destino'] as String,
-      cantidadCamion: (m['cantidadCamion'] as num?)?.toInt(),
-      cantidadBodega: (m['cantidadBodega'] as num?)?.toInt(),
+      productoId: (m['producto_id'] ?? '').toString(),
+      cantidad: m['cantidad'] as int? ?? 0,
+      precioUnitario: (m['precio_unitario'] as num?)?.toDouble() ?? 0.0,
+      destino: (m['destino'] ?? 'camion').toString(),
+      cantidadCamion: (m['cantidad_camion'] as num?)?.toInt(),
+      cantidadBodega: (m['cantidad_bodega'] as num?)?.toInt(),
     );
   }
 }

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
-import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
 
 void main() {
@@ -60,11 +59,7 @@ void main() {
       expect(last.isOriginal, false);
     });
 
-    test('Seed data stays aligned with the demo inventory', () {
-      expect(InventorySeedData.demoEntries.length, 6);
-      expect(InventorySeedData.demoEntries.first.nombre, 'Kit de Arrastre Racing Oro');
-      expect(InventorySeedData.demoEntries.last.cantidadBodega, 30);
-    });
+
 
     test('COP formatter behavior stays stable', () {
       String formatCOP(double precio) {

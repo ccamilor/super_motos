@@ -16,7 +16,7 @@ extension GetHistorialPreciosModelCollection on Isar {
 
 const HistorialPreciosModelSchema = CollectionSchema(
   name: r'HistorialPreciosModel',
-  id: 2245722991053323034,
+  id: (224572299 * 10000000000 + 1053323034),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -56,7 +56,7 @@ const HistorialPreciosModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

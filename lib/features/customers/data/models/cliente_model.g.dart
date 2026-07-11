@@ -15,7 +15,7 @@ extension GetClienteModelCollection on Isar {
 
 const ClienteModelSchema = CollectionSchema(
   name: r'ClienteModel',
-  id: -8935630899739365906,
+  id: -(893563089 * 10000000000 + 9739365906),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -75,7 +75,7 @@ const ClienteModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

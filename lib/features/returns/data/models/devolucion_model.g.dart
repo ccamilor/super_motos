@@ -15,7 +15,7 @@ extension GetDevolucionModelCollection on Isar {
 
 const DevolucionModelSchema = CollectionSchema(
   name: r'DevolucionModel',
-  id: -1834170141947563791,
+  id: -(183417014 * 10000000000 + 1947563791),
   properties: {
     r'canastaDestino': PropertySchema(
       id: 0,
@@ -65,7 +65,7 @@ const DevolucionModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

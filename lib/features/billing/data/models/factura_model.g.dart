@@ -15,7 +15,7 @@ extension GetFacturaModelCollection on Isar {
 
 const FacturaModelSchema = CollectionSchema(
   name: r'FacturaModel',
-  id: -6748147298321532866,
+  id: -(674814729 * 10000000000 + 8321532866),
   properties: {
     r'clienteId': PropertySchema(
       id: 0,
@@ -76,7 +76,7 @@ const FacturaModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,
@@ -1798,7 +1798,7 @@ extension FacturaModelQueryProperty
 
 const DetalleFacturaModelSchema = Schema(
   name: r'DetalleFacturaModel',
-  id: 4795833135690052401,
+  id: (479583313 * 10000000000 + 5690052401),
   properties: {
     r'cantidad': PropertySchema(
       id: 0,

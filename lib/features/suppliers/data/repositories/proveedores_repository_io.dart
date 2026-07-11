@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/suppliers/data/models/proveedor_model.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
-import 'package:super_motos/features/suppliers/data/services/proveedores_seed_data.dart';
 import 'package:super_motos/features/suppliers/domain/entities/proveedor.dart';
 
 class IsarProveedoresRepository implements ProveedoresRepository {
@@ -15,10 +15,6 @@ class IsarProveedoresRepository implements ProveedoresRepository {
     final isar = _isar;
     if (isar == null) return [];
     var models = await isar.proveedorModels.where().sortByNombre().findAll();
-    if (models.isEmpty) {
-      await _seedDemoData(isar);
-      models = await isar.proveedorModels.where().sortByNombre().findAll();
-    }
     return models.map((m) => m.toDomain()).toList();
   }
 
@@ -65,16 +61,6 @@ class IsarProveedoresRepository implements ProveedoresRepository {
     SyncService.instance.enqueue('proveedores', SyncOperation.delete, json);
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    await isar.writeTxn(() async {
-      for (final proveedor in ProveedoresSeedData.demoProveedores) {
-        final model = ProveedorModel.fromDomain(proveedor);
-        final existing = await isar.proveedorModels.filter().codigoEqualTo(model.codigo).findFirst();
-        if (existing != null) model.id = existing.id;
-        await isar.proveedorModels.put(model);
-      }
-    });
-  }
 }
 
 ProveedoresRepository createProveedoresRepository() => IsarProveedoresRepository();

@@ -25,12 +25,12 @@ class SyncLogEntry {
     return {
       if (id != null) 'id': id,
       'timestamp': timestamp.toIso8601String(),
-      'table': table,
+      'table_name': table,
       'operation': operation,
-      'recordId': recordId,
+      'record_id': recordId,
       'status': status.name,
-      'errorMessage': errorMessage,
-      'retryCount': retryCount,
+      'error_message': errorMessage,
+      'retry_count': retryCount,
     };
   }
 
@@ -38,15 +38,15 @@ class SyncLogEntry {
     return SyncLogEntry(
       id: map['id'] as int?,
       timestamp: DateTime.parse(map['timestamp'] as String),
-      table: map['table'] as String,
+      table: (map['table_name'] ?? map['table'] ?? '') as String,
       operation: map['operation'] as String,
-      recordId: map['recordId'] as String,
+      recordId: (map['record_id'] ?? map['recordId'] ?? '') as String,
       status: SyncLogStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => SyncLogStatus.pending,
       ),
-      errorMessage: map['errorMessage'] as String?,
-      retryCount: (map['retryCount'] as int?) ?? 0,
+      errorMessage: (map['error_message'] ?? map['errorMessage']) as String?,
+      retryCount: (map['retry_count'] ?? map['retryCount'] ?? 0) as int,
     );
   }
 }

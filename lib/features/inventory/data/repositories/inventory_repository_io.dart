@@ -11,7 +11,6 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
 import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_exporter.dart';
-import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
 import 'package:super_motos/core/utils/import_progress.dart';
 
@@ -28,15 +27,6 @@ class IsarInventoryRepository implements InventoryRepository {
     }
 
     var productos = await isar.productoModels.where().findAll();
-    if (productos.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      final alreadySeeded = prefs.getBool('super_motos_seeded') ?? false;
-      if (!alreadySeeded) {
-        await _seedDemoData(isar);
-        await prefs.setBool('super_motos_seeded', true);
-      }
-      productos = await isar.productoModels.where().findAll();
-    }
 
     final camion = await isar.inventarioCamionModels.where().findAll();
     final bodega = await isar.inventarioBodegaModels.where().findAll();
@@ -62,6 +52,13 @@ class IsarInventoryRepository implements InventoryRepository {
     if (entries.isEmpty) {
       throw FormatException('El CSV está vacío o no contiene filas válidas.');
     }
+
+    // Reemplazar completamente el inventario local para evitar datos demo persistentes.
+    await isar.writeTxn(() async {
+      await isar.productoModels.where().deleteAll();
+      await isar.inventarioCamionModels.where().deleteAll();
+      await isar.inventarioBodegaModels.where().deleteAll();
+    });
 
     const chunkSize = 500;
     final total = entries.length;
@@ -178,44 +175,7 @@ class IsarInventoryRepository implements InventoryRepository {
     return _exporter.export(entries);
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    final syncedCodigos = <String>[];
-    await isar.writeTxn(() async {
-      for (final entry in InventorySeedData.demoEntries) {
-        final pModel = entry.toProductoModel();
-        final existingP = await isar.productoModels.filter().codigoEqualTo(pModel.codigo).findFirst();
-        if (existingP != null) pModel.id = existingP.id;
-        await isar.productoModels.put(pModel);
 
-        final cModel = entry.toCamionModel();
-        final existingC = await isar.inventarioCamionModels.filter().codigoEqualTo(cModel.codigo).findFirst();
-        if (existingC != null) cModel.id = existingC.id;
-        await isar.inventarioCamionModels.put(cModel);
-
-        final bModel = entry.toBodegaModel();
-        final existingB = await isar.inventarioBodegaModels.filter().codigoEqualTo(bModel.codigo).findFirst();
-        if (existingB != null) bModel.id = existingB.id;
-        await isar.inventarioBodegaModels.put(bModel);
-
-        syncedCodigos.add(pModel.codigo);
-      }
-    });
-
-    for (final codigo in syncedCodigos) {
-      final savedP = await isar.productoModels.filter().codigoEqualTo(codigo).findFirst();
-      if (savedP != null) {
-        SyncService.instance.enqueue('productos', SyncOperation.insert, jsonEncode(savedP.toJson()));
-      }
-      final savedC = await isar.inventarioCamionModels.filter().productoIdEqualTo(codigo).findFirst();
-      if (savedC != null) {
-        SyncService.instance.enqueue('inventario_camion', SyncOperation.insert, jsonEncode(savedC.toJson()));
-      }
-      final savedB = await isar.inventarioBodegaModels.filter().productoIdEqualTo(codigo).findFirst();
-      if (savedB != null) {
-        SyncService.instance.enqueue('inventario_bodega', SyncOperation.insert, jsonEncode(savedB.toJson()));
-      }
-    }
-  }
 
   @override
   Future<void> decrementCamionStock(String productoId, int cantidad) async {

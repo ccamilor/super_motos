@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/customers/data/models/cliente_model.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
-import 'package:super_motos/features/customers/data/services/clientes_seed_data.dart';
 import 'package:super_motos/features/customers/domain/entities/cliente.dart';
 
 class IsarClientesRepository implements ClientesRepository {
@@ -18,11 +18,6 @@ class IsarClientesRepository implements ClientesRepository {
     }
 
     var models = await isar.clienteModels.where().sortByNombre().findAll();
-    if (models.isEmpty) {
-      await _seedDemoData(isar);
-      models = await isar.clienteModels.where().sortByNombre().findAll();
-    }
-
     return models.map((m) => m.toDomain()).toList();
   }
 
@@ -79,16 +74,6 @@ class IsarClientesRepository implements ClientesRepository {
     SyncService.instance.enqueue('clientes', SyncOperation.delete, json);
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    await isar.writeTxn(() async {
-      for (final cliente in ClientesSeedData.demoClientes) {
-        final model = ClienteModel.fromDomain(cliente);
-        final existing = await isar.clienteModels.filter().codigoEqualTo(model.codigo).findFirst();
-        if (existing != null) model.id = existing.id;
-        await isar.clienteModels.put(model);
-      }
-    });
-  }
 }
 
 ClientesRepository createClientesRepository() => IsarClientesRepository();

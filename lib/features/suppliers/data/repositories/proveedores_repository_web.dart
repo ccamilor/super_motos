@@ -1,84 +1,67 @@
-import 'dart:convert';
+import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/features/suppliers/data/repositories/proveedores_repository.dart';
-import 'package:super_motos/features/suppliers/data/services/proveedores_seed_data.dart';
 import 'package:super_motos/features/suppliers/domain/entities/proveedor.dart';
-import 'package:super_motos/features/inventory/presentation/pages/web_storage_stub.dart'
-    if (dart.library.js_interop) 'package:super_motos/features/inventory/presentation/pages/web_storage_web.dart';
-
-const String _proveedoresStorageKey = 'super_motos_proveedores_data';
 
 class WebProveedoresRepository implements ProveedoresRepository {
-  static List<Proveedor> _proveedores = [];
-
   @override
   Future<List<Proveedor>> loadAll() async {
-    if (_proveedores.isEmpty) {
-      final savedData = getWebStorage().getItem(_proveedoresStorageKey);
-      if (savedData != null && savedData.isNotEmpty) {
-        _proveedores = _decode(savedData);
-      }
-      if (_proveedores.isEmpty) {
-        _proveedores = List<Proveedor>.from(ProveedoresSeedData.demoProveedores);
-        getWebStorage().setItem(_proveedoresStorageKey, _encode(_proveedores));
-      }
+    try {
+      final response = await SupabaseService.instance.client
+          .from('proveedores')
+          .select();
+      final list = response as List<dynamic>;
+      final domainList = list.map((e) => _proveedorFromMap(e as Map<String, dynamic>)).toList();
+      domainList.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+      return domainList;
+    } catch (e) {
+      return [];
     }
-    final sorted = List<Proveedor>.from(_proveedores)
-      ..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
-    return sorted;
   }
 
   @override
   Future<Proveedor> create(Proveedor proveedor) async {
-    _proveedores = [..._proveedores, proveedor];
-    _persist();
+    final map = _proveedorToMap(proveedor);
+    await SupabaseService.instance.client.from('proveedores').insert(map);
     return proveedor;
   }
 
   @override
   Future<Proveedor> update(Proveedor proveedor) async {
-    _proveedores = _proveedores
-        .map((p) => p.codigo == proveedor.codigo ? proveedor : p)
-        .toList();
-    _persist();
+    final map = _proveedorToMap(proveedor);
+    await SupabaseService.instance.client
+        .from('proveedores')
+        .update(map)
+        .eq('codigo', proveedor.codigo);
     return proveedor;
   }
 
   @override
   Future<void> delete(String codigo) async {
-    _proveedores = _proveedores.where((p) => p.codigo != codigo).toList();
-    _persist();
+    await SupabaseService.instance.client
+        .from('proveedores')
+        .delete()
+        .eq('codigo', codigo);
   }
 
-  void _persist() {
-    getWebStorage().setItem(_proveedoresStorageKey, _encode(_proveedores));
-  }
-
-  String _encode(List<Proveedor> list) {
-    return jsonEncode(list.map(_toMap).toList());
-  }
-
-  List<Proveedor> _decode(String raw) {
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => _fromMap(e as Map<String, dynamic>)).toList();
-  }
-
-  Map<String, dynamic> _toMap(Proveedor p) {
+  Map<String, dynamic> _proveedorToMap(Proveedor p) {
     return {
       'codigo': p.codigo,
       'nombre': p.nombre,
       'nit': p.nit,
       'telefono': p.telefono,
       'direccion': p.direccion,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 
-  Proveedor _fromMap(Map<String, dynamic> m) {
+  Proveedor _proveedorFromMap(Map<String, dynamic> m) {
     return Proveedor(
       codigo: m['codigo'] as String,
       nombre: m['nombre'] as String,
-      nit: m['nit'] as String,
-      telefono: m['telefono'] as String,
-      direccion: m['direccion'] as String,
+      nit: (m['nit'] ?? '').toString(),
+      telefono: (m['telefono'] ?? '').toString(),
+      direccion: (m['direccion'] ?? '').toString(),
     );
   }
 }

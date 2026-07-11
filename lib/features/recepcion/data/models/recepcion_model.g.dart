@@ -15,7 +15,7 @@ extension GetRecepcionModelCollection on Isar {
 
 const RecepcionModelSchema = CollectionSchema(
   name: r'RecepcionModel',
-  id: 7474841320601207936,
+  id: (747484132 * 10000000000 + 601207936),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -61,7 +61,7 @@ const RecepcionModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,
@@ -1493,7 +1493,7 @@ extension RecepcionModelQueryProperty
 
 const DetalleRecepcionModelSchema = Schema(
   name: r'DetalleRecepcionModel',
-  id: -4400363781098584812,
+  id: -(440036378 * 10000000000 + 1098584812),
   properties: {
     r'cantidad': PropertySchema(
       id: 0,

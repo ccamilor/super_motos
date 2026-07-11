@@ -566,8 +566,11 @@ class _FacturaFormPageState extends State<FacturaFormPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Subtotal', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      Text(formatCOP(linea.subtotal),
-                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 14)),
+                      Flexible(
+                        child: Text(formatCOP(linea.subtotal),
+                            style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 14),
+                            overflow: TextOverflow.ellipsis),
+                      ),
                     ],
                   ),
                 ),

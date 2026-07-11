@@ -545,7 +545,6 @@ class SyncService {
       final response = await client.from(table).select();
       if (response == null) return;
       final rows = response as List<dynamic>;
-      if (rows.isEmpty) return;
       final isar = _isar;
       if (isar == null) return;
 
@@ -599,6 +598,7 @@ class SyncService {
   // ---- Pull helpers per table ----
 
   Future<void> _pullClientes(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -623,9 +623,16 @@ class SyncService {
         await isar.clienteModels.put(model);
       }
     }
+    final localSynced = await isar.clienteModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.clienteModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullFacturas(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -660,9 +667,16 @@ class SyncService {
         await isar.facturaModels.put(model);
       }
     }
+    final localSynced = await isar.facturaModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.facturaModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullDevoluciones(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -685,9 +699,16 @@ class SyncService {
         await isar.devolucionModels.put(model);
       }
     }
+    final localSynced = await isar.devolucionModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.devolucionModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullProveedores(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -708,9 +729,16 @@ class SyncService {
         await isar.proveedorModels.put(model);
       }
     }
+    final localSynced = await isar.proveedorModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.proveedorModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullHistorialPrecios(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -731,9 +759,16 @@ class SyncService {
         await isar.historialPreciosModels.put(model);
       }
     }
+    final localSynced = await isar.historialPreciosModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.historialPreciosModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullProductos(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -756,9 +791,16 @@ class SyncService {
         await isar.productoModels.put(model);
       }
     }
+    final localSynced = await isar.productoModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.productoModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullInventarioCamion(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -778,9 +820,16 @@ class SyncService {
         await isar.inventarioCamionModels.put(model);
       }
     }
+    final localSynced = await isar.inventarioCamionModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.inventarioCamionModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullInventarioBodega(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -799,9 +848,16 @@ class SyncService {
         await isar.inventarioBodegaModels.put(model);
       }
     }
+    final localSynced = await isar.inventarioBodegaModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.inventarioBodegaModels.delete(local.id);
+      }
+    }
   }
 
   Future<void> _pullRecepciones(Isar isar, List<dynamic> rows) async {
+    final remoteCodigos = rows.map((r) => r['codigo']?.toString()).whereType<String>().toSet();
     for (final row in rows) {
       final map = row as Map<String, dynamic>;
       final codigo = map['codigo']?.toString();
@@ -833,6 +889,12 @@ class SyncService {
           ..isSynced = true;
         if (local != null) model.id = local.id;
         await isar.recepcionModels.put(model);
+      }
+    }
+    final localSynced = await isar.recepcionModels.filter().isSyncedEqualTo(true).findAll();
+    for (final local in localSynced) {
+      if (!remoteCodigos.contains(local.codigo)) {
+        await isar.recepcionModels.delete(local.id);
       }
     }
   }

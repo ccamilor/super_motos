@@ -5,7 +5,6 @@ import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/billing/data/models/factura_model.dart';
 import 'package:super_motos/features/billing/data/repositories/facturas_repository.dart';
-import 'package:super_motos/features/billing/data/services/facturas_seed_data.dart';
 import 'package:super_motos/features/billing/domain/entities/factura.dart';
 
 class IsarFacturasRepository implements FacturasRepository {
@@ -19,16 +18,6 @@ class IsarFacturasRepository implements FacturasRepository {
     }
 
     var models = await isar.facturaModels.where().sortByFechaDesc().findAll();
-    if (models.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      final alreadySeeded = prefs.getBool('super_motos_facturas_seeded') ?? false;
-      if (!alreadySeeded) {
-        await _seedDemoData(isar);
-        await prefs.setBool('super_motos_facturas_seeded', true);
-      }
-      models = await isar.facturaModels.where().sortByFechaDesc().findAll();
-    }
-
     return models.map((m) => m.toDomain()).toList();
   }
 
@@ -98,16 +87,6 @@ class IsarFacturasRepository implements FacturasRepository {
     SyncService.instance.enqueue('facturas', SyncOperation.delete, json);
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    await isar.writeTxn(() async {
-      for (final factura in FacturasSeedData.demoFacturas) {
-        final model = FacturaModel.fromDomain(factura);
-        final existing = await isar.facturaModels.filter().codigoEqualTo(model.codigo).findFirst();
-        if (existing != null) model.id = existing.id;
-        await isar.facturaModels.put(model);
-      }
-    });
-  }
 }
 
 FacturasRepository createFacturasRepository() => IsarFacturasRepository();

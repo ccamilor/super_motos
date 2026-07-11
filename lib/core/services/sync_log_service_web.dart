@@ -131,7 +131,6 @@ class SyncLogServiceWeb extends SyncLogServiceBase {
     }
   }
 
-  @override
   static int get maxRetries => _maxRetries;
 
   @override

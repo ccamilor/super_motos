@@ -15,7 +15,7 @@ extension GetProveedorModelCollection on Isar {
 
 const ProveedorModelSchema = CollectionSchema(
   name: r'ProveedorModel',
-  id: 7817599351648235903,
+  id: (781759935 * 10000000000 + 1648235903),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -55,7 +55,7 @@ const ProveedorModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

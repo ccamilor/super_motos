@@ -15,7 +15,7 @@ extension GetUsuarioModelCollection on Isar {
 
 const UsuarioModelSchema = CollectionSchema(
   name: r'UsuarioModel',
-  id: 2482984709579779713,
+  id: (248298470 * 10000000000 + 9579779713),
   properties: {
     r'codigo': PropertySchema(
       id: 0,
@@ -45,7 +45,7 @@ const UsuarioModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'codigo': IndexSchema(
-      id: 2475659939796141935,
+      id: (247565993 * 10000000000 + 9796141935),
       name: r'codigo',
       unique: true,
       replace: false,

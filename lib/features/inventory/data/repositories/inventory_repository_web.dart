@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_bodega_model.dart';
 import 'package:super_motos/features/inventory/data/models/inventario_camion_model.dart';
 import 'package:super_motos/features/inventory/data/models/producto_model.dart';
@@ -6,43 +6,33 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
 import 'package:super_motos/features/inventory/data/repositories/inventory_snapshot.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_parser.dart';
 import 'package:super_motos/features/inventory/data/services/inventory_csv_exporter.dart';
-import 'package:super_motos/features/inventory/data/services/inventory_seed_data.dart';
 import 'package:super_motos/features/inventory/domain/entities/inventory_entry.dart';
 import 'package:super_motos/core/utils/import_progress.dart';
-import '../../presentation/pages/web_storage_stub.dart'
-    if (dart.library.js_interop) '../../presentation/pages/web_storage_web.dart';
-
-const String _csvStorageKey = 'super_motos_csv_data';
 
 class WebInventoryRepository implements InventoryRepository {
-  static List<ProductoModel> _productos = [];
-  static List<InventarioCamionModel> _camion = [];
-  static List<InventarioBodegaModel> _bodega = [];
-
   final InventoryCsvParser _parser = const InventoryCsvParser();
   final InventoryCsvExporter _exporter = const InventoryCsvExporter();
 
   @override
   Future<InventorySnapshot> loadInventory() async {
-    if (_productos.isEmpty) {
-      final savedData = getWebStorage().getItem(_csvStorageKey);
-      if (savedData != null && savedData.isNotEmpty) {
-        final entries = _parser.parse(savedData);
-        if (entries.isNotEmpty) {
-          _applyEntries(entries);
-          return _snapshot();
-        }
-      }
+    try {
+      final client = SupabaseService.instance.client;
+      final prodRes = await client.from('productos').select();
+      final camRes = await client.from('inventario_camion').select();
+      final bodRes = await client.from('inventario_bodega').select();
 
-      final prefs = await SharedPreferences.getInstance();
-      final alreadySeeded = prefs.getBool('super_motos_seeded') ?? false;
-      if (!alreadySeeded) {
-        _applyEntries(InventorySeedData.demoEntries);
-        await prefs.setBool('super_motos_seeded', true);
-      }
+      final productos = (prodRes as List<dynamic>).map((e) => _productoFromMap(e as Map<String, dynamic>)).toList();
+      final camion = (camRes as List<dynamic>).map((e) => _camionFromMap(e as Map<String, dynamic>)).toList();
+      final bodega = (bodRes as List<dynamic>).map((e) => _bodegaFromMap(e as Map<String, dynamic>)).toList();
+
+      return InventorySnapshot(
+        productos: productos,
+        camion: camion,
+        bodega: bodega,
+      );
+    } catch (e) {
+      return InventorySnapshot.empty;
     }
-
-    return _snapshot();
   }
 
   @override
@@ -55,43 +45,64 @@ class WebInventoryRepository implements InventoryRepository {
       throw FormatException('El CSV está vacío o no contiene filas válidas.');
     }
 
-    const chunkSize = 500;
+    final client = SupabaseService.instance.client;
+
+    // Delete existing records
+    await client.from('inventario_camion').delete().neq('codigo', '');
+    await client.from('inventario_bodega').delete().neq('codigo', '');
+    await client.from('productos').delete().neq('codigo', '');
+
     final total = entries.length;
     int processed = 0;
-
-    // Report initial progress
     onProgress?.call(ImportProgress(processed: 0, total: total));
 
-    // Process in chunks
-    for (int i = 0; i < total; i += chunkSize) {
+    for (final entry in entries) {
       if (cancelToken?.isCancelled == true) {
         throw StateError('Importación cancelada por el usuario');
       }
 
-      final chunk = entries.skip(i).take(chunkSize).toList();
+      await client.from('productos').insert({
+        'codigo': entry.codigo,
+        'nombre': entry.nombre,
+        'precio': entry.precio,
+        'is_original': entry.isOriginal,
+        'motos_compatibles': entry.motosCompatibles,
+        'stock_minimo': entry.stockMinimo,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
 
-      _applyEntries(chunk);
+      if (entry.cantidadCamion > 0) {
+        await client.from('inventario_camion').insert({
+          'codigo': '${entry.codigo}_CAMION',
+          'producto_id': entry.codigo,
+          'canasta_id': entry.canastaId,
+          'cantidad': entry.cantidadCamion,
+          'is_synced': true,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      }
 
-      processed += chunk.length;
+      if (entry.cantidadBodega > 0) {
+        await client.from('inventario_bodega').insert({
+          'codigo': '${entry.codigo}_BODEGA',
+          'producto_id': entry.codigo,
+          'cantidad': entry.cantidadBodega,
+          'is_synced': true,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      }
+
+      processed++;
       onProgress?.call(ImportProgress(
         processed: processed,
         total: total,
-        currentItem: chunk.last.nombre,
+        currentItem: entry.nombre,
       ));
-
-      // Small delay to keep UI responsive
-      await Future.delayed(const Duration(milliseconds: 1));
     }
 
-    // Final progress
-    onProgress?.call(ImportProgress(
-      processed: total,
-      total: total,
-      done: true,
-    ));
-
-    getWebStorage().setItem(_csvStorageKey, csvContent);
-    return _snapshot();
+    onProgress?.call(ImportProgress(processed: total, total: total, done: true));
+    return loadInventory();
   }
 
   @override
@@ -100,14 +111,14 @@ class WebInventoryRepository implements InventoryRepository {
     final entries = <InventoryEntry>[];
 
     for (final producto in snapshot.productos) {
-      final camion = _camion.firstWhere(
+      final camion = snapshot.camion.firstWhere(
         (c) => c.productoId == producto.codigo,
         orElse: () => InventarioCamionModel()
           ..productoId = producto.codigo
           ..cantidad = 0
           ..canastaId = '0',
       );
-      final bodega = _bodega.firstWhere(
+      final bodega = snapshot.bodega.firstWhere(
         (b) => b.productoId == producto.codigo,
         orElse: () => InventarioBodegaModel()
           ..productoId = producto.codigo
@@ -130,178 +141,213 @@ class WebInventoryRepository implements InventoryRepository {
     return _exporter.export(entries);
   }
 
-  void _applyEntries(Iterable<dynamic> entries) {
-    _productos = [];
-    _camion = [];
-    _bodega = [];
-
-    for (final entry in entries) {
-      _productos.add(entry.toProductoModel());
-      _camion.add(entry.toCamionModel());
-      _bodega.add(entry.toBodegaModel());
-    }
-  }
-
-  InventorySnapshot _snapshot() {
-    return InventorySnapshot(
-      productos: List<ProductoModel>.from(_productos),
-      camion: List<InventarioCamionModel>.from(_camion),
-      bodega: List<InventarioBodegaModel>.from(_bodega),
-    );
-  }
-
   @override
   Future<void> decrementCamionStock(String productoId, int cantidad) async {
-    final idx = _camion.indexWhere((c) => c.productoId == productoId);
-    if (idx == -1) {
+    final client = SupabaseService.instance.client;
+    final res = await client
+        .from('inventario_camion')
+        .select()
+        .eq('producto_id', productoId)
+        .maybeSingle();
+    if (res == null) {
       throw StateError('No hay registro de stock en el camion para producto $productoId');
     }
-    final model = _camion[idx];
-    if (model.cantidad < cantidad) {
-      throw StateError(
-        'Stock insuficiente en el camion para producto $productoId (disponible: ${model.cantidad}, requerido: $cantidad)',
-      );
+    final currentQty = res['cantidad'] as int? ?? 0;
+    if (currentQty < cantidad) {
+      throw StateError('Stock insuficiente en el camion para producto $productoId');
     }
-    final updated = InventarioCamionModel()
-      ..id = model.id
-      ..codigo = model.codigo
-      ..productoId = model.productoId
-      ..canastaId = model.canastaId
-      ..cantidad = model.cantidad - cantidad;
-    _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
+    await client
+        .from('inventario_camion')
+        .update({'cantidad': currentQty - cantidad, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('producto_id', productoId);
   }
 
   @override
   Future<void> incrementCamionStock(String productoId, int cantidad) async {
-    final idx = _camion.indexWhere((c) => c.productoId == productoId);
-    if (idx == -1) {
+    final client = SupabaseService.instance.client;
+    final res = await client
+        .from('inventario_camion')
+        .select()
+        .eq('producto_id', productoId)
+        .maybeSingle();
+    if (res == null) {
       throw StateError('No hay registro de stock en el camion para producto $productoId');
     }
-    final model = _camion[idx];
-    final updated = InventarioCamionModel()
-      ..id = model.id
-      ..codigo = model.codigo
-      ..productoId = model.productoId
-      ..canastaId = model.canastaId
-      ..cantidad = model.cantidad + cantidad;
-    _camion = List<InventarioCamionModel>.from(_camion)..[idx] = updated;
+    final currentQty = res['cantidad'] as int? ?? 0;
+    await client
+        .from('inventario_camion')
+        .update({'cantidad': currentQty + cantidad, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('producto_id', productoId);
+  }
+
+  @override
+  Future<void> incrementBodegaStock(String productoId, int cantidad) async {
+    final client = SupabaseService.instance.client;
+    final res = await client
+        .from('inventario_bodega')
+        .select()
+        .eq('producto_id', productoId)
+        .maybeSingle();
+    if (res == null) {
+      throw StateError('No hay registro de stock en la bodega para producto $productoId');
+    }
+    final currentQty = res['cantidad'] as int? ?? 0;
+    await client
+        .from('inventario_bodega')
+        .update({'cantidad': currentQty + cantidad, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('producto_id', productoId);
   }
 
   @override
   Future<InventorySnapshot> createProduct(InventoryEntry entry) async {
-    final producto = entry.toProductoModel();
-    final camion = entry.toCamionModel();
-    final bodega = entry.toBodegaModel();
-
-    _productos = List<ProductoModel>.from(_productos)..add(producto);
+    final client = SupabaseService.instance.client;
+    await client.from('productos').insert({
+      'codigo': entry.codigo,
+      'nombre': entry.nombre,
+      'precio': entry.precio,
+      'is_original': entry.isOriginal,
+      'motos_compatibles': entry.motosCompatibles,
+      'stock_minimo': entry.stockMinimo,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
     if (entry.cantidadCamion > 0) {
-      _camion = List<InventarioCamionModel>.from(_camion)..add(camion);
+      await client.from('inventario_camion').insert({
+        'codigo': '${entry.codigo}_CAMION',
+        'producto_id': entry.codigo,
+        'canasta_id': entry.canastaId,
+        'cantidad': entry.cantidadCamion,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
     }
     if (entry.cantidadBodega > 0) {
-      _bodega = List<InventarioBodegaModel>.from(_bodega)..add(bodega);
+      await client.from('inventario_bodega').insert({
+        'codigo': '${entry.codigo}_BODEGA',
+        'producto_id': entry.codigo,
+        'cantidad': entry.cantidadBodega,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
     }
-
-    return _snapshot();
+    return loadInventory();
   }
 
   @override
   Future<InventorySnapshot> updateProduct(InventoryEntry entry) async {
-    final pIdx = _productos.indexWhere((p) => p.codigo == entry.codigo);
-    if (pIdx != -1) {
-      final updated = _productos[pIdx]
-        ..nombre = entry.nombre
-        ..precio = entry.precio
-        ..isOriginal = entry.isOriginal
-        ..motosCompatibles = entry.motosCompatibles
-        ..stockMinimo = entry.stockMinimo;
-      _productos = List<ProductoModel>.from(_productos)..[pIdx] = updated;
+    final client = SupabaseService.instance.client;
+    await client.from('productos').update({
+      'nombre': entry.nombre,
+      'precio': entry.precio,
+      'is_original': entry.isOriginal,
+      'motos_compatibles': entry.motosCompatibles,
+      'stock_minimo': entry.stockMinimo,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('codigo', entry.codigo);
+
+    if (entry.cantidadCamion > 0) {
+      await client.from('inventario_camion').upsert({
+        'codigo': '${entry.codigo}_CAMION',
+        'producto_id': entry.codigo,
+        'canasta_id': entry.canastaId,
+        'cantidad': entry.cantidadCamion,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } else {
+      await client.from('inventario_camion').delete().eq('producto_id', entry.codigo);
     }
 
-    final cIdx = _camion.indexWhere((c) => c.productoId == entry.codigo);
-    if (cIdx != -1 && entry.cantidadCamion > 0) {
-      final updated = _camion[cIdx]
-        ..cantidad = entry.cantidadCamion
-        ..canastaId = entry.canastaId;
-      _camion = List<InventarioCamionModel>.from(_camion)..[cIdx] = updated;
-    } else if (cIdx != -1) {
-      _camion = List<InventarioCamionModel>.from(_camion)..removeAt(cIdx);
-    } else if (entry.cantidadCamion > 0) {
-      _camion = List<InventarioCamionModel>.from(_camion)
-        ..add(entry.toCamionModel());
+    if (entry.cantidadBodega > 0) {
+      await client.from('inventario_bodega').upsert({
+        'codigo': '${entry.codigo}_BODEGA',
+        'producto_id': entry.codigo,
+        'cantidad': entry.cantidadBodega,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } else {
+      await client.from('inventario_bodega').delete().eq('producto_id', entry.codigo);
     }
 
-    final bIdx = _bodega.indexWhere((b) => b.productoId == entry.codigo);
-    if (bIdx != -1 && entry.cantidadBodega > 0) {
-      final updated = _bodega[bIdx]
-        ..cantidad = entry.cantidadBodega;
-      _bodega = List<InventarioBodegaModel>.from(_bodega)..[bIdx] = updated;
-    } else if (bIdx != -1) {
-      _bodega = List<InventarioBodegaModel>.from(_bodega)..removeAt(bIdx);
-    } else if (entry.cantidadBodega > 0) {
-      _bodega = List<InventarioBodegaModel>.from(_bodega)
-        ..add(entry.toBodegaModel());
-    }
-
-    return _snapshot();
+    return loadInventory();
   }
 
   @override
   Future<InventorySnapshot> deleteProduct(String codigo) async {
-    _productos = List<ProductoModel>.from(_productos)..removeWhere((p) => p.codigo == codigo);
-    _camion = List<InventarioCamionModel>.from(_camion)..removeWhere((c) => c.productoId == codigo);
-    _bodega = List<InventarioBodegaModel>.from(_bodega)..removeWhere((b) => b.productoId == codigo);
-    return _snapshot();
-  }
-  @override
-  Future<void> incrementBodegaStock(String productoId, int cantidad) async {
-    final idx = _bodega.indexWhere((b) => b.productoId == productoId);
-    if (idx == -1) {
-      throw StateError('No hay registro de stock en la bodega para producto $productoId');
-    }
-    final model = _bodega[idx];
-    final updated = InventarioBodegaModel()
-      ..id = model.id
-      ..codigo = model.codigo
-      ..productoId = model.productoId
-      ..cantidad = model.cantidad + cantidad;
-    _bodega = List<InventarioBodegaModel>.from(_bodega)..[idx] = updated;
+    final client = SupabaseService.instance.client;
+    await client.from('inventario_camion').delete().eq('producto_id', codigo);
+    await client.from('inventario_bodega').delete().eq('producto_id', codigo);
+    await client.from('productos').delete().eq('codigo', codigo);
+    return loadInventory();
   }
 
   @override
   Future<void> createProductFromRecepcion(String productoId, int cantCamion, int cantBodega) async {
-    // Verificar si el producto ya existe
-    ProductoModel? existingProducto;
-    for (final p in _productos) {
-      if (p.codigo == productoId) {
-        existingProducto = p;
-        break;
-      }
-    }
-    if (existingProducto != null) return;
+    final client = SupabaseService.instance.client;
+    final existing = await client.from('productos').select().eq('codigo', productoId).maybeSingle();
+    if (existing != null) return;
 
-    // Crear entrada mínima
-    final productoModel = ProductoModel()
-      ..codigo = productoId
-      ..nombre = 'Producto $productoId'
-      ..precio = 0
-      ..isOriginal = false
-      ..motosCompatibles = ''
-      ..stockMinimo = 0;
+    await client.from('productos').insert({
+      'codigo': productoId,
+      'nombre': 'Producto $productoId',
+      'precio': 0.0,
+      'is_original': false,
+      'motos_compatibles': '',
+      'stock_minimo': 0,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
 
-    _productos = List<ProductoModel>.from(_productos)..add(productoModel);
     if (cantCamion > 0) {
-      _camion = List<InventarioCamionModel>.from(_camion)..add(InventarioCamionModel()
-        ..codigo = '${productoId}_CAMION'
-        ..productoId = productoId
-        ..canastaId = '0'
-        ..cantidad = cantCamion);
+      await client.from('inventario_camion').insert({
+        'codigo': '${productoId}_CAMION',
+        'producto_id': productoId,
+        'canasta_id': '0',
+        'cantidad': cantCamion,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
     }
+
     if (cantBodega > 0) {
-      _bodega = List<InventarioBodegaModel>.from(_bodega)..add(InventarioBodegaModel()
-        ..codigo = '${productoId}_BODEGA'
-        ..productoId = productoId
-        ..cantidad = cantBodega);
+      await client.from('inventario_bodega').insert({
+        'codigo': '${productoId}_BODEGA',
+        'producto_id': productoId,
+        'cantidad': cantBodega,
+        'is_synced': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
     }
+  }
+
+  ProductoModel _productoFromMap(Map<String, dynamic> map) {
+    return ProductoModel()
+      ..codigo = map['codigo']?.toString() ?? ''
+      ..nombre = (map['nombre'] ?? '').toString()
+      ..precio = (map['precio'] as num?)?.toDouble() ?? 0.0
+      ..imagenUrl = map['imagen_url']?.toString()
+      ..isOriginal = map['is_original'] == true
+      ..motosCompatibles = (map['motos_compatibles'] ?? '').toString()
+      ..stockMinimo = (map['stock_minimo'] as num?)?.toInt() ?? 0
+      ..isSynced = true;
+  }
+
+  InventarioCamionModel _camionFromMap(Map<String, dynamic> map) {
+    return InventarioCamionModel()
+      ..codigo = map['codigo']?.toString() ?? ''
+      ..productoId = map['producto_id']?.toString() ?? ''
+      ..canastaId = map['canasta_id']?.toString() ?? ''
+      ..cantidad = (map['cantidad'] as num?)?.toInt() ?? 0
+      ..isSynced = true;
+  }
+
+  InventarioBodegaModel _bodegaFromMap(Map<String, dynamic> map) {
+    return InventarioBodegaModel()
+      ..codigo = map['codigo']?.toString() ?? ''
+      ..productoId = map['producto_id']?.toString() ?? ''
+      ..cantidad = (map['cantidad'] as num?)?.toInt() ?? 0
+      ..isSynced = true;
   }
 }
 

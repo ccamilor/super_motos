@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/inventory/data/repositories/inventory_repository.dart';
@@ -7,7 +8,6 @@ import 'package:super_motos/features/inventory/data/repositories/inventory_repos
     if (dart.library.io) 'package:super_motos/features/inventory/data/repositories/inventory_repository_web.dart';
 import 'package:super_motos/features/recepcion/data/models/recepcion_model.dart';
 import 'package:super_motos/features/recepcion/data/repositories/recepcion_repository.dart';
-import 'package:super_motos/features/recepcion/data/services/recepcion_seed_data.dart';
 import 'package:super_motos/features/recepcion/domain/entities/recepcion.dart';
 import 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository.dart';
 import 'package:super_motos/features/suppliers/data/repositories/historial_precios_repository_io.dart'
@@ -30,10 +30,6 @@ class IsarRecepcionRepository implements RecepcionRepository {
     if (isar == null) return [];
 
     var models = await isar.recepcionModels.where().sortByFechaDesc().findAll();
-    if (models.isEmpty) {
-      await _seedDemoData(isar);
-      models = await isar.recepcionModels.where().sortByFechaDesc().findAll();
-    }
     return models.map((m) => m.toDomain()).toList();
   }
 
@@ -137,14 +133,6 @@ class IsarRecepcionRepository implements RecepcionRepository {
     return detalle.destino == destino ? detalle.cantidad : 0;
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    await isar.writeTxn(() async {
-      for (final recepcion in RecepcionSeedData.demoRecepciones) {
-        final model = RecepcionModel.fromDomain(recepcion);
-        await isar.recepcionModels.put(model);
-      }
-    });
-  }
 }
 
 RecepcionRepository createRecepcionRepository() => IsarRecepcionRepository();

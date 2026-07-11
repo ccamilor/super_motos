@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:super_motos/core/database/isar_service.dart';
 import 'package:super_motos/core/services/stock_alert_service.dart';
@@ -12,9 +14,11 @@ void main() async {
   final isarService = IsarService();
   await isarService.init();
   await SyncService.instance.init();
-  SyncService.instance.pullAll();
-  await StockAlertService.instance.init();
-  await StockAlertService.instance.requestPermissions();
+  unawaited(SyncService.instance.pullAll());
+  if (!kIsWeb) {
+    await StockAlertService.instance.init();
+    await StockAlertService.instance.requestPermissions();
+  }
 
   runApp(const MyApp());
 }

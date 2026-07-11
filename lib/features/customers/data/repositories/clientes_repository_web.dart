@@ -1,81 +1,62 @@
-import 'dart:convert';
-
 import 'package:super_motos/core/enums/estado_cuenta.dart';
+import 'package:super_motos/core/services/supabase_service.dart';
 import 'package:super_motos/features/customers/data/repositories/clientes_repository.dart';
-import 'package:super_motos/features/customers/data/services/clientes_seed_data.dart';
 import 'package:super_motos/features/customers/domain/entities/cliente.dart';
-import 'package:super_motos/features/inventory/presentation/pages/web_storage_stub.dart'
-    if (dart.library.js_interop) 'package:super_motos/features/inventory/presentation/pages/web_storage_web.dart';
-
-const String _clientesStorageKey = 'super_motos_clientes_data';
 
 class WebClientesRepository implements ClientesRepository {
-  static List<Cliente> _clientes = [];
-
   @override
   Future<List<Cliente>> loadAll() async {
-    if (_clientes.isEmpty) {
-      final savedData = getWebStorage().getItem(_clientesStorageKey);
-      if (savedData != null && savedData.isNotEmpty) {
-        _clientes = _decode(savedData);
-      }
-      if (_clientes.isEmpty) {
-        _clientes = List<Cliente>.from(ClientesSeedData.demoClientes);
-        getWebStorage().setItem(_clientesStorageKey, _encode(_clientes));
-      }
+    try {
+      final response = await SupabaseService.instance.client
+          .from('clientes')
+          .select();
+      final list = response as List<dynamic>;
+      final domainList = list.map((e) => _clienteFromMap(e as Map<String, dynamic>)).toList();
+      domainList.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+      return domainList;
+    } catch (e) {
+      return [];
     }
-
-    final sorted = List<Cliente>.from(_clientes)
-      ..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
-    return sorted;
   }
 
   @override
   Future<Cliente> create(Cliente cliente) async {
-    _clientes = [..._clientes, cliente];
-    _persist();
+    final map = _clienteToMap(cliente);
+    await SupabaseService.instance.client.from('clientes').insert(map);
     return cliente;
   }
 
   @override
   Future<Cliente> update(Cliente cliente) async {
-    _clientes = _clientes
-        .map((c) => c.codigo == cliente.codigo ? cliente : c)
-        .toList();
-    _persist();
+    final map = _clienteToMap(cliente);
+    await SupabaseService.instance.client
+        .from('clientes')
+        .update(map)
+        .eq('codigo', cliente.codigo);
     return cliente;
   }
 
   @override
   Future<void> delete(String codigo) async {
-    _clientes = _clientes.where((c) => c.codigo != codigo).toList();
-    _persist();
-  }
-
-  void _persist() {
-    getWebStorage().setItem(_clientesStorageKey, _encode(_clientes));
-  }
-
-  String _encode(List<Cliente> clientes) {
-    return jsonEncode(clientes.map(_clienteToMap).toList());
-  }
-
-  List<Cliente> _decode(String raw) {
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => _clienteFromMap(e as Map<String, dynamic>)).toList();
+    await SupabaseService.instance.client
+        .from('clientes')
+        .delete()
+        .eq('codigo', codigo);
   }
 
   Map<String, dynamic> _clienteToMap(Cliente c) {
     return {
       'codigo': c.codigo,
       'nombre': c.nombre,
-      'identificadorFiscal': c.identificadorFiscal,
+      'identificador_fiscal': c.identificadorFiscal,
       'direccion': c.direccion,
       'latitud': c.latitud,
       'longitud': c.longitud,
-      'limiteCredito': c.limiteCredito,
-      'saldoPendiente': c.saldoPendiente,
-      'estadoCuenta': c.estadoCuenta.name,
+      'limite_credito': c.limiteCredito,
+      'saldo_pendiente': c.saldoPendiente,
+      'estado_cuenta': c.estadoCuenta.name,
+      'is_synced': true,
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 
@@ -83,14 +64,14 @@ class WebClientesRepository implements ClientesRepository {
     return Cliente(
       codigo: m['codigo'] as String,
       nombre: m['nombre'] as String,
-      identificadorFiscal: m['identificadorFiscal'] as String,
-      direccion: m['direccion'] as String,
+      identificadorFiscal: (m['identificador_fiscal'] ?? '').toString(),
+      direccion: (m['direccion'] ?? '').toString(),
       latitud: (m['latitud'] as num?)?.toDouble(),
       longitud: (m['longitud'] as num?)?.toDouble(),
-      limiteCredito: (m['limiteCredito'] as num).toDouble(),
-      saldoPendiente: (m['saldoPendiente'] as num).toDouble(),
+      limiteCredito: (m['limite_credito'] as num?)?.toDouble() ?? 0.0,
+      saldoPendiente: (m['saldo_pendiente'] as num?)?.toDouble() ?? 0.0,
       estadoCuenta: EstadoCuenta.values.firstWhere(
-        (e) => e.name == m['estadoCuenta'],
+        (e) => e.name == m['estado_cuenta'],
         orElse: () => EstadoCuenta.activo,
       ),
     );

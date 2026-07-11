@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_motos/core/services/sync_queue_item.dart';
 import 'package:super_motos/core/services/sync_service.dart';
 import 'package:super_motos/features/returns/data/models/devolucion_model.dart';
 import 'package:super_motos/features/returns/data/repositories/devoluciones_repository.dart';
-import 'package:super_motos/features/returns/data/services/devoluciones_seed_data.dart';
 import 'package:super_motos/features/returns/domain/entities/devolucion.dart';
 
 class IsarDevolucionesRepository implements DevolucionesRepository {
@@ -18,11 +18,6 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
     }
 
     var models = await isar.devolucionModels.where().sortByFechaDevolucionDesc().findAll();
-    if (models.isEmpty) {
-      await _seedDemoData(isar);
-      models = await isar.devolucionModels.where().sortByFechaDevolucionDesc().findAll();
-    }
-
     return models.map((m) => m.toDomain()).toList();
   }
 
@@ -71,16 +66,6 @@ class IsarDevolucionesRepository implements DevolucionesRepository {
     SyncService.instance.enqueue('devoluciones', SyncOperation.delete, json);
   }
 
-  Future<void> _seedDemoData(Isar isar) async {
-    await isar.writeTxn(() async {
-      for (final devolucion in DevolucionesSeedData.demoDevoluciones) {
-        final model = DevolucionModel.fromDomain(devolucion);
-        final existing = await isar.devolucionModels.filter().codigoEqualTo(model.codigo).findFirst();
-        if (existing != null) model.id = existing.id;
-        await isar.devolucionModels.put(model);
-      }
-    });
-  }
 }
 
 DevolucionesRepository createDevolucionesRepository() => IsarDevolucionesRepository();
