@@ -4,6 +4,12 @@
 > Si algo cambia, se actualiza **aquí primero**; `README.md` queda como índice rápido y `docs/historical.md` conserva el registro de cambios pasados.
 
 ---
+# Super Motos — Guía del Agente
+
+> Documento canónico para que `opencode` (o cualquier asistente) entienda el proyecto en una sola lectura.
+> Si algo cambia, se actualiza **aquí primero**; `README.md` queda como índice rápido y `docs/historical.md` conserva el registro de cambios pasados.
+
+---
 
 ## 1. Resumen del proyecto
 
@@ -11,9 +17,9 @@
 - **Dominio:** Repuestos de moto — inventario de camión del vendedor + bodega central + ventas en ruta
 - **Stack:** Flutter 3.44 · Dart 3.12 · Isar 3.1 · Supabase (postgresql)
 - **Plataformas soportadas:**
-  - **Android / nativo:** Isar como base local
-  - **Chrome / web:** `localStorage` mediante `package:web` (Isar v3 no soporta web)
-- **Estrategia:** *local-first*, sync bidireccional con Supabase
+  - **Android / nativo:** Isar como base local (local-first) con sincronización en segundo plano.
+  - **Chrome / web:** Online-Only en tiempo real directamente con Supabase (sin usar Isar ni localStorage).
+- **Estrategia:** *local-first* en móviles (Isar + cola offline) y *online-first* en web (Supabase Directo).
 
 ---
 
@@ -31,7 +37,7 @@
 | `recepcion` | ✅ Completo | Listado + crear recepción con proveedor/lineas + split + upsert historial precios; badge reactivo en proveedores |
 | `code_generator` | ✅ Implementado | Códigos secuenciales de 3 dígitos (CLI-001, FAC-001, etc.) |
 | Backend remoto (Supabase) | ✅ Funcional | `SupabaseService` singleton, credenciales configuradas, `supabase_flutter` conectado |
-| Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at`, migración única de productos no sincronizados |
+| Sincronización bidireccional | ✅ Implementado | `SyncService` con cola offline, push/pull, last-write-wins, UI badges en todas las listas y detalles, conflict detection via `updated_at`, migración única de productos no sincronizados. **Soporta sincronización de borrados remotos (Pull Deletes)** |
 | Notificaciones de stock bajo | ✅ Implementado | `StockAlertService` singleton, verificacion en `decrementCamionStock`, notificacion local, tarjeta amber en dashboard |
 | Geoposicionamiento en factura | ✅ Implementado | `LocationService` singleton, captura coords al guardar factura, muestra icono+coords en detalle |
 | SyncStateIndicator global AppBar | ✅ Implementado | `SyncStateIndicator` en AppBar de 6 páginas, clicable → navega a `SyncQueuePage` |
@@ -49,10 +55,9 @@
 UI (Flutter)
   └── InventoryRepository (contrato abstracto)
         ├── IsarInventoryRepository   → Android / nativo
-        └── WebInventoryRepository    → Chrome (localStorage)
+        └── WebInventoryRepository    → Chrome (Supabase Directo / Online-Only)
               │
-              ├── InventoryCsvParser   (parser común)
-              └── InventorySeedData    (semilla demo unificada)
+              └── InventoryCsvParser   (parser común)
 ```
 
 **Patrón clave:** *import condicional* por plataforma
@@ -158,7 +163,7 @@ super_motos/
 ```text
 ClientesRepository (contrato abstracto)
   ├── IsarClientesRepository   → Android / nativo
-  └── WebClientesRepository    → Chrome (localStorage con JSON)
+  └── WebClientesRepository    → Chrome (Online-Only con Supabase)
 ```
 Factory con import condicional: `createClientesRepository()`.
 
@@ -183,7 +188,7 @@ Factory con import condicional: `createClientesRepository()`.
 ```text
 FacturasRepository (contrato abstracto)
   ├── IsarFacturasRepository   → Android / nativo
-  └── WebFacturasRepository    → Chrome (localStorage con JSON)
+  └── WebFacturasRepository    → Chrome (Online-Only con Supabase)
 ```
 
 **Cross-module:** al guardar una factura se invoca `InventoryRepository.decrementCamionStock(productoId, cantidad)` por cada línea. Si el stock decrement falla, se registra warning pero la factura queda guardada con `isSynced=false` para reproceso manual.
@@ -203,7 +208,7 @@ FacturasRepository (contrato abstracto)
 ```text
 DevolucionesRepository (contrato abstracto)
   ├── IsarDevolucionesRepository   → Android / nativo
-  └── WebDevolucionesRepository    → Chrome (localStorage con JSON)
+  └── WebDevolucionesRepository    → Chrome (Online-Only con Supabase)
 ```
 
 **Cross-module:** al guardar una devolución se invoca `InventoryRepository.incrementCamionStock(productoId, cantidad)`. Inverso del decrement de facturación.
@@ -222,11 +227,11 @@ DevolucionesRepository (contrato abstracto)
 ```text
 ProveedoresRepository (contrato abstracto)
   ├── IsarProveedoresRepository   → Android / nativo
-  └── WebProveedoresRepository    → Chrome (localStorage con JSON)
+  └── WebProveedoresRepository    → Chrome (Online-Only con Supabase)
 
 HistorialPreciosRepository (contrato abstracto)
   ├── IsarHistorialPreciosRepository   → Android / nativo
-  └── WebHistorialPreciosRepository    → Chrome (localStorage con JSON)
+  └── WebHistorialPreciosRepository    → Chrome (Online-Only con Supabase)
 ```
 Factory con import condicional: `createProveedoresRepository()` y `createHistorialPreciosRepository()`.
 
@@ -289,7 +294,7 @@ abstract class RecepcionRepository {
   2. Por cada detalle → `incrementCamionStock` / `incrementBodegaStock` según `destino` (crea entrada en inventario si no existe)
   3. `HistorialPreciosRepository.upsertPrecio(proveedorId, productoId, precioUnitario)` → último precio real
   4. Enqueua en `SyncService` tabla `recepciones`
-- `WebRecepcionRepository`: localStorage + JSON
+- `WebRecepcionRepository`: Online-Only con Supabase
 
 **Seed data** (`recepcion_seed_data.dart`): 2 recepciones demo (PROV-001 con 2 líneas camión/bodega; PROV-002 con split 15+25 y bodega).
 
@@ -346,9 +351,7 @@ Todos los modelos tienen `Id id` (auto-increment, PK interno de Isar) + `@Index(
 ```text
 1. InventoryPage.initState()           → _loadInventory()
 2. _repository.loadInventory()
-       ├── Web: lee localStorage["super_motos_csv_data"]
-       │        ├── si hay → InventoryCsvParser.parse()
-       │        └── si no  → InventorySeedData.demoEntries
+       ├── Web: lee de Supabase (Online-Only)
        └── IO: lee de Isar
 3. snapshot.productos / camion / bodega → setState → render
 4. Usuario toca "Cargar CSV"
@@ -356,7 +359,7 @@ Todos los modelos tienen `Id id` (auto-increment, PK interno de Isar) + `@Index(
        ├── Lee bytes (web) o path (io)
        ├── _repository.importCsv(content)
        │        ├── parser
-       │        ├── persist (localStorage en web / Isar txn en nativo)
+       │        ├── persist (Supabase en web / Isar txn en nativo)
        │        └── devuelve snapshot
        └── setState + SnackBar "EXITO"
 ```
@@ -375,7 +378,6 @@ Todos los modelos tienen `Id id` (auto-increment, PK interno de Isar) + `@Index(
 | `package:web` solo en Chrome | Tipos `JSAny`/`JSObject` no existen en runtime nativo → patrón stub |
 | `FilePicker.withData` | `true` en web (carga bytes), `false` en móvil (usa path) |
 | `dart:io` vs `dart:js_interop` | Selección de archivo de import condicional |
-| Almacenamiento web | Clave única: `super_motos_csv_data` (CSV completo en `localStorage`) |
 | Geolocator + Permission Handler | Solo en plataformas nativas; fails silently en web/chrome |
 | iOS location permissions | `NSLocationWhenInUseUsageDescription` y `NSLocationAlwaysAndWhenInUseUsageDescription` en `Info.plist` |
 | Android location permissions | `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` en `AndroidManifest.xml` |
@@ -447,7 +449,6 @@ flutter clean && flutter pub get
 |---|---|---|
 | `IsarError: Collection id is invalid` en emulador | BD del emulador con schemas antiguos incompatibles | `flutter clean` + `build_runner build` + reinstalar app |
 | Crash de Impeller en emulador x86 (API 30) | Backend GLES del emulador no enlaza shaders de Impeller | `flutter run --no-enable-impeller` (en físico funciona bien) |
-| `package:web` rompe compilación Android | Tipos `JSAny`/`JSObject` no existen en runtime nativo | Patrón de import condicional con `web_storage_stub.dart` |
 | Errores `LateInitializationError` en `flutter test` | SyncService intentaba pushear/salvar cola sin binding ni Supabase inicializado | Flag `_canSync` en `SyncService.init()` — solo activa push/save cuando está completamente inicializado |
 
 ---
@@ -512,34 +513,24 @@ flutter clean && flutter pub get
 | `lib/core/widgets/sync_status_badge.dart` | Widgets `SyncStatusBadge` (compact chip + full badge), `SyncIndicator`, `SyncStateIndicator` (clicable) |
 | `lib/features/home/presentation/pages/dashboard_page.dart` | Dashboard principal |
 | `lib/features/inventory/presentation/pages/inventory_page.dart` | Pantalla de inventario con 3 tabs + botones importar/exportar CSV |
-| `lib/features/inventory/presentation/pages/inventory_file_writer_io.dart` | Guardar CSV en Android |
-| `lib/features/inventory/presentation/pages/inventory_file_writer_web.dart` | Descargar CSV en Chrome |
-| `lib/features/inventory/presentation/pages/inventory_file_writer_stub.dart` | Stub condicional |
-| `lib/features/sync/presentation/pages/sync_queue_page.dart` | Pantalla "Pendientes de Sync" |
-| `lib/features/customers/presentation/pages/clientes_page.dart` | Lista de clientes con búsqueda |
-| `lib/features/customers/presentation/pages/cliente_form_page.dart` | Form crear/editar cliente |
-| `lib/features/customers/data/repositories/clientes_repository.dart` | Contrato abstracto |
-| `lib/features/customers/data/repositories/clientes_repository_web.dart` | Impl web (localStorage + JSON) |
+| `lib/features/customers/data/repositories/clientes_repository_web.dart` | Impl web (Online-Only con Supabase) |
 | `lib/features/customers/data/repositories/clientes_repository_io.dart` | Impl nativa (Isar) |
-| `lib/features/customers/data/services/clientes_seed_data.dart` | 3 clientes demo cubriendo los 3 estados |
 | `lib/features/billing/presentation/pages/facturas_page.dart` | Historial de ventas con búsqueda |
 | `lib/features/billing/presentation/pages/factura_form_page.dart` | Form crear venta con line items + stock decrement |
 | `lib/features/billing/presentation/pages/factura_detail_page.dart` | Detalle de factura con delete |
 | `lib/features/billing/data/repositories/facturas_repository.dart` | Contrato abstracto |
 | `lib/features/billing/data/repositories/facturas_repository_io.dart` | Impl nativa (Isar) |
-| `lib/features/billing/data/repositories/facturas_repository_web.dart` | Impl web (localStorage + JSON) |
-| `lib/features/billing/data/services/facturas_seed_data.dart` | 2 facturas demo (contado + credito) |
+| `lib/features/billing/data/repositories/facturas_repository_web.dart` | Impl web (Online-Only con Supabase) |
 | `lib/features/returns/presentation/pages/devoluciones_page.dart` | Historial de devoluciones con búsqueda |
 | `lib/features/returns/presentation/pages/devolucion_form_page.dart` | Form crear devolucion con factura/producto filtrado + restock |
 | `lib/features/returns/presentation/pages/devolucion_detail_page.dart` | Detalle de devolucion con delete |
 | `lib/features/returns/data/repositories/devoluciones_repository.dart` | Contrato abstracto |
 | `lib/features/returns/data/repositories/devoluciones_repository_io.dart` | Impl nativa (Isar) |
-| `lib/features/returns/data/repositories/devoluciones_repository_web.dart` | Impl web (localStorage + JSON) |
-| `lib/features/returns/data/services/devoluciones_seed_data.dart` | 2 devoluciones demo (defecto + producto incorrecto) |
+| `lib/features/returns/data/repositories/devoluciones_repository_web.dart` | Impl web (Online-Only con Supabase) |
 | `lib/features/inventory/presentation/pages/web_storage_stub.dart` | Stub de localStorage para Android |
 | `lib/features/inventory/presentation/pages/web_storage_web.dart` | Impl localStorage para Chrome |
 | `lib/features/inventory/data/repositories/inventory_repository.dart` | Contrato abstracto |
-| `lib/features/inventory/data/repositories/inventory_repository_web.dart` | Impl web (`localStorage`) |
+| `lib/features/inventory/data/repositories/inventory_repository_web.dart` | Impl web (Online-Only con Supabase) |
 | `lib/features/inventory/data/repositories/inventory_repository_io.dart` | Impl nativa (Isar) |
 | `lib/features/inventory/data/repositories/inventory_snapshot.dart` | DTO de salida del repositorio |
 | `lib/features/inventory/data/services/inventory_csv_parser.dart` | Parser CSV común |
@@ -563,4 +554,8 @@ flutter clean && flutter pub get
 
 ## Nota sobre ejecución en Chrome
 
-> ⚠️ **No soportado actualmente.** Los archivos `.g.dart` generados por Isar contienen IDs int64 que JavaScript no puede representar (±2⁵³). Intentar `flutter run -d chrome` produce errores `The integer literal X can't be represented exactly in JavaScript` en 9 archivos. **Usar Android** (`flutter run -d emulator-5554 --no-enable-impeller` o dispositivo físico) para desarrollo local.
+> ✅ **Soportado por completo y funcional.** La versión Web compila y ejecuta limpiamente en Chrome (`flutter run -d chrome`). 
+> 
+> **Cómo se resolvió la limitación de JS (64-bit Ints en *.g.dart):**
+> Los identificadores autogenerados de Isar que sobrepasaban los 53 bits (ej: `8283790178398363742`) fueron transformados automáticamente en expresiones constantes matemáticas seguras de base 10: `(828379017 * 10000000000 + 8398363742)`. Esto es perfectamente compatible con el compilador Dart-to-JS como constante en tiempo de compilación y se resuelve en runtime como float de doble precisión (sin arrojar errores), mientras que en plataformas nativas móviles se evalúa al entero exacto de 64 bits.
+> Además, todos los repositorios Web se conectan en tiempo real de forma directa a Supabase (Online-Only) sin depender de Isar.
