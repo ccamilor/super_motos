@@ -535,8 +535,9 @@ flutter clean && flutter pub get
 | `lib/features/inventory/data/repositories/inventory_snapshot.dart` | DTO de salida del repositorio |
 | `lib/features/inventory/data/services/inventory_csv_parser.dart` | Parser CSV común |
 | `lib/features/inventory/data/services/inventory_csv_exporter.dart` | Exportador CSV común |
-| `lib/features/inventory/data/services/inventory_seed_data.dart` | Semilla demo unificada |
 | `lib/features/inventory/domain/entities/inventory_entry.dart` | DTO común de fila de inventario |
+| `deploy.bat` | Script local de un clic para compilar y subir build web a `web_deploy` |
+| `.github/workflows/deploy.yml` | Workflow de CI/CD para compilar y desplegar en GitHub Actions |
 | `test/csv_import_test.dart` | Suite de 10 tests del flujo CSV |
 | `test_data/inventario_prueba.csv` | CSV de prueba con 12 productos COP |
 | `pubspec.yaml` | Dependencias: `isar`, `csv`, `file_picker`, `web`, `path_provider`, `supabase_flutter`, `flutter_local_notifications`, `geolocator`, `permission_handler` |
@@ -549,6 +550,20 @@ flutter clean && flutter pub get
 
 - [`README.md`](./README.md) — Índice rápido y comandos de uso
 - [`docs/historical.md`](./docs/historical.md) — Walkthrough técnico del refactor + registro de sesiones
+
+---
+
+## 15. Automatización de Despliegue (Local-First y CI/CD)
+
+### Automatización Local (deploy.bat)
+* **Propósito**: Permite compilar y publicar los cambios a la web con un solo clic, sin depender de los servidores de GitHub (evita bloqueos por facturación o límites de minutos en GitHub Actions).
+* **Cómo usar**: Haz doble clic sobre `deploy.bat` en la carpeta raíz del proyecto. Esto compilará tu aplicación con la ruta correcta (`--base-href "/super_motos/"`) y subirá los archivos compilados a la rama `web_deploy`.
+* **Sincronización**: Al actualizar la rama `web_deploy`, GitHub Pages o Vercel se actualizan automáticamente en tiempo real.
+
+### Automatización en la nube (GitHub Actions)
+* **Propósito**: Compila y publica automáticamente la versión web cada vez que haces un push a la rama `main`.
+* **Archivo**: `.github/workflows/deploy.yml`.
+* **Requisito**: Requiere activar permisos de escritura en tu repositorio en GitHub (*Settings -> Actions -> General -> Workflow permissions -> Read and write permissions*).
 
 ---
 
